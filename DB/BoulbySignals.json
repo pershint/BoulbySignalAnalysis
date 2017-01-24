@@ -1,6 +1,6 @@
 {
-   "Efficiency_cases": [
-    { "Detection_Efficiency": 1,
+   "Efficiency_Cases": [
+    { "Detection_Efficiency": 1.0,
     "Signal_Contributions": {
         "Core_1" : 1.3,
         "Core_2" : 1.3,
