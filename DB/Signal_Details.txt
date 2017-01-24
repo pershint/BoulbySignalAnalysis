@@ -1,0 +1,4 @@
+Details on BoulbySignals.json:
+    The Signal contributions give the number of IBDs expected in WATCHMAN per
+    day for the source label.  These numbers are based on a ?% photocoverage
+    and ? size for the WATCHMAN detector at the Boulby site.

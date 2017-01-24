@@ -1,0 +1,61 @@
+{
+   "Efficiency_cases": [
+    { "Detection_Efficiency": 1,
+    "Signal_Contributions": {
+        "Core_1" : 1.3,
+        "Core_2" : 1.3,
+        "Other_Reacs": 0.38,
+        "Accidentals": 0.0,
+        "Fast_N": 0.25,
+        "Radionuclides": 0.06
+        }
+    },
+
+    {
+    "Detection_Efficiency": 0.8,
+    "Signal_Contributions": {
+        "Core_1" : 1.04,
+        "Core_2" : 1.04,
+        "Other_Reacs": 0.304,
+        "Accidentals": 0.0,
+        "Fast_N": 0.25,
+        "Radionuclides": 0.06
+        }
+    },
+
+    {
+    "Detection_Efficiency": 0.6,
+    "Signal_Contributions": {
+        "Core_1" : 0.78,
+        "Core_2" : 0.78,
+        "Other_Reacs": 0.228,
+        "Accidentals": 0.0,
+        "Fast_N": 0.225,
+        "Radionuclides": 0.06
+        }
+    },
+
+    {
+    "Detection_Efficiency": 0.4,
+    "Signal_Contributions": {
+        "Core_1" : 0.52,
+        "Core_2" : 0.52,
+        "Other_Reacs": 0.152,
+        "Accidentals": 0.0,
+        "Fast_N": 0.2,
+        "Radionuclides": 0.06
+        }
+    },
+
+{
+    "Detection_Efficiency": 0.2,
+    "Signal_Contributions": {
+        "Core_1" : 0.26,
+        "Core_2" : 0.26,
+        "Other_Reacs": 0.076,
+        "Accidentals": 0.0,
+        "Fast_N": 0.2,
+        "Radionuclides": 0.06
+        }
+    }]
+}
