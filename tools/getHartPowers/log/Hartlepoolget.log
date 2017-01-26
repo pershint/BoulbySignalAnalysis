@@ -1,0 +1,129 @@
+#LOG FOR FAILURE TO CONNECTS AND UNCAUGHT EXCEPTIONS
+2017-01-25 19:04:12,126 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:04:12,126 type: <type 'exceptions.KeyError'>
+None
+2017-01-25 19:04:12,126 value: u'\n    Turbine Generator 1  '
+None
+2017-01-25 19:04:12,126 Traceback: <traceback object at 0x7fbb155a0c20>
+None
+2017-01-25 19:07:04,494 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:07:04,494 type: <type 'exceptions.KeyError'>
+None
+2017-01-25 19:07:04,495 value: u'\n    Turbine Generator 1  '
+None
+2017-01-25 19:07:04,495 Traceback: None
+None
+2017-01-25 19:08:45,257 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:08:45,258 type: <type 'exceptions.KeyError'>
+None
+2017-01-25 19:08:45,258 value: u'\n    Turbine Generator 1  '
+None
+2017-01-25 19:08:45,258 Traceback: None
+None
+2017-01-25 19:09:47,026 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:09:47,026 type: <type 'exceptions.KeyError'>
+None
+2017-01-25 19:09:47,026 value: u'\n    Turbine Generator 1  '
+None
+2017-01-25 19:09:47,026 Traceback: None
+None
+2017-01-25 19:10:48,710 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:10:48,710 type: <type 'exceptions.KeyError'>
+None
+2017-01-25 19:10:48,710 value: u'\n    Turbine Generator 1  '
+None
+2017-01-25 19:10:48,711 Traceback: None
+None
+2017-01-25 19:11:21,781 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:11:21,781 type: <type 'exceptions.KeyError'>
+None
+2017-01-25 19:11:21,781 value: u'\n    Turbine Generator 1  '
+None
+2017-01-25 19:11:21,782 Traceback: None
+None
+2017-01-25 19:12:03,950 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:12:03,950 type: <type 'exceptions.KeyError'>
+None
+2017-01-25 19:12:03,950 value: u'\n    Turbine Generator 1  '
+None
+2017-01-25 19:12:03,950 Traceback: None
+None
+2017-01-25 19:14:03,026 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:14:03,026 type: <type 'exceptions.KeyError'>
+None
+2017-01-25 19:14:03,026 value: u'\n    Turbine Generator 1  '
+None
+2017-01-25 19:14:03,026 Traceback: None
+None
+2017-01-25 19:15:23,222 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:15:23,222 type: <type 'exceptions.KeyError'>
+None
+2017-01-25 19:15:23,223 value: u'Turbine Generator 1'
+None
+2017-01-25 19:15:23,223 Traceback: None
+None
+2017-01-25 19:15:49,609 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:15:49,610 type: <type 'exceptions.KeyError'>
+None
+2017-01-25 19:15:49,610 value: 'Turbine Generator 1'
+None
+2017-01-25 19:15:49,610 Traceback: None
+None
+2017-01-25 19:18:08,717 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:18:08,717 type: <type 'exceptions.NameError'>
+None
+2017-01-25 19:18:08,717 value: global name 'logger' is not defined
+None
+2017-01-25 19:18:08,720 Traceback: None
+None
+2017-01-25 19:43:02,596 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:43:02,598 type: <type 'exceptions.KeyboardInterrupt'>
+None
+2017-01-25 19:43:02,598 value: 
+None
+2017-01-25 19:43:02,666 Traceback: None
+None
+2017-01-25 19:43:19,752 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:43:19,752 type: <type 'exceptions.KeyboardInterrupt'>
+None
+2017-01-25 19:43:19,752 value: 
+None
+2017-01-25 19:43:19,754 Traceback: None
+None
+2017-01-25 19:44:09,041 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:44:09,041 type: <type 'exceptions.KeyboardInterrupt'>
+None
+2017-01-25 19:44:09,041 value: 
+None
+2017-01-25 19:44:09,049 Traceback: None
+None
+2017-01-25 19:44:32,651 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 19:44:32,651 type: <type 'exceptions.KeyboardInterrupt'>
+None
+2017-01-25 19:44:32,651 value: 
+None
+2017-01-25 19:44:32,659 Traceback: None
+None
+2017-01-25 20:16:00,539 UNCAUGHT EXCEPTION: 
+None
+2017-01-25 20:16:00,539 type: <type 'exceptions.ValueError'>
+None
+2017-01-25 20:16:00,539 value: dict contains fields not in fieldnames: '\n'
+None
+2017-01-25 20:16:00,542 Traceback: None
+None

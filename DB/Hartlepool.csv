@@ -1,0 +1,7 @@
+#THIS CSV FILE HOLDS HARTLEPOOL TURBINE POWER DATA AS SEEN ON THE WEBPAGE
+#https://www.edfenergy.com/energy/power-stations/hartlepool
+
+
+
+Last updated,Hartlepool_turbines
+25 Jan 2017 12.49hrs,"{'Turbine Generator 1': {'status': 'Nominal full load ', 'power': '593MW'}, 'Turbine Generator 2': {'status': 'Nominal full load ', 'power': '594MW'}}"
