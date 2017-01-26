@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 def Plot_NRBackgrounds(GeneratedExperiment):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    #ax.plot(GeneratedExperiment.experiment_day, GeneratedExperiment.NR_bkg, \
+    #ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.NR_bkg, \
     #        'ro', color='blue', alpha=0.8)
-    ax.errorbar(GeneratedExperiment.experiment_day, GeneratedExperiment.NR_bkg, \
+    ax.errorbar(GeneratedExperiment.experiment_days, GeneratedExperiment.NR_bkg, \
         xerr=0, yerr=GeneratedExperiment.NR_bkg_unc, marker='o', linestyle='none', \
         color='g', alpha=0.7)
     ax.axhline(y=GeneratedExperiment.avg_NRbackground,color='k')
@@ -23,9 +23,9 @@ def Plot_NRBackgrounds(GeneratedExperiment):
 def Plot_Signal(GeneratedExperiment):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    #ax.plot(GeneratedExperiment.experiment_day, GeneratedExperiment.events, \
+    #ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.events, \
     #        'ro', color='blue', alpha=0.8)
-    ax.errorbar(GeneratedExperiment.experiment_day, GeneratedExperiment.events, \
+    ax.errorbar(GeneratedExperiment.experiment_days, GeneratedExperiment.events, \
         xerr=0, yerr=GeneratedExperiment.events_unc, marker='o',\
         linestyle='none',color='r', alpha=0.7)
     ax.axhline(y=GeneratedExperiment.avg_NRbackground,color='k')

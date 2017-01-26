@@ -4,14 +4,15 @@ import numpy as np
 #Class takes in a signal class as defined in DBParse.py and creates the spectrum
 #For an experiment.
 class ExperimentGenerator(object):
-    def __init__(self,signalClass, offtime, resolution, unknown_core, numcycles):
+    def __init__(self,signalClass, offtime, resolution, unknown_core, totaldays):
         self.signals = signalClass.signals
         self.efficiency = signalClass.efficiency
         self.offtime = offtime
+        self.totaldays = totaldays
         self.resolution = resolution
         self.unknown_core = unknown_core
-        self.numcycles = numcycles #Number of resolution periods measured
-        self.experiment_day = np.arange(1*resolution,(numcycles+1)*resolution, \
+        self.numcycles = self.totaldays / self.resolution #Number of resolution periods measured
+        self.experiment_days = np.arange(1*resolution,(numcycles+1)*resolution, \
                 resolution)
 
         #First, populate non-reactor backgrounds
@@ -65,18 +66,38 @@ class ExperimentGenerator(object):
                 self.known_core_events = core_signal_dict[core]
 
     def removeCoreOffEvents(self):
-        print("Not Implemented")
-        #First, shoot two random number between 0 and 3/4 the total experiment time
-        #These will be the time of the first turn-off
-        #Then, fire two random numbers close to ~18 months length
-        #These will be (when added to the first) the second turn-off day
-        #Now, have to remove events based on the date of the turn-off, and for
-        #How long the reactor is off for.  Could be removing partial events from
-        #bins, or all of them from a bin depending.
+        '''
+        Code first generates a random on/off cycle for each core.  Then,
+        goes through the experiment, day by day, and adjusts each reactor core's
+        signal according to if the reactor is on or off.
+        '''
+        #generate the days that each reactor shuts off
+        core_shutoffs = {'Core_1': [], 'Core_2': []}
+        for core in core_shutoffs:
+            shutoff_day = np.random.randint(1, self.uptime) #first shutoff
+            while ((shutoff_day + self.uptime) < (self.totaldays - self.offtime)):
+                shutoff_day += self.uptime
+                core_shutoffs[core].append(shutoff_day)
+        
+        #Now, go through each bin of core data and remove the appropriate
+        #portion of reactor flux for the shutoff
+
+        for core in core_shutoffs:
+            for shutdown_day in core_shutoffs[core]:
+                for j,daybin in enumerate(self.experiment_days):
+                    if (shutdown_day + off_time < daybin):
+                        ondays_inbin = daybin - (shutdown_day + offtime)
+                        self.known_core_events[j] = (self.known_core_events[j] * \
+                                (float(ondays_inbin) / float(resolution))
+                                #FIXME: Need to connect the core entry in core_shutoffs
+                                #With either the known or unknown core
+                    if shutdown_day > daybin:
+                        dayson_inbin
+                        #FIXME: Not yet implemented
 
     def show(self):
         print("Average Non-Reactor background events per division: " + \
                 str(self.avg_NRbackground))
         print("Background array: \n" + str(self.NR_bkg))
-        print("day of experiment array: \n" + str(self.experiment_day))
+        print("day of experiment array: \n" + str(self.experiment_days))
 

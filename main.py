@@ -15,6 +15,9 @@ parser.add_option("--debug",action="store_true",default="False")
 parser.add_option("-r","--resolution",action="store",dest="resolution", \
         type="int",default=30,help="Specify the number of days per bin " +\
         "for the produced experimental data")
+parser.add_option("-u","--uptime",action="store",dest="uptime", \
+        type="int",default=180,help="Specify the uptime, in days, " + \
+        "for a reactor between outages")
 parser.add_option("-d","--days",action="store",dest="days", \
         type="int",default=3000,help="Total number of days of candidate " + \
         "events produced")
@@ -32,6 +35,7 @@ KNOWN_CORE = 'Core_1'
 UNKNOWN_CORE = 'Core_2'
 RESOLUTION = options.resolution  #In days
 OFF_TIME = options.offtime       #In days
+UP_TIME = options.uptime         #In days
 TOTAL_RUN = options.days    #In Days (NOTE: If not divisible by RESOLUTION, will round
                  #down to next lowest number divisible by RESOLUTION)
 
@@ -57,9 +61,8 @@ if __name__=='__main__':
             np.sqrt(Boulby.signals[KNOWN_CORE]*RESOLUTION), title)
     #------------- END DEMO OF HOW STATS ARE FLUCTUATED ------------#
 
-    Num_data_bins = TOTAL_RUN / RESOLUTION
-    Run1 = eg.ExperimentGenerator(Boulby, OFF_TIME, RESOLUTION, UNKNOWN_CORE, \
-        100)
+    Run1 = eg.ExperimentGenerator(Boulby, OFF_TIME, UP_TIME, RESOLUTION, UNKNOWN_CORE, \
+        TOTAL_RUN)
     #Run1.show()  #Shows output of some experiment run details
     gr.Plot_NRBackgrounds(Run1)
     gr.Plot_Signal(Run1)
