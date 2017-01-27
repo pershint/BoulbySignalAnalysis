@@ -35,3 +35,23 @@ def Plot_Signal(GeneratedExperiment):
             str(GeneratedExperiment.efficiency) + '\n' + \
             'Event binning = ' + str(GeneratedExperiment.resolution) + 'days')
     plt.show()
+
+def Plot_Cores(GeneratedExperiment):
+    fig = plt.figure()
+    ax1 = fig.add_subplot(1,2,1)
+    ax2 = fig.add_subplot(1,2,2)
+    ax1.errorbar(GeneratedExperiment.experiment_days, GeneratedExperiment.known_core_events, \
+            xerr=0, yerr=np.sqrt(GeneratedExperiment.known_core_events), \
+            marker = 'o', linestyle='none', color='m', alpha=0.7)
+    ax2.errorbar(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_events, \
+            xerr=0, yerr=np.sqrt(GeneratedExperiment.unknown_core_events), \
+            marker = 'o', linestyle='none', color='r', alpha=0.4)
+    ax1.set_xlabel("days")
+    ax2.set_xlabel("days")
+    ax1.set_ylabel("Candidate events")
+    ax2.set_ylabel("Candidate events")
+    ax1.set_title("Background reactor candidate events in WATCHMAN")
+    ax2.set_title("Signal reactor candidate events in WATCHMAN")
+    plt.show()
+
+

@@ -66,3 +66,4 @@ if __name__=='__main__':
     #Run1.show()  #Shows output of some experiment run details
     gr.Plot_NRBackgrounds(Run1)
     gr.Plot_Signal(Run1)
+    gr.Plot_Cores(Run1)

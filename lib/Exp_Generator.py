@@ -75,7 +75,8 @@ class ExperimentGenerator(object):
         #generate the days that each reactor shuts off
         core_shutoffs = {'Core_1': [], 'Core_2': []}
         for core in core_shutoffs:
-            shutoff_day = np.random.randint(1, self.uptime) #first shutoff
+            #shutoff_day = np.random.randint(1, self.uptime) #first shutoff
+            shutoff_day = 10
             core_shutoffs[core].append(shutoff_day)
             while ((shutoff_day + self.uptime) < (self.totaldays - self.offtime)):
                 shutoff_day += self.uptime
