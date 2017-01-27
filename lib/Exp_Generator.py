@@ -4,16 +4,17 @@ import numpy as np
 #Class takes in a signal class as defined in DBParse.py and creates the spectrum
 #For an experiment.
 class ExperimentGenerator(object):
-    def __init__(self,signalClass, offtime, resolution, unknown_core, totaldays):
+    def __init__(self,signalClass, offtime, uptime, resolution, unknown_core, totaldays):
         self.signals = signalClass.signals
         self.efficiency = signalClass.efficiency
         self.offtime = offtime
+        self.uptime = uptime
         self.totaldays = totaldays
         self.resolution = resolution
         self.unknown_core = unknown_core
         self.numcycles = self.totaldays / self.resolution #Number of resolution periods measured
-        self.experiment_days = np.arange(1*resolution,(numcycles+1)*resolution, \
-                resolution)
+        self.experiment_days = np.arange(1*self.resolution,(self.numcycles+1)* \
+                self.resolution, self.resolution)
 
         #First, populate non-reactor backgrounds
         self.avg_NRbackground = 0 #In events/resolution width
@@ -75,10 +76,11 @@ class ExperimentGenerator(object):
         core_shutoffs = {'Core_1': [], 'Core_2': []}
         for core in core_shutoffs:
             shutoff_day = np.random.randint(1, self.uptime) #first shutoff
+            core_shutoffs[core].append(shutoff_day)
             while ((shutoff_day + self.uptime) < (self.totaldays - self.offtime)):
                 shutoff_day += self.uptime
                 core_shutoffs[core].append(shutoff_day)
-        
+        print(core_shutoffs)        
         #Now, go through each bin of core data and remove the appropriate
         #portion of reactor flux for the shutoff
 
@@ -87,36 +89,32 @@ class ExperimentGenerator(object):
                 for shutdown_day in core_shutoffs[core]:
                     for j,daybin in enumerate(self.experiment_days):
                         #check if shutdown time ended in this daybin
-                        if ((shutdown_day + off_time) < daybin):
-                            ondays_inbin = daybin - (shutdown_day + offtime)
+                        if ((shutdown_day + self.offtime) < daybin):
+                            ondays_inbin = daybin - (shutdown_day + self.offtime)
                             self.unknown_core_events[j] = (self.unknown_core_events[j] * \
-                                    (float(ondays_inbin) / float(resolution)))
+                                    (float(ondays_inbin) / float(self.resolution)))
                             break
                         elif shutdown_day < daybin:
                             dayson_inbin = self.resolution - (daybin - shutdown_day)
                             if dayson_inbin > 0:
                                 self.unknown_core_events[j] = (self.unknown_core_events[j] * \
-                                    (float(dayson_inbin) / float(resolution))
+                                    (float(dayson_inbin) / float(self.resolution)))
                             else:
                                 self.unknown_core_events[j] = 0
             else:
                 for shutdown_day in core_shutoffs[core]:
                     for j,daybin in enumerate(self.experiment_days):
                         #check if shutdown time ended in this daybin
-                        if ((shutdown_day + off_time) < daybin):
-                            ondays_inbin = daybin - (shutdown_day + offtime)
+                        if ((shutdown_day + self.offtime) < daybin):
+                            ondays_inbin = daybin - (shutdown_day + self.offtime)
                             self.known_core_events[j] = (self.known_core_events[j] * \
-                                    (float(ondays_inbin) / float(resolution)))
+                                    (float(ondays_inbin) / float(self.resolution)))
                             break
-                                    #FIXME: Need to connect the core entry in core_shutoffs
-                                    #With either the known or unknown core
-                        #if shutdown time did not end, adjust daybin's events by ratio of
-                        #on-time in bin to total days in bin
                         elif shutdown_day < daybin:
                             dayson_inbin = self.resolution - (daybin - shutdown_day)
                             if dayson_inbin > 0:
-                                self.known_core_events[j] = (self.known_core_events[j] * /
-                                    (float(dayson_inbin) / float(resolution))
+                                self.known_core_events[j] = (self.known_core_events[j] * \
+                                    (float(dayson_inbin) / float(self.resolution)))
 
     def show(self):
         print("Average Non-Reactor background events per division: " + \

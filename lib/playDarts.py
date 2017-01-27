@@ -9,7 +9,11 @@ import numpy as np
 def RandShoot(mu, sigma,n):
     '''
     Returns an array of n numbers from a gaussian distribution of
-    average mu and variance sigma.
+    average mu and variance sigma. If less than zero, return zero.
     '''
-    return mu + sigma * np.random.randn(n)
+    result = mu + sigma * np.random.randn(n)
+    for num in result:
+        if num < 0.0:
+            num = 0
+    return result
 
