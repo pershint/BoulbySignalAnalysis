@@ -89,41 +89,55 @@ class ExperimentGenerator(object):
             if core == self.unknown_core:
                 for shutdown_day in core_shutoffs[core]:
                     for j,daybin in enumerate(self.experiment_days):
-                        #check if shutdown time ended in this daybin
-                        if ((shutdown_day + self.offtime) < daybin):
-                            ondays_inbin = daybin - (shutdown_day + self.offtime)
-                            print("ONDAYS IN BIN: " + str(ondays_inbin))
-                            self.unknown_core_events[j] = (self.unknown_core_events[j] * \
-                                    (float(ondays_inbin) / float(self.resolution)))
-                            print("BIN EVENTS AFTER SCALING: " + str(self.unknown_core_events[j]))
-                            break
-                        #if it did not end, scale the events according to the bin's offtime
-                        elif shutdown_day < daybin:
-                            dayson_inbin = self.resolution - (daybin - shutdown_day)
-                            if dayson_inbin > 0:
-                                self.unknown_core_events[j] = (self.unknown_core_events[j] * \
-                                    (float(dayson_inbin) / float(self.resolution)))
+                        print("IN DAYBIN (UNKNOWN): " + str(daybin))
+
+                        #If a shutdown happened, scale the events according to
+                        #Days on before offtime begins
+                        if shutdown_day < daybin:
+                            dayson_beforeOT = self.resolution - (daybin - shutdown_day)
+                            if dayson_beforeOT > 0:
+                                flux_scaled = (self.unknown_core_events[j] * \
+                                    (float(dayson_beforeOT) / float(self.resolution)))
                             else:
-                                self.unknown_core_events[j] = 0
+                                flux_scaled = 0
+                        #If a reactor started back up, add back the proper flux ratio
+                        elif ((shutdown_day + self.offtime) < daybin):
+                                dayson_afterOT = daybin - (shutdown_day + self.offtime)
+                                flux_scaled += (self.unknown_core_events[j] * \
+                                    (float(dayson_afterOT) / float(self.resolution)))
+                                print("BIN EVENTS AFTER FOR END OF OUTAGE: " + str(self.unknown_core_events[j]))
+                                self.unknown_core_events[j] = flux_scaled
+                                break
+                        else:
+                            self.unknown_core_events[j] = flux_scaled
             else:
                 for shutdown_day in core_shutoffs[core]:
                     for j,daybin in enumerate(self.experiment_days):
-                        #check if shutdown time ended in this daybin
-                        if ((shutdown_day + self.offtime) < daybin):
-                            ondays_inbin = daybin - (shutdown_day + self.offtime)
-                            self.known_core_events[j] = (self.known_core_events[j] * \
-                                    (float(ondays_inbin) / float(self.resolution)))
-                            break
-                        #if it did not end, scale events according to bin's offtime
-                        elif shutdown_day < daybin:
-                            dayson_inbin = self.resolution - (daybin - shutdown_day)
-                            if dayson_inbin > 0:
-                                self.known_core_events[j] = (self.known_core_events[j] * \
-                                    (float(dayson_inbin) / float(self.resolution)))
-                            else:
-                                self.known_core_events[j] = 0
+                        print("IN DAYBIN (KNOWN): " + str(daybin))
 
-    def show(self):
+                        #If a shutdown happened, scale the events according to
+                        #Days on before offtime begins
+                        if shutdown_day < daybin:
+                            dayson_beforeOT = self.resolution - (daybin - shutdown_day)
+                            if dayson_beforeOT > 0:
+                                flux_scaled = (self.known_core_events[j] * \
+                                    (float(dayson_beforeOT) / float(self.resolution)))
+                            else:
+                                flux_scaled = 0
+                        #If a reactor started back up, add back the proper flux ratio back,
+                        #Then break to start looking at the next outage
+                        if ((shutdown_day + self.offtime) < daybin):
+                                dayson_afterOT = daybin - (shutdown_day + self.offtime)
+                                flux_scaled += (self.known_core_events[j] * \
+                                    (float(dayson_afterOT) / float(self.resolution)))
+                                print("BIN EVENTS AFTER FOR END OF OUTAGE: " + str(self.known_core_events[j]))
+                                self.known_core_events[j] = flux_scaled
+                                break
+                        #If the outage did not end by the end of the bin, scale flux and continue
+                        else:
+                            self.known_core_events[j] = flux_scaled
+
+def show(self):
         print("Average Non-Reactor background events per division: " + \
                 str(self.avg_NRbackground))
         print("Background array: \n" + str(self.NR_bkg))
