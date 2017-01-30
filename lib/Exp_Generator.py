@@ -79,7 +79,7 @@ class ExperimentGenerator(object):
             shutoff_day = 10
             core_shutoffs[core].append(shutoff_day)
             while ((shutoff_day + self.uptime) < (self.totaldays - self.offtime)):
-                shutoff_day += self.uptime
+                shutoff_day = (shutoff_day + self.offtime) + self.uptime
                 core_shutoffs[core].append(shutoff_day)
         print(core_shutoffs)        
         #Now, go through each bin of core data and remove the appropriate
@@ -92,9 +92,12 @@ class ExperimentGenerator(object):
                         #check if shutdown time ended in this daybin
                         if ((shutdown_day + self.offtime) < daybin):
                             ondays_inbin = daybin - (shutdown_day + self.offtime)
+                            print("ONDAYS IN BIN: " + str(ondays_inbin))
                             self.unknown_core_events[j] = (self.unknown_core_events[j] * \
                                     (float(ondays_inbin) / float(self.resolution)))
+                            print("BIN EVENTS AFTER SCALING: " + str(self.unknown_core_events[j]))
                             break
+                        #if it did not end, scale the events according to the bin's offtime
                         elif shutdown_day < daybin:
                             dayson_inbin = self.resolution - (daybin - shutdown_day)
                             if dayson_inbin > 0:
@@ -111,11 +114,14 @@ class ExperimentGenerator(object):
                             self.known_core_events[j] = (self.known_core_events[j] * \
                                     (float(ondays_inbin) / float(self.resolution)))
                             break
+                        #if it did not end, scale events according to bin's offtime
                         elif shutdown_day < daybin:
                             dayson_inbin = self.resolution - (daybin - shutdown_day)
                             if dayson_inbin > 0:
                                 self.known_core_events[j] = (self.known_core_events[j] * \
                                     (float(dayson_inbin) / float(self.resolution)))
+                            else:
+                                self.known_core_events[j] = 0
 
     def show(self):
         print("Average Non-Reactor background events per division: " + \
