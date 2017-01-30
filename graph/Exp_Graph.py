@@ -45,7 +45,7 @@ def Plot_Cores(GeneratedExperiment):
             marker = 'o', linestyle='none', color='m', alpha=0.7)
     ax2.errorbar(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_events, \
             xerr=0, yerr=np.sqrt(GeneratedExperiment.unknown_core_events), \
-            marker = 'o', linestyle='none', color='r', alpha=0.4)
+            marker = 'o', linestyle='none', color='r', alpha=0.3)
     ax1.set_xlabel("days")
     ax2.set_xlabel("days")
     ax1.set_ylabel("Candidate events")

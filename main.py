@@ -31,8 +31,8 @@ parser.add_option('-e','--efficiency',action="store",dest="efficiency", \
 (options,args) = parser.parse_args()
 
 DETECTION_EFF = options.efficiency
-KNOWN_CORE = 'Core_1'
-UNKNOWN_CORE = 'Core_2'
+KNOWN_CORE = 'Core_2'
+UNKNOWN_CORE = 'Core_1'
 RESOLUTION = options.resolution  #In days
 OFF_TIME = options.offtime       #In days
 UP_TIME = options.uptime         #In days
