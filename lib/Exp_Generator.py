@@ -36,11 +36,8 @@ class ExperimentGenerator(object):
         self.events_allcoreson = self.NR_bkg + self.known_core_events + \
                 self.unknown_core_events
 
-        print(self.unknown_core_events)
-#Now, remove events based on days a core is off
+        #Now, remove events based on days a core is off
         self.removeCoreOffEvents()
-        print(self.unknown_core_events)
-
         self.events = self.NR_bkg + self.known_core_events + \
                 self.unknown_core_events
         self.events_unc = np.sqrt(self.events)

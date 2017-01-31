@@ -35,20 +35,22 @@ def hPlot_CoresOnAndOffHist(GenExp):
     periods.
     '''
     fig = plt.figure()
+    nbins = 15
+    xmin=np.min([np.min(GenExp.events_allcoreson),np.min(GenExp.events)])-1
+    xmax=np.max([np.max(GenExp.events_allcoreson),np.max(GenExp.events)])+1
     ax1 = fig.add_subplot(1,2,1)
     ax2 = fig.add_subplot(1,2,2)
-    ax1_xmin = np.min(GenExp.events_allcoreson) - 1
-    ax1_xmax = np.max(GenExp.events_allcoreson) + 1
-    ax1_nbins = ax1_xmax - ax1_xmin
-    ax1.hist(GenExp.events_allcoreson, ax1_nbins, facecolor = 'blue', alpha=0.75)
+    ax1.hist(GenExp.events_allcoreson, nbins, facecolor = 'blue', alpha=0.75)
     ax1.set_title("Histogram of events per bin distribution \n" + \
             "[NR backgrounds + both cores on]")
+    ax1.set_xbound(lower=xmin, upper=xmax)
     ax1.set_xlabel("Candidate Events")
     ax1.set_ylabel("# Bins")
     ax2_xmin = np.min(GenExp.events) - 1
     ax2_xmax = np.max(GenExp.events) + 1
-    ax2_nbins = ax2_xmax - ax2_xmin
-    ax2.hist(GenExp.events, ax2_nbins, facecolor = 'blue', alpha=0.75)
+    ax2_nbins = int((ax2_xmax - ax2_xmin) / 4)
+    ax2.hist(GenExp.events, nbins, facecolor = 'blue', alpha=0.75)
+    ax2.set_xbound(lower=xmin,upper=xmax)
     ax2.set_title("Histogram of events per bin distribution \n" + \
             "[NR backgrounds + cores do shut off]")
     ax2.set_xlabel("Candidate Events")
