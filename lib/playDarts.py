@@ -6,14 +6,26 @@
 
 import numpy as np
 
+def RandShoot_g0(mu, sigma,n):
+    '''
+    Returns an array of n numbers from a gaussian distribution of
+    average mu and variance sigma. If less than zero, reshoot number.
+    '''
+    result = mu + (sigma * np.random.randn(n))
+    for j,num in enumerate(result):
+        if num < 0.0:
+            isNegative = True
+            while isNegative:
+                result[j] = mu + (sigma * np.random.randn(1))
+                if result[j] >= 0.0:
+                    isNegative = False
+    return result
+
 def RandShoot(mu, sigma,n):
     '''
     Returns an array of n numbers from a gaussian distribution of
-    average mu and variance sigma. If less than zero, return zero.
+    average mu and variance sigma.
     '''
-    result = mu + sigma * np.random.randn(n)
-    for num in result:
-        if num < 0.0:
-            num = 0
+    result = mu + (sigma * np.random.randn(n))
     return result
 

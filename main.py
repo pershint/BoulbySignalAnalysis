@@ -47,8 +47,8 @@ def StatFlucDemo(mu, sigma, title):
     performing a random shoot of a variable.
     '''
     #Fire 1000 days to get the afterage nu/day histogram for the known Core
-    events = pd.RandShoot(mu,sigma, 1000)
-    h.Plot_SignalHistogram(title, events, 50, 0, 60)
+    events = pd.RandShoot_g0(mu,sigma, 1000)
+    h.Plot_SignalHistogram(title, events, 50, -10, 60)
 
 if __name__=='__main__':
     Boulby = dp.BoulbySignals(DETECTION_EFF)

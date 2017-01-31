@@ -15,7 +15,7 @@ class ExperimentGenerator(object):
         self.numcycles = self.totaldays / self.resolution #Number of resolution periods measured
         self.experiment_days = np.arange(1*self.resolution,(self.numcycles+1)* \
                 self.resolution, self.resolution)
-
+        print(self.experiment_days)
         #First, populate non-reactor backgrounds
         self.avg_NRbackground = 0 #In events/resolution width
         self.NR_bkg = []     #Array with experiments' non-reactor backgrounds
@@ -42,7 +42,7 @@ class ExperimentGenerator(object):
             if signal not in ['Core_1','Core_2']:
                 avg_events = self.signals[signal]*self.resolution
                 avg_NRbackground = avg_NRbackground + avg_events
-                events = pd.RandShoot(avg_events, np.sqrt(avg_events), self.numcycles)
+                events = pd.RandShoot_g0(avg_events, np.sqrt(avg_events), self.numcycles)
                 bkg_signal_dict[signal] = events
         self.avg_NRbackground = avg_NRbackground
         self.NR_bkg = [] #clear out NR_bkg if already filled previously
@@ -57,8 +57,8 @@ class ExperimentGenerator(object):
         core_signal_dict = {}
         for signal in self.signals:
             if signal in ['Core_1', 'Core_2']:
-                core_avg = self.signals[signal]*self.resolution
-                events = pd.RandShoot(core_avg, np.sqrt(core_avg), self.numcycles)
+                core_avg = self.signals[signal]*float(self.resolution)
+                events = pd.RandShoot_g0(core_avg, np.sqrt(core_avg), self.numcycles)
                 core_signal_dict[signal] = events
         for core in core_signal_dict:
             if core == self.unknown_core:
@@ -75,14 +75,13 @@ class ExperimentGenerator(object):
         #generate the days that each reactor shuts off
         core_shutoffs = {'Core_1': [], 'Core_2': []}
         for core in core_shutoffs:
-            #shutoff_day = np.random.randint(1, self.uptime) #first shutoff
-            shutoff_day = 10
+            shutoff_day = np.random.randint(1, self.uptime) #first shutoff
             core_shutoffs[core].append(shutoff_day)
+            #FIXME: Want a fixed start day for BKG core?
             while ((shutoff_day + self.uptime) < (self.totaldays - self.offtime)):
-                #shutoff_day = (shutoff_day + self.offtime) + self.uptime
-                shutoff_day+=self.uptime
+                shutoff_day = (shutoff_day + self.offtime) + self.uptime
                 core_shutoffs[core].append(shutoff_day)
-        print(core_shutoffs)        
+        print("CORE SHUTOFF DAYS: " + str(core_shutoffs))        
         #Now, go through each bin of core data and remove the appropriate
         #portion of reactor flux for the shutoff
 
@@ -91,29 +90,23 @@ class ExperimentGenerator(object):
                 OT_complete = False
                 for j,daybin in enumerate(self.experiment_days):
                     flux_scaler = 1.0 #Stays 1 if no off-days in bin
-                    print("IN DAYBIN: " + str(daybin))
                     #If a shutdown happened, scale the events according to
                     #Days on before offtime begins
                     if shutdown_day < daybin:
-                        print("FLUX IS SCALING")
                         dayson_beforeOT = self.resolution - (daybin - shutdown_day)
                         if dayson_beforeOT > 0:
                             flux_scaler = (float(dayson_beforeOT) / float(self.resolution))
                         else:
                             flux_scaler = 0
-                        print("FLUX SCALE FACTOR: " + str(flux_scaler))
                         #If a reactor started back up, add back the proper flux ratio
                     if ((shutdown_day + self.offtime) < daybin):
                             dayson_afterOT = daybin - (shutdown_day + self.offtime)
                             flux_scaler += (float(dayson_afterOT) / float(self.resolution))
                             OT_complete = True
-                            print("RESCALING AFTER SHUTOFF.  FACTOR IS " + str(flux_scaler))
                     if core == self.unknown_core:
                         self.unknown_core_events[j] = flux_scaler * self.unknown_core_events[j]
-                        print("FINAL FLUX FOR UNKNOWN BIN: " + str(self.unknown_core_events[j]))
                     else:
                         self.known_core_events[j] = flux_scaler * self.known_core_events[j]
-                        print("FINAL FLUX FOR KNOWN BIN: " + str(self.known_core_events[j]))
                     if OT_complete:
                         break
  
