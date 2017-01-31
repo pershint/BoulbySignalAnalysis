@@ -48,7 +48,7 @@ def StatFlucDemo(lamb, title):
     '''
     #Fire 1000 days to get the afterage nu/day histogram for the known Core
     events = pd.RandShoot_p(lamb,1000)
-    h.Plot_SignalHistogram(title, events, 60, -0.5, 60.5)
+    h.hPlot_SignalHistogram(title, events, 60, -0.5, 60.5)
 
 if __name__=='__main__':
     Boulby = dp.BoulbySignals(DETECTION_EFF)
@@ -66,3 +66,7 @@ if __name__=='__main__':
     gr.Plot_NRBackgrounds(Run1)
     gr.Plot_Signal(Run1)
     gr.Plot_Cores(Run1)
+
+    #Take your total core events when a reactor is on and when a reactor is 
+    #off and project them onto the y-axis
+    h.hPlot_CoresOnAndOffHist(Run1)   
