@@ -1,6 +1,10 @@
 import playDarts as pd
 import numpy as np
 
+UNKNOWN_FIRSTOFF = 90
+KNOWN_FIRSTOFF = 180
+
+
 #Class takes in a signal class as defined in DBParse.py and creates the spectrum
 #For an experiment.
 class ExperimentGenerator(object):
@@ -42,7 +46,7 @@ class ExperimentGenerator(object):
             if signal not in ['Core_1','Core_2']:
                 avg_events = self.signals[signal]*self.resolution
                 avg_NRbackground = avg_NRbackground + avg_events
-                events = pd.RandShoot_g0(avg_events, np.sqrt(avg_events), self.numcycles)
+                events = pd.RandShoot_p(avg_events, self.numcycles)
                 bkg_signal_dict[signal] = events
         self.avg_NRbackground = avg_NRbackground
         self.NR_bkg = [] #clear out NR_bkg if already filled previously
@@ -58,7 +62,7 @@ class ExperimentGenerator(object):
         for signal in self.signals:
             if signal in ['Core_1', 'Core_2']:
                 core_avg = self.signals[signal]*float(self.resolution)
-                events = pd.RandShoot_g0(core_avg, np.sqrt(core_avg), self.numcycles)
+                events = pd.RandShoot_p(core_avg, self.numcycles)
                 core_signal_dict[signal] = events
         for core in core_signal_dict:
             if core == self.unknown_core:
@@ -68,16 +72,18 @@ class ExperimentGenerator(object):
 
     def removeCoreOffEvents(self):
         '''
-        Code first generates a random on/off cycle for each core.  Then,
+        Code defines the first shutoff days for each reactor.  Then,
         goes through the experiment, day by day, and adjusts each reactor core's
         signal according to if the reactor is on or off.
         '''
         #generate the days that each reactor shuts off
         core_shutoffs = {'Core_1': [], 'Core_2': []}
         for core in core_shutoffs:
-            shutoff_day = np.random.randint(1, self.uptime) #first shutoff
+            if core == self.unknown_core:
+                shutoff_day = UNKNOWN_FIRSTOFF
+            else:
+                shutoff_day = KNOWN_FIRSTOFF
             core_shutoffs[core].append(shutoff_day)
-            #FIXME: Want a fixed start day for BKG core?
             while ((shutoff_day + self.uptime) < (self.totaldays - self.offtime)):
                 shutoff_day = (shutoff_day + self.offtime) + self.uptime
                 core_shutoffs[core].append(shutoff_day)

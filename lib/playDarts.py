@@ -29,3 +29,10 @@ def RandShoot(mu, sigma,n):
     result = mu + (sigma * np.random.randn(n))
     return result
 
+def RandShoot_p(lamb, n):
+    '''
+    Returns an array of n numbers from a poisson distribution of
+    average value lamb.
+    '''
+    result = np.random.poisson(lamb, n)
+    return result

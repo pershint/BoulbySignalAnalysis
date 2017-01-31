@@ -41,14 +41,14 @@ TOTAL_RUN = options.days    #In Days (NOTE: If not divisible by RESOLUTION, will
 
 
 
-def StatFlucDemo(mu, sigma, title):
+def StatFlucDemo(lamb, title):
     '''
     Gives a quick demo of the distribution  given when
     performing a random shoot of a variable.
     '''
     #Fire 1000 days to get the afterage nu/day histogram for the known Core
-    events = pd.RandShoot_g0(mu,sigma, 1000)
-    h.Plot_SignalHistogram(title, events, 50, -10, 60)
+    events = pd.RandShoot_p(lamb,1000)
+    h.Plot_SignalHistogram(title, events, 60, 0, 60)
 
 if __name__=='__main__':
     Boulby = dp.BoulbySignals(DETECTION_EFF)
@@ -57,8 +57,7 @@ if __name__=='__main__':
     #------------- BEGIN DEMO OF HOW STATS ARE FLUCTUATED ----------#
     title = "Events fired distribution for " + str(KNOWN_CORE) + "in a single" + \
         "bin of width " + str(RESOLUTION) + "days"
-    StatFlucDemo(Boulby.signals[KNOWN_CORE]*RESOLUTION, \
-            np.sqrt(Boulby.signals[KNOWN_CORE]*RESOLUTION), title)
+    StatFlucDemo(Boulby.signals[KNOWN_CORE]*RESOLUTION, title)
     #------------- END DEMO OF HOW STATS ARE FLUCTUATED ------------#
 
     Run1 = eg.ExperimentGenerator(Boulby, OFF_TIME, UP_TIME, RESOLUTION, UNKNOWN_CORE, \
