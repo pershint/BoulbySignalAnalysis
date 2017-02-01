@@ -8,7 +8,7 @@ import graph.Histogram as h
 import lib.Exp_Generator as eg
 import graph.Exp_Graph as gr
 import numpy as np
-
+import lib.ExpFitting as ef
 
 parser = optparse.OptionParser()
 parser.add_option("--debug",action="store_true",default="False")
@@ -57,16 +57,20 @@ if __name__=='__main__':
     #------------- BEGIN DEMO OF HOW STATS ARE FLUCTUATED ----------#
     title = "Events fired distribution for " + str(KNOWN_CORE) + "in a single" + \
         "bin of width " + str(RESOLUTION) + "days"
-    StatFlucDemo(Boulby.signals[KNOWN_CORE]*RESOLUTION, title)
+    #StatFlucDemo(Boulby.signals[KNOWN_CORE]*RESOLUTION, title)
     #------------- END DEMO OF HOW STATS ARE FLUCTUATED ------------#
 
     Run1 = eg.ExperimentGenerator(Boulby, OFF_TIME, UP_TIME, RESOLUTION, UNKNOWN_CORE, \
         TOTAL_RUN)
-    #Run1.show()  #Shows output of some experiment run details
+    Run1.show()  #Shows output of some experiment run details
     gr.Plot_NRBackgrounds(Run1)
     gr.Plot_Signal(Run1)
     gr.Plot_Cores(Run1)
 
     #Take your total core events when a reactor is on and when a reactor is 
     #off and project them onto the y-axis
-    h.hPlot_CoresOnAndOffHist(Run1)   
+    h.hPlot_CoresOnAndOffHist(Run1)
+
+    #Uncomment to use pyROOT to try and fit a poisson distribution
+    #c1, h = ef.PoissonFit(Run1)
+    #c1.Draw("al")
