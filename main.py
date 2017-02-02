@@ -25,7 +25,7 @@ parser.add_option('-t',"--offtime",action="store",dest="offtime", \
         type="int",default=15,help="Average # days that a reactor is off for " + \
         "maintenance")
 parser.add_option('-e','--efficiency',action="store",dest="efficiency", \
-        type="float",default=0.8,help="Detector efficiency (0.2,0.4,0.6,0.8,"+\
+        type="float",default=0.6,help="Detector efficiency (0.2,0.4,0.6,0.8,"+\
         "1.0 only currently implemented")
 
 (options,args) = parser.parse_args()
@@ -72,5 +72,5 @@ if __name__=='__main__':
     h.hPlot_CoresOnAndOffHist(Run1)
 
     #Uncomment to use pyROOT to try and fit a poisson distribution
-    #c1, h = ef.PoissonFit(Run1)
-    #c1.Draw("al")
+    c1, h = ef.PoissonFit(Run1)
+    c1.Draw()

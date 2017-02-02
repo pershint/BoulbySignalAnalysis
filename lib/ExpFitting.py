@@ -21,7 +21,7 @@ def PoissonFit(ExpGen):
     c1.cd(1)
     x = ExpGen.experiment_days
     y = ExpGen.events
-    h = r.TH1D('h','Events at Boulby site in WATCHMAN', 12, 0, 120)
+    h = r.TH1D('h','Events at Boulby site in WATCHMAN', 20, 0, 120)
     h = FillTH1D(h,y)
     h.Draw("al")
     pois_f = r.TF1('pois_f', '[0]*TMath::Power(([1]/[2]), (x/[2]))*(TMath::Exp(-([1]/[2])))/TMath::Gamma((x/[2])+1)', 0, 120.)
