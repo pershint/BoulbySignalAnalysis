@@ -6,6 +6,42 @@ KNOWN_FIRSTOFF = 180
 
 CORE_NAMES = ['Core_1', 'Core_2']
 
+#Class takes in a generated experiment (ExperimentGenerator class) and performs
+#various analysis tasks
+class ExperimentAnalyzer(object):
+    def __init__(self):
+        print("Put here any information needed for initialization")
+    def __call__(self, ExpGen):
+        print("Run your methods for analysis")
+
+    def OnOffCompare(self, ExpGen):
+        '''
+        Takes an experiment and groups together the days of data where
+        both reactors were on, and groups days where reactor was off.
+        Can only be called if ExpGen.resolution = 1.
+        '''
+        if ExpGen.resolution != 1:
+            print("Cannot perform OnOffComparison.  Experiment's resolution is" + \
+                    "not one day per bin. \n")
+            return
+        offday_events = []
+        onday_events = []
+        days_bothreacson = ExpGen.known_core_onoffdays * \
+                ExpGen.unknown_core_onoffdays
+        for j,day in enumerate(ExpGen.experiment_days):
+            if  days_bothreacson[j] == 1:
+                onday_events.append(ExpGen.events[j])
+            else:
+                offday_events.append(ExpGen.events[j])
+        offday_events = np.array(offday_events)
+        onday_events = np.array(onday_events)
+        #Now, calculate the average and standard deviation of each
+        onday_avg = np.average(onday_events)
+        offday_avg = np.average(offday_events)
+        offday_stdev = np.std(offday_events)
+        onday_stdev = np.std(onday_events)
+
+
 #Class takes in a signal class as defined in DBParse.py and creates the spectrum
 #For an experiment.
 class ExperimentGenerator(object):
@@ -30,8 +66,10 @@ class ExperimentGenerator(object):
         #First, generate core events as if reactor cores were always on
         self.known_core_events = []
         self.known_core_binavg = 'none'
+        self.known_core_onoffdays = []
         self.unknown_core_events = []
         self.unknown_core_binavg = 'none'
+        self.unknown_core_onoffdays = []
         self.generateCoreEvents()
         self.events_allcoreson = self.NR_bkg + self.known_core_events + \
                 self.unknown_core_events
@@ -41,6 +79,8 @@ class ExperimentGenerator(object):
         self.events = self.NR_bkg + self.known_core_events + \
                 self.unknown_core_events
         self.events_unc = np.sqrt(self.events)
+
+           
 
     #Generates non-reactor backgrounds
     def generateNRBKG(self):
@@ -99,6 +139,21 @@ class ExperimentGenerator(object):
                 shutoff_day = (shutoff_day + self.offtime) + self.uptime
                 core_shutoffs[core].append(shutoff_day)
         print("CORE SHUTOFF DAYS: " + str(core_shutoffs))        
+
+        #Generate a day-by-day map of each reactor's state (1-on, 0-off)
+        for core in core_shutoffs:
+            onoffdays = np.ones(self.totaldays)
+            for shutdown_day in core_shutoffs[core]:
+                j = shutdown_day - 1
+                while j <= (shutdown_day - 1) + self.offtime:
+                    onoffdays[j] = 0.
+                    j+=1
+            if core == self.unknown_core:
+                self.unknown_core_onoffdays = onoffdays
+            else:
+                self.known_core_onoffdays = onoffdays
+                        
+
         #Now, go through each bin of core data and remove the appropriate
         #portion of reactor flux for the shutoff
 
