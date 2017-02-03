@@ -9,12 +9,15 @@ CORE_NAMES = ['Core_1', 'Core_2']
 #Class takes in a generated experiment (ExperimentGenerator class) and performs
 #various analysis tasks
 class ExperimentAnalyzer(object):
-    def __init__(self):
+    def __init__(self, binning_choices):
+        self.binning_choices = binning_choices
         print("Put here any information needed for initialization")
     def __call__(self, ExpGen):
         print("Run your methods for analysis")
+        for bin_choice in self.binning_choices:
+            self.OnOffCompare(ExpGen, bin_choice)
 
-    def OnOffCompare(self, ExpGen):
+    def OnOffCompare(self, ExpGen, bin_choice):
         '''
         Takes an experiment and groups together the days of data where
         both reactors were on, and groups days where reactor was off.
@@ -35,13 +38,52 @@ class ExperimentAnalyzer(object):
                 offday_events.append(ExpGen.events[j])
         offday_events = np.array(offday_events)
         onday_events = np.array(onday_events)
+        #if 1 < bin_choice < ExpGen.totaldays, rebin events
+        if 1 < bin_choice < ExpGen.totaldays:
+            rebinned_ondays, rebinned_offdays, lost_days = \
+                    self.rebin_days(onday_events, offday_events, bin_choice)
+            print("{0}\n,{1}\n,{2}\n".format(rebinned_ondays, \
+                    rebinned_offdays, lost_days))
         #Now, calculate the average and standard deviation of each
         onday_avg = np.average(onday_events)
         offday_avg = np.average(offday_events)
         offday_stdev = np.std(offday_events)
         onday_stdev = np.std(onday_events)
+        print("EXPIERMENT RAN FOR {} DAYS".format(ExpGen.totaldays))
+        print("ON DAY AVERAGE/STDEV: {0} / {1}".format(onday_avg, onday_stdev))
+        print("OFF DAY AVERAGE/STDEV: {0} / {1}".format(offday_avg, offday_stdev))
+        print("SUM OF ON DAYS AND POISSON UNC: {0},{1}".format(np.sum(onday_events), \
+                np.sqrt(np.sum(onday_events))))
+        print("SUM OF OFF DAYS AND POISSON UNC: {0},{1}".format(np.sum(offday_events), \
+                np.sqrt(np.sum(offday_events))))
 
-
+    def rebin_days(self, onday_events, offday_events, bin_choice):
+        '''
+        Takes in an array of daily rates for days both reactors were on
+        (onday_events) and an array of daily rates for days where one
+        reactor is off (offday_events).  
+        If there are any days left over not divisible by the binning increment,
+        THIS DATA IS LOST.
+        '''
+        rebinned_ondays = []
+        rebinned_offdays = []
+        nonbinned_days = []
+        step = 1
+        event_data = {'ondays':onday_events, 'offdays':offday_events}
+        for datatype in event_data:
+            while (step * bin_choice) < len(event_data[datatype]):
+                rebin_datapt = np.sum(event_data[datatype][((step-1) * \
+                        bin_choice):((step * bin_choice))])
+                if datatype == 'ondays':
+                    rebinned_ondays.append(rebin_datapt)
+                elif datatype == 'offdays':
+                    rebinned_offdays.append(rebin_datapt)
+                step +=1
+            #now, check for any data at the end that was not rebinned
+            #print(event_data[datatype][((step-1)* bin_choice):((step * bin_choice))])
+            lost_days = len(event_data[datatype][((step-1)* bin_choice):((step * bin_choice))])
+            nonbinned_days.append(lost_days)
+        return np.array(rebinned_ondays), np.array(rebinned_offdays), nonbinned_days
 #Class takes in a signal class as defined in DBParse.py and creates the spectrum
 #For an experiment.
 class ExperimentGenerator(object):
@@ -145,7 +187,10 @@ class ExperimentGenerator(object):
             onoffdays = np.ones(self.totaldays)
             for shutdown_day in core_shutoffs[core]:
                 j = shutdown_day - 1
-                while j <= (shutdown_day - 1) + self.offtime:
+                print("COMPARATOR TO J:" + str((shutdown_day -1) + self.offtime))
+                while j < ((shutdown_day - 1) + self.offtime):
+                    if(j == self.totaldays):
+                        break
                     onoffdays[j] = 0.
                     j+=1
             if core == self.unknown_core:

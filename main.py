@@ -19,10 +19,10 @@ parser.add_option("-u","--uptime",action="store",dest="uptime", \
         type="int",default=180,help="Specify the uptime, in days, " + \
         "for a reactor between outages")
 parser.add_option("-d","--days",action="store",dest="days", \
-        type="int",default=3000,help="Total number of days of candidate " + \
+        type="int",default=1080,help="Total number of days of candidate " + \
         "events produced")
 parser.add_option('-t',"--offtime",action="store",dest="offtime", \
-        type="int",default=15,help="Average # days that a reactor is off for " + \
+        type="int",default=16,help="Average # days that a reactor is off for " + \
         "maintenance")
 parser.add_option('-e','--efficiency',action="store",dest="efficiency", \
         type="float",default=0.6,help="Detector efficiency (0.2,0.4,0.6,0.8,"+\
@@ -74,3 +74,8 @@ if __name__=='__main__':
     #Uncomment to use pyROOT to try and fit a poisson distribution
     c1, h = ef.PoissonFit(Run1)
     c1.Draw()
+
+    #Try out the new ExperimentAnalyzer class
+    binning_choices = np.arange(3,7,1)
+    Analysis1 = eg.ExperimentAnalyzer(binning_choices)
+    Analysis1(Run1)
