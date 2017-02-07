@@ -63,19 +63,22 @@ if __name__=='__main__':
     Run1 = eg.ExperimentGenerator(Boulby, OFF_TIME, UP_TIME, RESOLUTION, UNKNOWN_CORE, \
         TOTAL_RUN)
     Run1.show()  #Shows output of some experiment run details
-    gr.Plot_NRBackgrounds(Run1)
-    gr.Plot_Signal(Run1)
-    gr.Plot_Cores(Run1)
-
+#    gr.Plot_NRBackgrounds(Run1)
+#    gr.Plot_Signal(Run1)
+#    gr.Plot_Cores(Run1)
+#    gr.Plot_ReacOnOff(Run1)
     #Take your total core events when a reactor is on and when a reactor is 
     #off and project them onto the y-axis
-    h.hPlot_CoresOnAndOffHist(Run1)
+#    h.hPlot_CoresOnAndOffHist(Run1)
 
     #Uncomment to use pyROOT to try and fit a poisson distribution
-    c1, h = ef.PoissonFit(Run1)
-    c1.Draw()
+#    c1, h = ef.PoissonFit(Run1)
+#    c1.Draw()
 
     #Try out the new ExperimentAnalyzer class
-    binning_choices = np.arange(3,7,1)
-    Analysis1 = eg.ExperimentAnalyzer(binning_choices)
+    binning_choices = np.arange(3,30,1)
+    Analysis1 = eg.ExperimentAnalysis1(binning_choices)
     Analysis1(Run1)
+    gr.Plot_OnOffCumSum(Analysis1)
+#    gr.Plot_Analysis1OnOff(Analysis1)
+#    gr.Plot_Analysis1OnOff_poserr(Analysis1)
