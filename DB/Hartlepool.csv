@@ -5,3 +5,6 @@
 
 Last updated,Hartlepool_turbines
 25 Jan 2017 12.49hrs,"{'Turbine Generator 1': {'status': 'Nominal full load ', 'power': '593MW'}, 'Turbine Generator 2': {'status': 'Nominal full load ', 'power': '594MW'}}"
+
+Last updated,Hartlepool_turbines
+07 Feb 2017 15.01hrs,"{'Turbine Generator 1': {'status': 'Nominal full load ', 'power': '590MW'}, 'Turbine Generator 2': {'status': 'Raising load following off-load refuelling', 'power': '165MW'}}"

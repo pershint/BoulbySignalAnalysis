@@ -4,12 +4,16 @@ import numpy as np
 UNKNOWN_FIRSTOFF = 90
 KNOWN_FIRSTOFF = 180
 
+DEBUG = False
 CORE_NAMES = ['Core_1', 'Core_2']
 
 #Class takes in a generated experiment (ExperimentGenerator class) and performs
 #Some Analysis assuming we know exactly the days each core is on or off
 class ExperimentAnalysis1(object):
-    def __init__(self, binning_choices):
+    def __init__(self, binning_choices,doReBin):
+        #Bool for if reBinning analysis should be performed
+        self.doReBin = doReBin
+        
         #Holds metadata of current experiment in analysis
         self.Current_Experiment = 'no current experiment'
 
@@ -31,6 +35,7 @@ class ExperimentAnalysis1(object):
         self.csum_on = []
         self.csum_off = []
         self.csum_numdays = []
+        self.determination_day = 0
 
     def __call__(self, ExpGen):
         self.Current_Experiment = ExpGen
@@ -38,11 +43,11 @@ class ExperimentAnalysis1(object):
             print("Cannot perform OnOffComparison on this experiment. " + \
                     'Experiment resolution is not one day per bin. \n')
             return
-        print("Run your methods for analysis")
         self.OnOffGroup(self.Current_Experiment)
         self.OnOffStats()
-        for bin_choice in self.binning_choices:
-            self.ReBinningStudy(bin_choice)
+        if self.doReBin:
+            for bin_choice in self.binning_choices:
+                self.ReBinningStudy(bin_choice)
 
     def OnOffStats(self):
         '''
@@ -53,13 +58,17 @@ class ExperimentAnalysis1(object):
         smallerdataset = np.min([len(self.onday_events),len(self.offday_events)])
         daysofrunning = np.arange(1,(smallerdataset+1),1)
         self.csum_numdays = daysofrunning
-        determination = False
+        determined = False
         for day in daysofrunning:
             totalondata = np.sum(self.onday_events[0:day])
             totaloffdata = np.sum(self.offday_events[0:day])
             self.csum_on.append(totalondata)
             self.csum_off.append(totaloffdata)
-        #TODO: Add your analysis code checking for a 3sigma difference in data sets
+            threesig = totalondata - 3 * np.sqrt(totalondata)
+            if (not determined) and threesig > totaloffdata:
+                self.determination_day = day
+                determined = True
+
 
 
     def OnOffGroup(self, ExpGen):
@@ -87,8 +96,6 @@ class ExperimentAnalysis1(object):
         if 1 < bin_choice < self.Current_Experiment.totaldays:
             rebinned_ondays, rebinned_offdays, lost_days = \
                     self.rebin_days(self.onday_events, self.offday_events, bin_choice)
-            print("{0}\n,{1}\n,{2}\n".format(rebinned_ondays, \
-                    rebinned_offdays, lost_days))
         #Now, calculate the average and standard deviation of each
         self.binned_onday_avg.append(np.average(rebinned_ondays))
         self.binned_onday_stdev.append(np.std(rebinned_ondays))
@@ -99,13 +106,14 @@ class ExperimentAnalysis1(object):
         ondstd = (np.std(rebinned_ondays))
         offda = (np.average(rebinned_offdays))
         offdstd = (np.std(rebinned_offdays))
-       
-        print("EXPIERMENT RAN FOR {} DAYS".format(self.Current_Experiment.totaldays))
-        print("DAYS BOTH ON, DAYS ONE REAC OFF: {0},{1}".format(len(self.onday_events),len(self.offday_events)))
-        print("BINNING OF ON/OFF DAY DATA: {0}".format(bin_choice))
-        print("ON DAY AVERAGE/STDEV: {0} / {1}".format(onda, ondstd))
-        print("OFF DAY AVERAGE/STDEV: {0} / {1}".format(offda, offdstd))
-        print("# DAYS LOST IN REBINNING [ONDAYS, OFFDAYS]: {0}".format(lost_days))
+        
+        if DEBUG:
+            print("EXPIERMENT RAN FOR {} DAYS".format(self.Current_Experiment.totaldays))
+            print("DAYS BOTH ON, DAYS ONE REAC OFF: {0},{1}".format(len(self.onday_events),len(self.offday_events)))
+            print("BINNING OF ON/OFF DAY DATA: {0}".format(bin_choice))
+            print("ON DAY AVERAGE/STDEV: {0} / {1}".format(onda, ondstd))
+            print("OFF DAY AVERAGE/STDEV: {0} / {1}".format(offda, offdstd))
+            print("# DAYS LOST IN REBINNING [ONDAYS, OFFDAYS]: {0}".format(lost_days))
 
     def rebin_days(self, onday_events, offday_events, bin_choice):
         '''
@@ -230,14 +238,12 @@ class ExperimentGenerator(object):
             while ((shutoff_day + self.uptime) < (self.totaldays - self.offtime)):
                 shutoff_day = (shutoff_day + self.offtime) + self.uptime
                 core_shutoffs[core].append(shutoff_day)
-        print("CORE SHUTOFF DAYS: " + str(core_shutoffs))        
-
+        
         #Generate a day-by-day map of each reactor's state (1-on, 0-off)
         for core in core_shutoffs:
             onoffdays = np.ones(self.totaldays)
             for shutdown_day in core_shutoffs[core]:
                 j = shutdown_day - 1
-                print("COMPARATOR TO J:" + str((shutdown_day -1) + self.offtime))
                 while j < ((shutdown_day - 1) + self.offtime):
                     if(j == self.totaldays):
                         break
@@ -258,16 +264,16 @@ class ExperimentGenerator(object):
                     flux_scaler = 1.0 #Stays 1 if no off-days in bin
                     #If a shutdown happened, scale the events according to
                     #Days on before offtime begins
-                    if shutdown_day < daybin:
-                        dayson_beforeOT = self.resolution - (daybin - shutdown_day)
+                    if shutdown_day <= daybin:
+                        dayson_beforeOT = (self.resolution-1) - (daybin - shutdown_day)
                         if dayson_beforeOT > 0:
                             flux_scaler = (float(dayson_beforeOT) / float(self.resolution))
                         else:
                             flux_scaler = 0
                     #If a reactor started back up, add back the proper
                     #flux ratio
-                    if ((shutdown_day + self.offtime) < daybin):
-                            dayson_afterOT = daybin - (shutdown_day + self.offtime)
+                    if ((shutdown_day + self.offtime) <= daybin):
+                            dayson_afterOT = (daybin + 1) - (shutdown_day + self.offtime)
                             flux_scaler += (float(dayson_afterOT) / float(self.resolution))
                             OT_complete = True
                     #After calculating how much this bin should be scaled for

@@ -7,10 +7,12 @@ import matplotlib.pyplot as plt
 def Plot_ReacOnOff(GeneratedExperiment):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_onoffdays,
-            color='k', alpha=0.8)
+#    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_onoffdays,
+#            color='k', alpha=0.8)
+#    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_events, marker = 'o', linestyle='none', color='k')
     ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.known_core_onoffdays,
             color='b', alpha=0.8) 
+    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.known_core_events, marker = 'o', linestyle='none', color = 'b')
     ax.set_xlabel("days")
     ax.set_ylabel("Reactor state (1-on, 0-off)")
     ax.set_ylim([0,2])
@@ -70,10 +72,12 @@ def Plot_OnOffCumSum(Analysis):
     ax.errorbar(Analysis.csum_numdays, Analysis.csum_off, \
         xerr=0, yerr=np.sqrt(Analysis.csum_off), marker='o', linestyle='none', \
         color='m', alpha=0.7, label='One core off')
+    ax.axvline(x=Analysis.determination_day,color='k', label=r'on > off by 3$\sigma$')
     ax.set_xlabel("Number of days of IBD data")
     ax.set_ylabel("IBD candidates")
     ax.set_title("Number of days of data collected\n" + \
-            "Efficiency = {}".format(Analysis.Current_Experiment.efficiency))
+            "Efficiency = {}, ".format(Analysis.Current_Experiment.efficiency) + \
+            "Determination day = {}".format(Analysis.determination_day))
     plt.legend(loc = 2)
     plt.show()
 

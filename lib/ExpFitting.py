@@ -2,6 +2,7 @@
 #Fitting types.
 
 import ROOT as r
+import numpy as np
 
 def FillTH1D(h,data):
     '''
@@ -11,7 +12,7 @@ def FillTH1D(h,data):
         h.Fill(element)
     return h
 
-def PoissonFit(ExpGen):
+def Exp_PoissonFit(ExpGen):
     '''
     Takes in a generated experiment, and fits the candidate event
     Spectrum to a poisson distribution
@@ -35,9 +36,21 @@ def PoissonFit(ExpGen):
     return c1, h
 
 
-def PoissonFit_FixMean(ExpGen, lamb):
+def PoissonFit(Title, y):
     '''
-    Takes in a generated experiment, and fits the candidate event
-    Spectrum to a poisson distribution of mean lamb.
+    Takes in a set of data, fits  and fits a poisson to the data.
     '''
+    c1 = r.TCanvas("c1","c1",1200,1000)
+    c1.Divide(1,1)
+    c1.cd(1)
+    h = r.TH1D('h',Title, int(np.max(y)), 0.5, int(np.max(y)+ 0.5))
+    h = FillTH1D(h,y)
+    h.Draw("al")
+    pois_f = r.TF1('pois_f', '[0]*TMath::Power(([1]/[2]), (x/[2]))*(TMath::Exp(-([1]/[2])))/TMath::Gamma((x/[2])+1)', 0, 100)
+    pois_f.SetParameters(10,10,10)
+    #Define the fit to fit to histogram of data
+    h.Fit("pois_f","MR","",0.,np.max(y))
+    res = h.GetFunction("pois_f")
+    return c1, h
+
 
