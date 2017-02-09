@@ -9,6 +9,69 @@ CORE_NAMES = ['Core_1', 'Core_2']
 
 #Class takes in a generated experiment (ExperimentGenerator class) and performs
 #Some Analysis assuming we know exactly the days each core is on or off
+class Analysis(object):
+    def __init__(self):
+        #Holds metadata of current experiment in analysis
+        self.Current_Experiment = 'no current experiment'
+
+        #Arrays that hold the event rate for each day where both
+        #reactors are on or where one reactor is off
+        self.onday_events = []
+        self.offday_events = []
+
+        #Array of ones and zeroes, each representing a day in the experiment
+        #(1 - both reactors were on on this day, 0 - a reactor was off)
+        self.onoff_record = []
+
+    def __call__(self, ExpGen):
+        self.Current_Experiment = ExpGen
+
+    def OnOffGroup(self, ExpGen):
+        '''
+        Takes an experiment and groups together the days of data where
+        both reactors were on, and groups days where reactor was off.
+        Can only be called if ExpGen.resolution = 1.
+        '''
+        offday_events = []
+        onday_events = []
+        days_bothreacson = ExpGen.either_core_onoffdays
+        for j,day in enumerate(ExpGen.experiment_days):
+            if  days_bothreacson[j] == 1:
+                onday_events.append(ExpGen.events[j])
+            else:
+                offday_events.append(ExpGen.events[j])
+        offday_events = np.array(offday_events)
+        onday_events = np.array(onday_events)
+        self.onday_events = onday_events
+        self.offday_events = offday_events
+        self.onoff_record = days_bothreacson
+
+class Analysis2(ExperimentalAnalysis):
+    def __init__(self):
+        super(Analysis2, self).__init__()
+        self.onavg_cumul = []
+        self.offavg_cumul = []
+        self.onavg_unc = []
+        self.offavg_unc = []
+    
+    def __call__(self, ExpGen):
+        super(Analysis2, self).__call__(ExpGen)
+        if self.Current_Experiment.resolution != 1:
+            print("Cannot perform OnOffComparison on this experiment. " + \
+                    'Experiment resolution is not one day per bin. \n')
+            return
+        self.OnOffGroup(self.Current_Experiment)
+
+    def CalcDailyAvgAndUnc(self):
+        offavg_cumul = []
+        onavg = []
+        experiment_day = 0
+        for j,status in enumerate(self.onoff_record):
+            if status == 0:
+                offavg_self.Current_Experiment.events[j]
+        
+
+
 class ExperimentAnalysis1(object):
     def __init__(self, binning_choices,doReBin):
         #Bool for if reBinning analysis should be performed
