@@ -22,6 +22,10 @@ class ExperimentAnalysis1(object):
         self.onday_events = []
         self.offday_events = []
 
+        #Array of ones and zeroes, each representing a day in the experiment
+        #(1 - both reactors were on on this day, 0 - a reactor was off)
+        self.onoff_record = []
+
         #Rebinned data from the onday and offday event arrays above
         self.binning_choices = binning_choices
         self.binning = []
@@ -35,41 +39,111 @@ class ExperimentAnalysis1(object):
         self.csum_on = []
         self.csum_off = []
         self.csum_numdays = []
-        self.determination_day = 0
+        self.currentexp_determination_day = 0
+
+        #Array is filled with determination days by running self.OnOffStats
+        self.determination_days = []
+        self.determ_day_inexp = []
 
     def __call__(self, ExpGen):
         self.Current_Experiment = ExpGen
+
         if self.Current_Experiment.resolution != 1:
             print("Cannot perform OnOffComparison on this experiment. " + \
                     'Experiment resolution is not one day per bin. \n')
             return
+
         self.OnOffGroup(self.Current_Experiment)
-        self.OnOffStats()
+        AvgLargerSetEvents = True
+        self.OnOffStats(AvgLargerSetEvents)
         if self.doReBin:
             for bin_choice in self.binning_choices:
                 self.ReBinningStudy(bin_choice)
 
-    def OnOffStats(self):
+    def OnOffStats(self,AvgLargerSetEvents):
         '''
         Compares data from days when reactors were both on and when one reactor
         was off.  Determines how many days of data for each are needed to get a
         3sigma difference between the values.
         '''
-        smallerdataset = np.min([len(self.onday_events),len(self.offday_events)])
-        daysofrunning = np.arange(1,(smallerdataset+1),1)
+        data = {'ondata':self.onday_events, 'offdata':self.offday_events}
+        smallerdata = 'unknown'
+        smallerdatalen = np.min([len(data['ondata']),len(data['offdata'])])
+        largerdatalen = np.max([len(data['ondata']),len(data['offdata'])])
+        #if true, the following takes the larger data set, rebins the larger set
+        #to be the length of the smaller set but with the value as the average
+        #Events per day for that rebinned data.  Essentially, lets you utilize
+        #The larger data set to it's fullest when comparing to smaller set.
+        if AvgLargerSetEvents:
+            bin_choice = int(float(largerdatalen) / float(smallerdatalen))
+            rebinned_ondata, rebinned_offdata, lost_days = self.ReBin_Days(data['ondata'], \
+                    data['offdata'], bin_choice)
+            if (int(len(data['ondata'])) > int(len(data['offdata']))):
+                smallerdata = 'offdata'
+                data['ondata'] = (rebinned_ondata / float(bin_choice))
+            elif (int(len(data['offdata'])) > int(len(data['ondata']))):
+                smallerdata = 'ondata'
+                data['offdata'] = rebinned_offdata / float(bin_choice)
+
+        daysofrunning = np.arange(1,(smallerdatalen+1),1)
         self.csum_numdays = daysofrunning
         determined = False
+        dcount = 0
         for day in daysofrunning:
-            totalondata = np.sum(self.onday_events[0:day])
-            totaloffdata = np.sum(self.offday_events[0:day])
+            totalondata = np.sum(data['ondata'][0:day])
+            totaloffdata = np.sum(data['offdata'][0:day])
+            onoffdiff = abs(totalondata - totaloffdata)
             self.csum_on.append(totalondata)
             self.csum_off.append(totaloffdata)
-            threesig = totalondata - 3 * np.sqrt(totalondata)
-            if (not determined) and threesig > totaloffdata:
-                self.determination_day = day
-                determined = True
+            #Check if the data values are 3sigma apart
+            ontoterr = np.sqrt(totalondata)
+            offtoterr = np.sqrt(totaloffdata)
+            avg_sigma = abs(np.sqrt((ontoterr)**2 + (offtoterr)**2))
+            if not determined:
+                if (onoffdiff <= (3 * avg_sigma)):
+                    dcount = 0
+                if (onoffdiff > (3 * avg_sigma)):
+                    dcount += 1
+                if dcount == 14:
+                    self.currentexp_determination_day = day
+                    self.determination_days.append(day)
+                    experiment_determ_day = self.Dday_To_Eday(day,smallerdata)
+                    self.determ_day_inexp.append(experiment_determ_day)
+                    determined = True
+        #If still not determined, print that we need more data for a
+        #Determination in this experiment
+        print("No determination of on/off after length of experiment." + \
+                "Would have to run longer than {} days".format(
 
+    def Dday_To_Eday(self,day,smallerdata):
+        '''
+        Takes in # days of data needed for determination and converts to
+        A day in the experiment.  Whichever is the smaller data set is
+        the set that limits how fast we get our result.
+        '''
+        experiment_day = 0
+        determ_counter = 0
+        if smallerdata == 'offdata':
+            for reactor_state in self.onoff_record:
+                experiment_day += 1
+                if reactor_state == 0:
+                    #This is a day from the smaller data set; contributes to
+                    #determination day
+                    determ_counter += 1
+                if determ_counter == day:
+                    #Reached our successful determination day in experiment!
+                    return experiment_day
 
+        if smallerdata == 'ondata':
+            for reactor_state in self.onoff_record:
+                experiment_day += 1
+                if reactor_state == 1:
+                    #This is a day from the smaller data set; contributes to
+                    #determination day
+                    determ_counter += 1
+                if determ_counter == day:
+                    #Reached our successful determination day in experiment!
+                    return experiment_day
 
     def OnOffGroup(self, ExpGen):
         '''
@@ -79,8 +153,7 @@ class ExperimentAnalysis1(object):
         '''
         offday_events = []
         onday_events = []
-        days_bothreacson = ExpGen.known_core_onoffdays * \
-                ExpGen.unknown_core_onoffdays
+        days_bothreacson = ExpGen.either_core_onoffdays
         for j,day in enumerate(ExpGen.experiment_days):
             if  days_bothreacson[j] == 1:
                 onday_events.append(ExpGen.events[j])
@@ -90,12 +163,13 @@ class ExperimentAnalysis1(object):
         onday_events = np.array(onday_events)
         self.onday_events = onday_events
         self.offday_events = offday_events
+        self.onoff_record = days_bothreacson
 
     def ReBinningStudy(self,bin_choice):
         #if 1 < bin_choice < self.Current_Experiment.totaldays, rebin events
         if 1 < bin_choice < self.Current_Experiment.totaldays:
             rebinned_ondays, rebinned_offdays, lost_days = \
-                    self.rebin_days(self.onday_events, self.offday_events, bin_choice)
+                    self.ReBin_Days(self.onday_events, self.offday_events, bin_choice)
         #Now, calculate the average and standard deviation of each
         self.binned_onday_avg.append(np.average(rebinned_ondays))
         self.binned_onday_stdev.append(np.std(rebinned_ondays))
@@ -115,7 +189,7 @@ class ExperimentAnalysis1(object):
             print("OFF DAY AVERAGE/STDEV: {0} / {1}".format(offda, offdstd))
             print("# DAYS LOST IN REBINNING [ONDAYS, OFFDAYS]: {0}".format(lost_days))
 
-    def rebin_days(self, onday_events, offday_events, bin_choice):
+    def ReBin_Days(self, onday_events, offday_events, bin_choice):
         '''
         Takes in an array of daily rates for days both reactors were on
         (onday_events) and an array of daily rates for days where one
@@ -126,9 +200,10 @@ class ExperimentAnalysis1(object):
         rebinned_ondays = []
         rebinned_offdays = []
         nonbinned_days = []
-        step = 1
+
         event_data = {'ondays':onday_events, 'offdays':offday_events}
         for datatype in event_data:
+            step = 1
             while (step * bin_choice) <= len(event_data[datatype]):
                 rebin_datapt = np.sum(event_data[datatype][((step-1) * \
                         bin_choice):((step * bin_choice))])
@@ -142,6 +217,7 @@ class ExperimentAnalysis1(object):
             lost_days = len(event_data[datatype][((step-1)* bin_choice):((step * bin_choice))])
             nonbinned_days.append(lost_days)
         return np.array(rebinned_ondays), np.array(rebinned_offdays), nonbinned_days
+
 #Class takes in a signal class as defined in DBParse.py and creates the spectrum
 #For an experiment.
 class ExperimentGenerator(object):
@@ -166,16 +242,18 @@ class ExperimentGenerator(object):
         #First, generate core events as if reactor cores were always on
         self.known_core_events = []
         self.known_core_binavg = 'none'
-        self.known_core_onoffdays = []
         self.unknown_core_events = []
         self.unknown_core_binavg = 'none'
-        self.unknown_core_onoffdays = []
         self.generateCoreEvents()
         self.events_allcoreson = self.NR_bkg + self.known_core_events + \
                 self.unknown_core_events
 
         #Now, remove events based on days a core is off
+        self.known_core_onoffdays = []
+        self.unknown_core_onoffdays = []
         self.removeCoreOffEvents()
+        self.either_core_onoffdays = self.known_core_onoffdays * \
+                self.unknown_core_onoffdays
         self.events = self.NR_bkg + self.known_core_events + \
                 self.unknown_core_events
         self.events_unc = np.sqrt(self.events)

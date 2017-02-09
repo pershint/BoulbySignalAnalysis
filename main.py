@@ -66,7 +66,7 @@ if __name__=='__main__':
 #    gr.Plot_NRBackgrounds(Run1)
 #    gr.Plot_Signal(Run1)
 #    gr.Plot_Cores(Run1)
-    gr.Plot_ReacOnOff(Run1)
+#    gr.Plot_ReacOnOff(Run1)
     #Take your total core events when a reactor is on and when a reactor is 
     #off and project them onto the y-axis
 #    h.hPlot_CoresOnAndOffHist(Run1)
@@ -82,7 +82,7 @@ if __name__=='__main__':
     Analysis1(Run1)
     gr.Plot_OnOffCumSum(Analysis1)
 
-    #Now, run 100 experiments, get the determination days from each experiment,
+    #Now, run 100 experiments, determination days from each experiment,
     #And fill a histogram
     experiments = np.arange(0,10000,1)
     determination_days = []
@@ -91,10 +91,14 @@ if __name__=='__main__':
         Run = eg.ExperimentGenerator(Boulby, OFF_TIME, UP_TIME, RESOLUTION, UNKNOWN_CORE, \
             TOTAL_RUN)
         Analysis1(Run)
-        determination_days.append(Analysis1.determination_day)
-    h.hPlot_SignalHistogram('Determination days', determination_days, \
-            40,0,160)
-    TITLE = str('# Days needed to distinguish on/off reactor states' + \
+    h.hPlot_Determ(Analysis1.determination_days, \
+            np.max(Analysis1.determination_days),0.5, \
+            (np.max(Analysis1.determination_days) + 0.5))
+    h.hPlot_Determ_InExpDays(Analysis1.determ_day_inexp, \
+            np.max(Analysis1.determ_day_inexp),0.5, \
+            (np.max(Analysis1.determ_day_inexp) + 0.5))
+    TITLE = str('# Days of dataneeded to distinguish on/off reactor states' + \
             '(Efficiency = {0}, off-time = {1} days)'.format(DETECTION_EFF,OFF_TIME))
-    c1, h = ef.PoissonFit(TITLE,determination_days)
+    c1, h = ef.PoissonFit(TITLE,Analysis1.determination_days)
     c1.Draw()
+    h.Draw()

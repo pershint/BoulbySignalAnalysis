@@ -72,12 +72,13 @@ def Plot_OnOffCumSum(Analysis):
     ax.errorbar(Analysis.csum_numdays, Analysis.csum_off, \
         xerr=0, yerr=np.sqrt(Analysis.csum_off), marker='o', linestyle='none', \
         color='m', alpha=0.7, label='One core off')
-    ax.axvline(x=Analysis.determination_day,color='k', label=r'on > off by 3$\sigma$')
+    ax.axvline(x=Analysis.currentexp_determination_day,color='k', \
+            label=r'on > off by 3$\sigma$')
     ax.set_xlabel("Number of days of IBD data")
     ax.set_ylabel("IBD candidates")
     ax.set_title("Number of days of data collected\n" + \
             "Efficiency = {}, ".format(Analysis.Current_Experiment.efficiency) + \
-            "Determination day = {}".format(Analysis.determination_day))
+            "Determination day = {}".format(Analysis.currentexp_determination_day))
     plt.legend(loc = 2)
     plt.show()
 

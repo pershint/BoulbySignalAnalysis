@@ -28,11 +28,41 @@ def hPlot_SignalHistogram(signal_name, evperdays, numbins, hmin, hmax):
     ax.grid(True)
     plt.show()
 
+def hPlot_Determ(evperdays, numbins, hmin, hmax):
+    '''
+    Takes the signal name, and an array of randomly shot events per day, and
+    outputs the histogram for the events fired.
+    '''
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    ax.hist(evperdays, numbins, facecolor='blue', alpha=0.75)
+    ax.set_title("# Days of 'one reactor off' data needed for mesaurement")
+    ax.set_xlabel("# Days of off-core data")
+    ax.set_ylabel("# Experiments")
+    ax.set_xbound(lower=hmin,upper=hmax)
+    ax.grid(True)
+    plt.show()
+
+def hPlot_Determ_InExpDays(evperdays, numbins, hmin, hmax):
+    '''
+    Takes the signal name, and an array of randomly shot events per day, and
+    outputs the histogram for the events fired.
+    '''
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    ax.hist(evperdays, numbins, facecolor='m', alpha=0.75)
+    ax.set_title("# Experiental Days needed for on/off measurement")
+    ax.set_xlabel("# Days in experiment")
+    ax.set_ylabel("# Experiments")
+    ax.set_xbound(lower=hmin,upper=hmax)
+    ax.grid(True)
+    plt.show()
+
 def hPlot_CoresOnAndOffHist(GenExp):
     '''
-    Takes in an ExperimentGenerator class and prints the histograms for
-    an experiment if all cores stayed on, and if both cores had shutoff
-    periods.
+    Takes in an ExperimentGenerator class and gives the event distribution
+    for the selected binning (nbins below) for if all cores stayed on in
+    #an experiment, and if both cores had shutoff periods.
     '''
     fig = plt.figure()
     nbins = 15
