@@ -67,20 +67,14 @@ if __name__=='__main__':
 #    gr.Plot_Signal(Run1)
 #    gr.Plot_Cores(Run1)
 #    gr.Plot_ReacOnOff(Run1)
-    #Take your total core events when a reactor is on and when a reactor is 
-    #off and project them onto the y-axis
 #    h.hPlot_CoresOnAndOffHist(Run1)
-
-    #Uncomment to use pyROOT to try and fit a poisson distribution
-#    c1, h = ef.Exp_PoissonFit(Run1)
-#    c1.Draw()
 
     #Try out the new ExperimentAnalyzer class
     binning_choices = np.arange(3,30,1)
     doReBin_Analysis = False
-    Analysis1 = eg.ExperimentAnalysis1(binning_choices,doReBin_Analysis)
-    Analysis1(Run1)
-    gr.Plot_OnOffCumSum(Analysis1)
+    Analysis2 = eg.Analysis2()
+    Analysis2(Run1)
+    gr.Plot_OnOffCumSum_A2(Analysis2)
 
     #Now, run 100 experiments, determination days from each experiment,
     #And fill a histogram
@@ -90,15 +84,15 @@ if __name__=='__main__':
     for experiment in experiments:
         Run = eg.ExperimentGenerator(Boulby, OFF_TIME, UP_TIME, RESOLUTION, UNKNOWN_CORE, \
             TOTAL_RUN)
-        Analysis1(Run)
-    h.hPlot_Determ(Analysis1.determination_days, \
-            np.max(Analysis1.determination_days),0.5, \
-            (np.max(Analysis1.determination_days) + 0.5))
-    h.hPlot_Determ_InExpDays(Analysis1.determ_day_inexp, \
-            np.max(Analysis1.determ_day_inexp),0.5, \
-            (np.max(Analysis1.determ_day_inexp) + 0.5))
-    TITLE = str('# Days of dataneeded to distinguish on/off reactor states' + \
+        Analysis2(Run)
+    h.hPlot_Determ_InExpDays(Analysis2.determination_days, \
+            np.max(Analysis2.determination_days),0.5, \
+            (np.max(Analysis2.determination_days) + 0.5))
+
+    #Takes the determination day spread filled in Analysis2 and fits it to a 
+    #Poisson distribution
+    TITLE = str('# Days of data needed to distinguish on/off reactor states' + \
             '(Efficiency = {0}, off-time = {1} days)'.format(DETECTION_EFF,OFF_TIME))
-    c1, h = ef.PoissonFit(TITLE,Analysis1.determination_days)
+    c1, h = ef.PoissonFit(TITLE,Analysis2.determination_days)
     c1.Draw()
     h.Draw()

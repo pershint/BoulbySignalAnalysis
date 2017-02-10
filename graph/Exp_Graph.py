@@ -61,24 +61,53 @@ def Plot_Analysis1OnOff(Analysis):
     plt.legend(loc = 2)
     plt.show()
 
-def Plot_OnOffCumSum(Analysis):
+def Plot_OnOffCumSum_A2(Analysis2):
+    '''
+    Takes in an Analysis2 subclass and plots the results from the 3Sigma
+    studies for the current experiment fed into the Analysis2 call.
+    '''
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     #ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.NR_bkg, \
     #        'ro', color='blue', alpha=0.8)
-    ax.errorbar(Analysis.csum_numdays, Analysis.csum_on, \
-        xerr=0, yerr=np.sqrt(Analysis.csum_on), marker='o', linestyle='none', \
-        color='g', alpha=0.7, label='Both cores on')
-    ax.errorbar(Analysis.csum_numdays, Analysis.csum_off, \
-        xerr=0, yerr=np.sqrt(Analysis.csum_off), marker='o', linestyle='none', \
+    ax.errorbar(Analysis2.Current_Experiment.experiment_days, \
+        Analysis2.onavg_cumul, xerr=0, yerr=Analysis2.onavg_cumul_unc, \
+        marker='o', linestyle='none', color='g', alpha=0.7, label='Both cores on')
+    ax.errorbar(Analysis2.Current_Experiment.experiment_days, \
+        Analysis2.offavg_cumul, xerr=0, yerr=Analysis2.offavg_cumul_unc, \
+        marker='o', linestyle='none', \
         color='m', alpha=0.7, label='One core off')
-    ax.axvline(x=Analysis.currentexp_determination_day,color='k', \
+    ax.axvline(x=Analysis2.currentexp_determination_day,color='k', \
+            label=r'on > off by 3$\sigma$')
+    ax.set_xlabel("Days since experiment started")
+    ax.set_ylabel("Average IBDs/day rate")
+    ax.set_title("Average IBDs/day at WATCHMAN Boulby Site \n" + \
+            "Efficiency = {}, ".format(Analysis2.Current_Experiment.efficiency) + \
+            "Determination day = {}".format(Analysis2.currentexp_determination_day))
+    plt.legend(loc = 2)
+    plt.show()
+
+def Plot_OnOffCumSum_A1(Analysis1):
+    '''
+    Plots results from calling the ExperimentalAnalysis11 class.
+    '''
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    #ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.NR_bkg, \
+    #        'ro', color='blue', alpha=0.8)
+    ax.errorbar(Analysis1.csum_numdays, Analysis1.csum_on, \
+        xerr=0, yerr=np.sqrt(Analysis1.csum_on), marker='o', linestyle='none', \
+        color='g', alpha=0.7, label='Both cores on')
+    ax.errorbar(Analysis1.csum_numdays, Analysis1.csum_off, \
+        xerr=0, yerr=np.sqrt(Analysis1.csum_off), marker='o', linestyle='none', \
+        color='m', alpha=0.7, label='One core off')
+    ax.axvline(x=Analysis1.currentexp_determination_day,color='k', \
             label=r'on > off by 3$\sigma$')
     ax.set_xlabel("Number of days of IBD data")
     ax.set_ylabel("IBD candidates")
     ax.set_title("Number of days of data collected\n" + \
-            "Efficiency = {}, ".format(Analysis.Current_Experiment.efficiency) + \
-            "Determination day = {}".format(Analysis.currentexp_determination_day))
+            "Efficiency = {}, ".format(Analysis1.Current_Experiment.efficiency) + \
+            "Determination day = {}".format(Analysis1.currentexp_determination_day))
     plt.legend(loc = 2)
     plt.show()
 

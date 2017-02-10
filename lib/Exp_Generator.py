@@ -9,7 +9,7 @@ CORE_NAMES = ['Core_1', 'Core_2']
 
 #Class takes in a generated experiment (ExperimentGenerator class) and performs
 #Some Analysis assuming we know exactly the days each core is on or off
-class Analysis(object):
+class ExperimentalAnalysis(object):
     def __init__(self):
         #Holds metadata of current experiment in analysis
         self.Current_Experiment = 'no current experiment'
@@ -49,11 +49,19 @@ class Analysis(object):
 class Analysis2(ExperimentalAnalysis):
     def __init__(self):
         super(Analysis2, self).__init__()
+
+        #containers for results of CalcDailyAvgAndUnc
         self.onavg_cumul = []
         self.offavg_cumul = []
-        self.onavg_unc = []
-        self.offavg_unc = []
-    
+        self.onavg_cumul_unc = []
+        self.offavg_cumul_unc = []
+
+        #Current experiments day where 3sigma is confirmed, and
+        #Array of experiment determination day results
+        self.currentexp_determination_day = 0
+        self.determination_days = []
+        self.num_nodetermine = 0
+
     def __call__(self, ExpGen):
         super(Analysis2, self).__call__(ExpGen)
         if self.Current_Experiment.resolution != 1:
@@ -61,16 +69,113 @@ class Analysis2(ExperimentalAnalysis):
                     'Experiment resolution is not one day per bin. \n')
             return
         self.OnOffGroup(self.Current_Experiment)
+        self.CalcDailyAvgAndUnc()
+        self.Get3SigmaDay()
 
     def CalcDailyAvgAndUnc(self):
+        '''
+        Goes day-by-day and gets the average of IBD candidates and it's uncertainty 
+        for 'both cores on' data and 'one core off' data based on all data that has
+        been measured up to the current day.  Does this for every day in the experiment.
+        '''
         offavg_cumul = []
-        onavg = []
+        offavg_cumul_unc = []
+        onavg_cumul = []
+        onavg_cumul_unc = []
         experiment_day = 0
+        #status codes: 0 - one core off, 1 - both cores on
         for j,status in enumerate(self.onoff_record):
             if status == 0:
-                offavg_self.Current_Experiment.events[j]
-        
+                #Get all previous data from 'cores off' days
+                currentsum,daysofdata = self.GetDataToCurrentDay((j+1),'off')
+                thisdays_offavg = (float(currentsum)/float(daysofdata))
+                offavg_cumul.append(thisdays_offavg)
+                #The uncertainty is the measured average divided by sqrt # days of
+                #data
+                offavg_cumul_unc.append(float(thisdays_offavg)/np.sqrt(daysofdata))
+                #Didn't get new on-day data; carry over the last day's statistics
+                if j == 0:
+                    onavg_cumul.append(0)
+                    onavg_cumul_unc.append(0)
+                else:
+                    onavg_cumul.append(onavg_cumul[j-1])
+                    onavg_cumul_unc.append(onavg_cumul_unc[j-1])
+            if status == 1:
+                #Get all previous data from 'cores off' days
+                currentsum,daysofdata = self.GetDataToCurrentDay((j+1),'on')
+                thisdays_onavg = (float(currentsum)/float(daysofdata))
+                onavg_cumul.append(thisdays_onavg)
+                #The uncertainty is the measured average divided by sqrt # days of
+                #data
+                onavg_cumul_unc.append(float(thisdays_onavg)/np.sqrt(daysofdata))
+                #Didn't get new off-day data; carry over the last day's statistics
+                if j == 0:
+                    offavg_cumul.append(0)
+                    offavg_cumul_unc.append(0)
+                else:
+                    offavg_cumul.append(offavg_cumul[j-1])
+                    offavg_cumul_unc.append(offavg_cumul_unc[j-1])
+        #analysis complete; place values in class containers
+        self.onavg_cumul = onavg_cumul
+        self.onavg_cumul_unc = onavg_cumul_unc
+        self.offavg_cumul = offavg_cumul
+        self.offavg_cumul_unc = offavg_cumul_unc
 
+    def GetDataToCurrentDay(self, day, status):
+        '''
+        For the given status ('both on' or 'one core off'), get all days of data
+        in the vent BEFORE the given day summed together. returns the number of
+        events and the number of days summed.
+        '''
+        events_tosum = []
+        if status == 'on':
+            for j,state in enumerate(self.onoff_record):
+                if j == day:  #we've gotten our days.  break.
+                    break
+                if state == 1:
+                    events_tosum.append(self.Current_Experiment.events[j])
+        elif status == 'off':
+            for j,state in enumerate(self.onoff_record):
+                if j == day:
+                    break
+                if state == 0:
+                    events_tosum.append(self.Current_Experiment.events[j])
+        summed_events = np.sum(events_tosum)
+        days_summed = len(events_tosum)
+        return summed_events, days_summed
+
+    def Get3SigmaDay(self):
+        '''
+        uses the onavg_cumul and offavg_cumul arrays filled with self.GetDataFromPastDays
+        to determine what day in the experiment a 3sigma difference is achieved.
+        Sets the current determination day and appends value to determination_days.
+        '''
+        daysofrunning = self.Current_Experiment.experiment_days
+        dcount = 0
+        d_days = 14  #Number of days in a row of 3sigma required for determination
+        for j,day in enumerate(daysofrunning):
+
+            day_onoffdiff = abs(self.onavg_cumul[j] - self.offavg_cumul[j])
+            #Check if the data values are 3sigma apart
+            day_sigma = abs(np.sqrt((self.onavg_cumul_unc[j])**2 + \
+                    (self.offavg_cumul_unc[j])**2))
+            if ((self.onavg_cumul_unc[j] == 0) or (self.offavg_cumul_unc[j] == 0)):
+                #no data measured yet on this day for either on or off data
+                continue
+            if (day_onoffdiff <= (3 * day_sigma)):
+                dcount = 0
+                continue
+            if (day_onoffdiff > (3 * day_sigma)):
+                dcount += 1
+                if dcount == 14:
+                    self.currentexp_determination_day = day
+                    self.determination_days.append(day)
+                    return
+        #If still not determined, print that we need more data for a
+        #Determination in this experiment
+        print("No determination of on/off after length of experiment." + \
+                "Would have to run longer than {} days".format(self.Current_Experiment.totaldays))
+        self.num_nodetermine+=1
 
 class ExperimentAnalysis1(object):
     def __init__(self, binning_choices,doReBin):
@@ -176,7 +281,7 @@ class ExperimentAnalysis1(object):
         #If still not determined, print that we need more data for a
         #Determination in this experiment
         print("No determination of on/off after length of experiment." + \
-                "Would have to run longer than {} days".format(
+                "Would have to run longer than current experiment length.")
 
     def Dday_To_Eday(self,day,smallerdata):
         '''
