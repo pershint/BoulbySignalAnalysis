@@ -38,7 +38,7 @@ def Plot_Analysis1OnOff_poserr(Analysis):
     ax.set_ylabel("Average IBDs/bin")
     ax.set_title("Average number of IBDs measured for different data binnings\n" + \
             "Total days in experiment: {} days".format(Analysis.totaldays))
-    plt.legend(loc = 2)
+    plt.legend([ax])
     plt.show()
 
 #Same as above; in this case, error bars are shown as the square root of the
