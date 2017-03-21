@@ -82,7 +82,6 @@ def Plot_OnOffCumSum_A2(Analysis2):
     ax.set_xlabel("Days since experiment started")
     ax.set_ylabel("Average IBDs/day rate")
     ax.set_title("Average IBDs/day at WATCHMAN Boulby Site \n" + \
-            "Efficiency = {}, ".format(Analysis2.Current_Experiment.efficiency) + \
             "Determination day = {}".format(Analysis2.currentexp_determination_day))
     plt.legend(loc = 2)
     plt.show()
@@ -106,7 +105,6 @@ def Plot_OnOffCumSum_A1(Analysis1):
     ax.set_xlabel("Number of days of IBD data")
     ax.set_ylabel("IBD candidates")
     ax.set_title("Number of days of data collected\n" + \
-            "Efficiency = {}, ".format(Analysis1.Current_Experiment.efficiency) + \
             "Determination day = {}".format(Analysis1.currentexp_determination_day))
     plt.legend(loc = 2)
     plt.show()
@@ -122,8 +120,7 @@ def Plot_NRBackgrounds(GeneratedExperiment):
     ax.axhline(y=GeneratedExperiment.avg_NRbackground,color='k')
     ax.set_xlabel("days")
     ax.set_ylabel("Candidate events")
-    ax.set_title("Non-Reactor Backgrounds for WATCHMAN, efficiency = " + \
-            str(GeneratedExperiment.efficiency) + '\n' + \
+    ax.set_title("Non-Reactor Backgrounds for WATCHMAN \n" + \
             'Event binning = ' + str(GeneratedExperiment.resolution) + 'days')
     plt.show()
 
@@ -139,8 +136,7 @@ def Plot_Signal(GeneratedExperiment):
     ax.axhline(y=GeneratedExperiment.avg_NRbackground,color='k')
     ax.set_xlabel("days")
     ax.set_ylabel("Candidate events")
-    ax.set_title("Total signal for WATCHMAN, efficiency = " + \
-            str(GeneratedExperiment.efficiency) + '\n' + \
+    ax.set_title("Total signal for WATCHMAN, \n" + \
             'Event binning = ' + str(GeneratedExperiment.resolution) + 'days')
     plt.show()
 

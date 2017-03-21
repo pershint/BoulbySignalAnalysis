@@ -2,6 +2,7 @@
 
 #Main script for outputting reactor sensitivity study at Boulby in WATCHMAN
 import optparse
+import sys
 import lib.playDarts as pd
 import lib.DBParse as dp
 import graph.Histogram as h
@@ -25,11 +26,14 @@ parser.add_option('-t',"--offtime",action="store",dest="offtime", \
         type="int",default=16,help="Average # days that a reactor is off for " + \
         "maintenance")
 parser.add_option('-e','--efficiency',action="store",dest="efficiency", \
-        type="float",default=0.6,help="Detector efficiency (0.2,0.4,0.6,0.8,"+\
+        type="float",default=None,help="Detector efficiency (0.2,0.4,0.6,0.8,"+\
         "1.0 only currently implemented")
+parser.add_option('-p','--photocov',action="store",dest="pc", \
+        type="float",default=None,help="Photocoverage of WATCHMAN" + \
+        "to use(0.25 only implemented)")
 
 (options,args) = parser.parse_args()
-
+PHOTOCOVERAGE = options.pc
 DETECTION_EFF = options.efficiency
 KNOWN_CORE = 'Core_2'
 UNKNOWN_CORE = 'Core_1'
@@ -51,8 +55,15 @@ def StatFlucDemo(lamb, title):
     h.hPlot_SignalHistogram(title, events, 60, -0.5, 60.5)
 
 if __name__=='__main__':
-    Boulby = dp.BoulbySignals(DETECTION_EFF)
-    print(Boulby.signals)
+    if PHOTOCOVERAGE is not None and DETECTION_EFF is not None:
+        print("CHOOSE EITHER A PHOTOCOVERAGE OR EFFICIENCY, NOT BOTH.")
+        sys.exit(0)
+    elif PHOTOCOVERAGE is not None:
+        Boulby = dp.BoulbySignals_PC(PHOTOCOVERAGE)
+        print(Boulby.signals)
+    elif DETECTION_EFF is not None:
+        Boulby = dp.BoulbySignals(DETECTION_EFF)
+        print(Boulby.signals)
 
     #------------- BEGIN DEMO OF HOW STATS ARE FLUCTUATED ----------#
     title = "Events fired distribution for " + str(KNOWN_CORE) + "in a single" + \

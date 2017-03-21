@@ -391,7 +391,7 @@ class ExperimentAnalysis1(object):
 class ExperimentGenerator(object):
     def __init__(self,signalClass, offtime, uptime, resolution, unknown_core, totaldays):
         self.signals = signalClass.signals
-        self.efficiency = signalClass.efficiency
+        ##self.efficiency = signalClass.efficiency
         self.offtime = offtime
         self.uptime = uptime
         self.totaldays = totaldays
