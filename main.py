@@ -7,6 +7,7 @@ import lib.playDarts as pd
 import lib.DBParse as dp
 import graph.Histogram as h
 import lib.Exp_Generator as eg
+import lib.Analysis as a
 import graph.Exp_Graph as gr
 import numpy as np
 import lib.ExpFitting as ef
@@ -83,7 +84,7 @@ if __name__=='__main__':
     #Try out the new ExperimentAnalyzer class
     binning_choices = np.arange(3,30,1)
     doReBin_Analysis = False
-    Analysis2 = eg.Analysis2()
+    Analysis2 = a.Analysis2()
     Analysis2(Run1)
     gr.Plot_OnOffCumSum_A2(Analysis2)
 
@@ -96,6 +97,8 @@ if __name__=='__main__':
         Run = eg.ExperimentGenerator(Boulby, OFF_TIME, UP_TIME, RESOLUTION, UNKNOWN_CORE, \
             TOTAL_RUN)
         Analysis2(Run)
+    print("# EXP. WITH NO DETERMINATION IN TIME ALOTTED: \n")
+    print(Analysis2.num_nodetermine)
     h.hPlot_Determ_InExpDays(Analysis2.determination_days, \
             np.max(Analysis2.determination_days),0.5, \
             (np.max(Analysis2.determination_days) + 0.5))
@@ -103,7 +106,7 @@ if __name__=='__main__':
     #Takes the determination day spread filled in Analysis2 and fits it to a 
     #Poisson distribution
     TITLE = str('# Days of data needed to distinguish on/off reactor states' + \
-            '(Efficiency = {0}, off-time = {1} days)'.format(DETECTION_EFF,OFF_TIME))
+            '(PC = {0}, off-time = {1} days)'.format(PHOTOCOVERAGE,OFF_TIME))
     c1, h = ef.PoissonFit(TITLE,Analysis2.determination_days)
     c1.Draw()
     h.Draw()

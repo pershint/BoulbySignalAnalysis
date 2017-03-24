@@ -4,7 +4,7 @@
     "Signal_Contributions": {
         "Core_1" : 0.3699,
         "Core_2" : 0.3699,
-        "Other_Reacs": 0.4772,
+        "Other_Reacs": 0.1073,
         "Accidentals": 0.0996,
         "Fast_N": 0.0832,
         "Radionuclides": 0.0145
