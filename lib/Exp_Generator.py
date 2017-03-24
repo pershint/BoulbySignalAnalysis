@@ -2,7 +2,7 @@ import playDarts as pd
 import numpy as np
 
 UNKNOWN_FIRSTOFF = 30
-KNOWN_FIRSTOFF = 90
+KNOWN_FIRSTOFF = 210
 
 DEBUG = False
 CORE_NAMES = ['Core_1', 'Core_2']

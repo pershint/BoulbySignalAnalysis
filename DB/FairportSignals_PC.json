@@ -1,0 +1,12 @@
+{
+   "Photocoverage_Cases": [
+    { "Photocoverage": 0.20,
+    "Signal_Contributions": {
+        "Core_1" : 3.69,
+        "Other_Reacs": 0.1845,
+        "Accidentals": 0.4333,
+        "Fast_N": 0.8554,
+        "Radionuclides": 0.1896
+        }
+    }]
+}

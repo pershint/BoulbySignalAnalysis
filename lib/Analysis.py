@@ -48,6 +48,7 @@ class Analysis2(ExperimentalAnalysis):
         self.offavg_cumul = []
         self.onavg_cumul_unc = []
         self.offavg_cumul_unc = []
+        self.tot_cumul_unc = []
 
         #Current experiments day where 3sigma is confirmed, and
         #Array of experiment determination day results
@@ -146,6 +147,7 @@ class Analysis2(ExperimentalAnalysis):
         daysofrunning = self.Current_Experiment.experiment_days
         dcount = 0
         d_days = 14  #Number of days in a row of 3sigma required for determination
+        dfound = False
         for j,day in enumerate(daysofrunning):
 
             day_onoffdiff = abs(self.onavg_cumul[j] - self.offavg_cumul[j])
@@ -154,21 +156,26 @@ class Analysis2(ExperimentalAnalysis):
                     (self.offavg_cumul_unc[j])**2))
             if ((self.onavg_cumul_unc[j] == 0) or (self.offavg_cumul_unc[j] == 0)):
                 #no data measured yet on this day for either on or off data
+                self.tot_cumul_unc.append(0)
                 continue
-            if (day_onoffdiff <= (3 * day_sigma)):
-                dcount = 0
-                continue
-            if (day_onoffdiff > (3 * day_sigma)):
-                dcount += 1
-                if dcount == 14:
-                    self.currentexp_determination_day = day
-                    self.determination_days.append(day)
-                    return
+            self.tot_cumul_unc.append(day_sigma)
+            if not dfound:
+                if (day_onoffdiff <= (3 * day_sigma)):
+                    dcount = 0
+                    continue
+                if (day_onoffdiff > (3 * day_sigma)):
+                    dcount += 1
+                    if dcount == 14:
+                        self.currentexp_determination_day = day
+                        self.determination_days.append(day)
+                        dfound = True
+                        continue
         #If still not determined, print that we need more data for a
         #Determination in this experiment
-        print("No determination of on/off after length of experiment." + \
-                "Would have to run longer than {} days".format(self.Current_Experiment.totaldays))
-        self.num_nodetermine+=1
+        if not dfound:
+            print("No determination of on/off after length of experiment." + \
+                    "Would have to run longer than {} days".format(self.Current_Experiment.totaldays))
+            self.num_nodetermine+=1
 
 class ExperimentAnalysis1(object):
     def __init__(self, binning_choices,doReBin):

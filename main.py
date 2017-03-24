@@ -87,7 +87,7 @@ if __name__=='__main__':
     Analysis2 = a.Analysis2()
     Analysis2(Run1)
     gr.Plot_OnOffCumSum_A2(Analysis2)
-
+    gr.Plot_OnOffDiff_A2(Analysis2)
     #Now, run 100 experiments, determination days from each experiment,
     #And fill a histogram
     experiments = np.arange(0,10000,1)

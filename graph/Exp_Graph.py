@@ -77,12 +77,42 @@ def Plot_OnOffCumSum_A2(Analysis2):
         Analysis2.offavg_cumul, xerr=0, yerr=Analysis2.offavg_cumul_unc, \
         marker='o', linestyle='none', \
         color='m', alpha=0.7, label='One core off')
-    ax.axvline(x=Analysis2.currentexp_determination_day,color='k', \
+    ax.axvline(x=Analysis2.currentexp_determination_day,color='r', \
             label=r'on > off by 3$\sigma$')
+    ax.axhline(y=0,color='k')
     ax.set_xlabel("Days since experiment started")
     ax.set_ylabel("Average IBDs/day rate")
     ax.set_title("Average IBDs/day at WATCHMAN Boulby Site \n" + \
             "Determination day = {}".format(Analysis2.currentexp_determination_day))
+    ax.grid(True)
+    plt.legend(loc = 2)
+    plt.show()
+
+def Plot_OnOffDiff_A2(Analysis2):
+    '''
+    Takes in an Analysis2 subclass and plots the difference of the
+    "Both cores on" and "one core off" data sets' cumulative sums on
+    that day.  The uncertainty is the total uncertainty.  If no error
+    bars, one of the data sets is still empty.
+    '''
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    high = np.array(Analysis2.onavg_cumul)
+    low = np.array(Analysis2.offavg_cumul)
+    #ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.NR_bkg, \
+    #        'ro', color='blue', alpha=0.8)
+    ax.errorbar(Analysis2.Current_Experiment.experiment_days, \
+        (high - low), xerr=0, \
+        yerr=Analysis2.tot_cumul_unc, \
+        marker='o', linestyle='none', color='b', alpha=0.7, label='On - Off')
+    ax.axvline(x=Analysis2.currentexp_determination_day,color='r', \
+            label=r'(on - off > 0) by 3$\sigma$')
+    ax.axhline(y=0,color='k')
+    ax.set_xlabel("Days since experiment started")
+    ax.set_ylabel("Average IBDs/day rate")
+    ax.set_title("Average on-off IBDs/day at WATCHMAN Boulby Site \n" + \
+            "Determination day = {}".format(Analysis2.currentexp_determination_day))
+    ax.grid(True)
     plt.legend(loc = 2)
     plt.show()
 
