@@ -3,10 +3,10 @@ import numpy as np
 #Class takes in a generated experiment (ExperimentGenerator class) and performs
 #Some Analysis assuming we know exactly the days each core is on or off
 class ExperimentalAnalysis(object):
-    def __init__(self):
+    def __init__(self, sitename):
+        self.sitename = sitename
         #Holds metadata of current experiment in analysis
         self.Current_Experiment = 'no current experiment'
-
         #Arrays that hold the event rate for each day where both
         #reactors are on or where one reactor is off
         self.onday_events = []
@@ -40,8 +40,8 @@ class ExperimentalAnalysis(object):
         self.onoff_record = days_bothreacson
 
 class Analysis2(ExperimentalAnalysis):
-    def __init__(self):
-        super(Analysis2, self).__init__()
+    def __init__(self, sitename):
+        super(Analysis2, self).__init__(sitename)
 
         #containers for results of CalcDailyAvgAndUnc
         self.onavg_cumul = []

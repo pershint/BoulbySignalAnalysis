@@ -8,7 +8,8 @@
         "Accidentals": 0.0996,
         "Fast_N": 0.0832,
         "Radionuclides": 0.0145
-        },
+        }
+    },
     { "Photocoverage": 0.20,
     "Signal_Contributions": {
         "Core_1" : 0.3153,

@@ -82,7 +82,8 @@ def Plot_OnOffCumSum_A2(Analysis2):
     ax.axhline(y=0,color='k')
     ax.set_xlabel("Days since experiment started")
     ax.set_ylabel("Average IBDs/day rate")
-    ax.set_title("Average IBDs/day at WATCHMAN Boulby Site \n" + \
+    ax.set_title("Average IBDs/day at WATCHMAN " + Analysis2.sitename + \
+            " Site \n" + \
             "Determination day = {}".format(Analysis2.currentexp_determination_day))
     ax.grid(True)
     plt.legend(loc = 2)
@@ -110,7 +111,8 @@ def Plot_OnOffDiff_A2(Analysis2):
     ax.axhline(y=0,color='k')
     ax.set_xlabel("Days since experiment started")
     ax.set_ylabel("Average IBDs/day rate")
-    ax.set_title("Average on-off IBDs/day at WATCHMAN Boulby Site \n" + \
+    ax.set_title("Average on-off IBDs/day at WATCHMAN " + Analysis2.sitename + \
+            "Site \n" + \
             "Determination day = {}".format(Analysis2.currentexp_determination_day))
     ax.grid(True)
     plt.legend(loc = 2)

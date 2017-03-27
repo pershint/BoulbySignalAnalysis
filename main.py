@@ -14,6 +14,9 @@ import lib.ExpFitting as ef
 
 parser = optparse.OptionParser()
 parser.add_option("--debug",action="store_true",default="False")
+parser.add_option("-S","--site",action="store",dest="site", \
+        default="Boulby",help="Input which experimental site you are" + \
+            "assuming for WATCHMAN (Boulby and Fairport implemented")
 parser.add_option("-r","--resolution",action="store",dest="resolution", \
         type="int",default=30,help="Specify the number of days per bin " +\
         "for the produced experimental data")
@@ -36,8 +39,7 @@ parser.add_option('-p','--photocov',action="store",dest="pc", \
 (options,args) = parser.parse_args()
 PHOTOCOVERAGE = options.pc
 DETECTION_EFF = options.efficiency
-KNOWN_CORE = 'Core_2'
-UNKNOWN_CORE = 'Core_1'
+SITE = options.site
 RESOLUTION = options.resolution  #In days
 OFF_TIME = options.offtime       #In days
 UP_TIME = options.uptime         #In days
@@ -56,23 +58,31 @@ def StatFlucDemo(lamb, title):
     h.hPlot_SignalHistogram(title, events, 60, -0.5, 60.5)
 
 if __name__=='__main__':
+    cores = {}
+    if SITE=="Boulby":
+        cores["known_core"] = "Core_1"
+        cores["unknown_cores"] = ["Core_2"]
+    if SITE=="Fairport":
+        cores["known_core"] = "Core_1"
+        cores["unknown_cores"] = []
+    
     if PHOTOCOVERAGE is not None and DETECTION_EFF is not None:
         print("CHOOSE EITHER A PHOTOCOVERAGE OR EFFICIENCY, NOT BOTH.")
         sys.exit(0)
     elif PHOTOCOVERAGE is not None:
-        Boulby = dp.BoulbySignals_PC(PHOTOCOVERAGE)
-        print(Boulby.signals)
+        signals = dp.Signals_PC(PHOTOCOVERAGE, SITE)
+        print(signals.signals)
     elif DETECTION_EFF is not None:
-        Boulby = dp.BoulbySignals(DETECTION_EFF)
-        print(Boulby.signals)
+        signals = dp.Signals(DETECTION_EFF, SITE)
+        print(signals.signals)
 
     #------------- BEGIN DEMO OF HOW STATS ARE FLUCTUATED ----------#
-    title = "Events fired distribution for " + str(KNOWN_CORE) + "in a single" + \
+    title = "Events fired distribution for " + str(cores["known_core"]) + "in a single" + \
         "bin of width " + str(RESOLUTION) + "days"
     #StatFlucDemo(Boulby.signals[KNOWN_CORE]*RESOLUTION, title)
     #------------- END DEMO OF HOW STATS ARE FLUCTUATED ------------#
 
-    Run1 = eg.ExperimentGenerator(Boulby, OFF_TIME, UP_TIME, RESOLUTION, UNKNOWN_CORE, \
+    Run1 = eg.ExperimentGenerator(signals, OFF_TIME, UP_TIME, RESOLUTION, cores, \
         TOTAL_RUN)
     Run1.show()  #Shows output of some experiment run details
 #    gr.Plot_NRBackgrounds(Run1)
@@ -84,7 +94,7 @@ if __name__=='__main__':
     #Try out the new ExperimentAnalyzer class
     binning_choices = np.arange(3,30,1)
     doReBin_Analysis = False
-    Analysis2 = a.Analysis2()
+    Analysis2 = a.Analysis2(SITE)
     Analysis2(Run1)
     gr.Plot_OnOffCumSum_A2(Analysis2)
     gr.Plot_OnOffDiff_A2(Analysis2)
@@ -94,7 +104,7 @@ if __name__=='__main__':
     determination_days = []
 
     for experiment in experiments:
-        Run = eg.ExperimentGenerator(Boulby, OFF_TIME, UP_TIME, RESOLUTION, UNKNOWN_CORE, \
+        Run = eg.ExperimentGenerator(signals, OFF_TIME, UP_TIME, RESOLUTION, cores, \
             TOTAL_RUN)
         Analysis2(Run)
     print("# EXP. WITH NO DETERMINATION IN TIME ALOTTED: \n")

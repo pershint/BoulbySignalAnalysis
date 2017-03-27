@@ -5,19 +5,22 @@ UNKNOWN_FIRSTOFF = 30
 KNOWN_FIRSTOFF = 210
 
 DEBUG = False
-CORE_NAMES = ['Core_1', 'Core_2']
 
 #Class takes in a signal class as defined in DBParse.py and creates the spectrum
 #For an experiment.
 class ExperimentGenerator(object):
-    def __init__(self,signalClass, offtime, uptime, resolution, unknown_core, totaldays):
+    def __init__(self,signalClass, offtime, uptime, resolution, cores, totaldays):
         self.signals = signalClass.signals
         ##self.efficiency = signalClass.efficiency
         self.offtime = offtime
         self.uptime = uptime
         self.totaldays = totaldays
         self.resolution = resolution
-        self.unknown_core = unknown_core
+        self.coredict = cores
+        self.allcores = self.parsecores()
+        self.areunknowns = False
+        if self.coredict["unknown_cores"]:
+            self.areunknowns = True
         self.numcycles = self.totaldays / self.resolution #Number of resolution periods measured
         self.experiment_days = np.arange(1*self.resolution,(self.numcycles+1)* \
                 self.resolution, self.resolution)
@@ -30,24 +33,34 @@ class ExperimentGenerator(object):
 
         #First, generate core events as if reactor cores were always on
         self.known_core_events = []
-        self.known_core_binavg = 'none'
+        self.known_core_binavg = -9999
         self.unknown_core_events = []
-        self.unknown_core_binavg = 'none'
+        self.unknown_core_binavg = -9999
         self.generateCoreEvents()
-        self.events_allcoreson = self.NR_bkg + self.known_core_events + \
-                self.unknown_core_events
 
+        self.events_allcoreson = self.NR_bkg + self.known_core_events
+        if self.areunknowns:
+            self.events_allcoreson += self.unknown_core_events
+    
         #Now, remove events based on days a core is off
         self.known_core_onoffdays = []
         self.unknown_core_onoffdays = []
         self.removeCoreOffEvents()
-        self.either_core_onoffdays = self.known_core_onoffdays * \
-                self.unknown_core_onoffdays
-        self.events = self.NR_bkg + self.known_core_events + \
-                self.unknown_core_events
+        self.either_core_onoffdays = self.known_core_onoffdays 
+        self.events = self.NR_bkg + self.known_core_events 
+        if self.areunknowns:
+            self.either_core_onoffdays +=self.unknown_core_onoffdays
+            self.events += self.unknown_core_events
         self.events_unc = np.sqrt(self.events)
 
-           
+    #Returns a list of all cores from the given core dictionary       
+    def parsecores(self):
+        corelist = []
+        corelist.append(self.coredict["known_core"])
+        ukcs = self.coredict["unknown_cores"]
+        for ukc in ukcs:
+            corelist.append(ukc)
+        return corelist
 
     #Generates non-reactor backgrounds
     def generateNRBKG(self):
@@ -55,7 +68,7 @@ class ExperimentGenerator(object):
         avg_NRbackground = 0. #In events/day
         #Fire average events for each
         for signal in self.signals:
-            if signal not in CORE_NAMES:
+            if signal not in self.allcores:
                 avg_events = self.signals[signal]*self.resolution
                 avg_NRbackground = avg_NRbackground + avg_events
                 events = pd.RandShoot_p(avg_events, self.numcycles)
@@ -74,18 +87,18 @@ class ExperimentGenerator(object):
         core_signal_dict = {}
         core_binavg_dict = {}
         for signal in self.signals:
-            if signal in CORE_NAMES:
+            if signal in self.allcores:
                 core_binavg = self.signals[signal]*float(self.resolution)
                 binned_events = pd.RandShoot_p(core_binavg, self.numcycles)
                 core_signal_dict[signal] = binned_events
                 core_binavg_dict[signal] = core_binavg
         for core in core_signal_dict:
-            if core == self.unknown_core:
-                self.unknown_core_events = core_signal_dict[core]
-                self.unknown_core_binavg = core_binavg_dict[core]
-            else:
+            if core == self.coredict["known_core"]:
                 self.known_core_events = core_signal_dict[core]
                 self.known_core_binavg = core_binavg_dict[core]
+            elif core in self.coredict["unknown_cores"]:
+                self.unknown_core_events = core_signal_dict[core]
+                self.unknown_core_binavg = core_binavg_dict[core]
 
     def removeCoreOffEvents(self):
         '''
@@ -95,12 +108,14 @@ class ExperimentGenerator(object):
         was off for that bin.
         '''
         #generate the days that each reactor shuts off
-        core_shutoffs = {'Core_1': [], 'Core_2': []}
+        core_shutoffs = {}
+        for corename in self.allcores:
+            core_shutoffs[corename] = []
         for core in core_shutoffs:
-            if core == self.unknown_core:
-                shutoff_day = UNKNOWN_FIRSTOFF
-            else:
+            if core == self.coredict["known_core"]:
                 shutoff_day = KNOWN_FIRSTOFF
+            elif core in self.coredict["unknown_cores"]:
+                shutoff_day = UNKNOWN_FIRSTOFF
             core_shutoffs[core].append(shutoff_day)
             while ((shutoff_day + self.uptime) < (self.totaldays - self.offtime)):
                 shutoff_day = (shutoff_day + self.offtime) + self.uptime
@@ -116,10 +131,10 @@ class ExperimentGenerator(object):
                         break
                     onoffdays[j] = 0.
                     j+=1
-            if core == self.unknown_core:
-                self.unknown_core_onoffdays = onoffdays
-            else:
+            if core == self.coredict["known_core"]:
                 self.known_core_onoffdays = onoffdays
+            elif core in self.coredict["unknown_cores"]:
+                self.unknown_core_onoffdays = onoffdays
 
         #Now, go through each bin of core data and remove the appropriate
         #portion of reactor flux for the shutoff
@@ -147,11 +162,11 @@ class ExperimentGenerator(object):
                     #This day, re-fire the bin value if re-scaled 
                     #statistics are needed
                     if flux_scaler < 1.0:
-                        if core == self.unknown_core:
-                            self.unknown_core_events[j] = pd.RandShoot_p((flux_scaler * self.unknown_core_binavg), 1)
-                        else:
-                            self.known_core_events[j] = pd.RandShoot_p( \
-                                    (flux_scaler * self.known_core_binavg), 1)
+                        if core == self.coredict["known_core"]:
+                            self.known_core_events[j] = pd.RandShoot_p((flux_scaler * self.known_core_binavg), 1)
+                        elif core in self.coredict["unknown_core"]:
+                            self.unknown_core_events[j] = pd.RandShoot_p( \
+                                    (flux_scaler * self.unknown_core_binavg), 1)
                     if OT_complete:
                         break
  
