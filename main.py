@@ -12,7 +12,7 @@ import lib.Exp_Generator as eg
 import lib.Analysis as a
 import graph.Exp_Graph as gr
 import numpy as np
-import lib.ExpFitting as ef
+#import lib.ExpFitting as ef
 
 basepath = os.path.dirname(__file__)
 savepath = os.path.abspath(os.path.join(basepath,"jobresults"))
@@ -94,23 +94,23 @@ if __name__=='__main__':
 
     Run1 = eg.ExperimentGenerator(signals, OFF_TIME, UP_TIME, RESOLUTION, cores, \
         TOTAL_RUN)
-    Run1.show()  #Shows output of some experiment run details
+    if DEBUG is True:
+        Run1.show()  #Shows output of some experiment run details
 #    gr.Plot_NRBackgrounds(Run1)
 #    gr.Plot_Signal(Run1)
 #    gr.Plot_Cores(Run1)
 #    gr.Plot_ReacOnOff(Run1)
 #    h.hPlot_CoresOnAndOffHist(Run1)
 
-    #Try out the new ExperimentAnalyzer class
-    binning_choices = np.arange(3,30,1)
-    doReBin_Analysis = False
     Analysis2 = a.Analysis2(SITE)
-    Analysis2(Run1)
-    gr.Plot_OnOffCumSum_A2(Analysis2)
-    gr.Plot_OnOffDiff_A2(Analysis2)
+    if DEBUG is True:
+        #Try out the new ExperimentAnalyzer class
+        Analysis2(Run1)
+        gr.Plot_OnOffCumSum_A2(Analysis2)
+        gr.Plot_OnOffDiff_A2(Analysis2)
     #Now, run 100 experiments, determination days from each experiment,
     #And fill a histogram
-    experiments = np.arange(0,10,1)
+    experiments = np.arange(0,100,1)
 
     for experiment in experiments:
         Run = eg.ExperimentGenerator(signals, OFF_TIME, UP_TIME, RESOLUTION, cores, \
@@ -118,7 +118,7 @@ if __name__=='__main__':
         Analysis2(Run)
     determination_data = Analysis2.determination_days
     datadict = {"Site": SITE,"pc":PHOTOCOVERAGE,"on/offdays": [UP_TIME,OFF_TIME],
-            "determination_days":determination_data}
+            "determination_days":determination_data,"no3sigmadays":Analysis2.num_nodetermine}
     with open(savepath + "/results_j"+str(jn)+".json","w") as datafile:
         json.dump(datadict,datafile,sort_keys=True,indent=4)
     if DEBUG is True:
@@ -132,6 +132,6 @@ if __name__=='__main__':
         #Poisson distribution
         TITLE = str('# Days of data needed to distinguish on/off reactor states' + \
                 '(PC = {0}, off-time = {1} days)'.format(PHOTOCOVERAGE,OFF_TIME))
-        c1, h = ef.PoissonFit(TITLE,Analysis2.determination_days)
-        c1.Draw()
+        #c1, h = ef.PoissonFit(TITLE,Analysis2.determination_days)
+        #c1.Draw()
         h.Draw()

@@ -78,7 +78,6 @@ class Analysis2(ExperimentalAnalysis):
         onavg_cumul_unc = []
         experiment_day = 0
         #status codes: 0 - one core off, 1 - both cores on
-        print(str(self.onoff_record))
         for j,status in enumerate(self.onoff_record):
             if status == 1:
                 #Get all previous data from 'cores off' days
@@ -150,7 +149,6 @@ class Analysis2(ExperimentalAnalysis):
         d_days = 14  #Number of days in a row of 3sigma required for determination
         dfound = False
         for j,day in enumerate(daysofrunning):
-
             day_onoffdiff = abs(self.onavg_cumul[j] - self.offavg_cumul[j])
             #Check if the data values are 3sigma apart
             day_sigma = abs(np.sqrt((self.onavg_cumul_unc[j])**2 + \
