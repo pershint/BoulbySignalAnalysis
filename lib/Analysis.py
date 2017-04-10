@@ -78,8 +78,9 @@ class Analysis2(ExperimentalAnalysis):
         onavg_cumul_unc = []
         experiment_day = 0
         #status codes: 0 - one core off, 1 - both cores on
+        print(str(self.onoff_record))
         for j,status in enumerate(self.onoff_record):
-            if status == 0:
+            if status == 1:
                 #Get all previous data from 'cores off' days
                 currentsum,daysofdata = self.GetDataToCurrentDay((j+1),'off')
                 thisdays_offavg = (float(currentsum)/float(daysofdata))
@@ -94,7 +95,7 @@ class Analysis2(ExperimentalAnalysis):
                 else:
                     onavg_cumul.append(onavg_cumul[j-1])
                     onavg_cumul_unc.append(onavg_cumul_unc[j-1])
-            if status == 1:
+            if status == 2:
                 #Get all previous data from 'cores off' days
                 currentsum,daysofdata = self.GetDataToCurrentDay((j+1),'on')
                 thisdays_onavg = (float(currentsum)/float(daysofdata))
@@ -104,8 +105,8 @@ class Analysis2(ExperimentalAnalysis):
                 onavg_cumul_unc.append(float(thisdays_onavg)/np.sqrt(daysofdata))
                 #Didn't get new off-day data; carry over the last day's statistics
                 if j == 0:
-                    offavg_cumul.append(0)
-                    offavg_cumul_unc.append(0)
+                    offavg_cumul.append(1)
+                    offavg_cumul_unc.append(1)
                 else:
                     offavg_cumul.append(offavg_cumul[j-1])
                     offavg_cumul_unc.append(offavg_cumul_unc[j-1])
@@ -126,13 +127,13 @@ class Analysis2(ExperimentalAnalysis):
             for j,state in enumerate(self.onoff_record):
                 if j == day:  #we've gotten our days.  break.
                     break
-                if state == 1:
+                if state == 2:
                     events_tosum.append(self.Current_Experiment.events[j])
         elif status == 'off':
             for j,state in enumerate(self.onoff_record):
                 if j == day:
                     break
-                if state == 0:
+                if state == 1:
                     events_tosum.append(self.Current_Experiment.events[j])
         summed_events = np.sum(events_tosum)
         days_summed = len(events_tosum)

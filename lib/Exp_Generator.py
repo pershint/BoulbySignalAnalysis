@@ -1,8 +1,8 @@
 import playDarts as pd
 import numpy as np
 
-UNKNOWN_FIRSTOFF = 30
-KNOWN_FIRSTOFF = 210
+UNKNOWN_FIRSTOFF = 0
+KNOWN_FIRSTOFF = 570
 
 DEBUG = False
 
@@ -164,7 +164,7 @@ class ExperimentGenerator(object):
                     if flux_scaler < 1.0:
                         if core == self.coredict["known_core"]:
                             self.known_core_events[j] = pd.RandShoot_p((flux_scaler * self.known_core_binavg), 1)
-                        elif core in self.coredict["unknown_core"]:
+                        elif core in self.coredict["unknown_cores"]:
                             self.unknown_core_events[j] = pd.RandShoot_p( \
                                     (flux_scaler * self.unknown_core_binavg), 1)
                     if OT_complete:
@@ -175,4 +175,5 @@ class ExperimentGenerator(object):
                 str(self.avg_NRbackground))
         print("Background array: \n" + str(self.NR_bkg))
         print("day of experiment array: \n" + str(self.experiment_days))
+        print("#Cores on for a day: \n" + str(self.either_core_onoffdays))
 

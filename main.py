@@ -2,6 +2,8 @@
 
 #Main script for outputting reactor sensitivity study at Boulby in WATCHMAN
 import optparse
+import json
+import os.path
 import sys
 import lib.playDarts as pd
 import lib.DBParse as dp
@@ -12,8 +14,12 @@ import graph.Exp_Graph as gr
 import numpy as np
 import lib.ExpFitting as ef
 
+basepath = os.path.dirname(__file__)
+savepath = os.path.abspath(os.path.join(basepath,"jobresults"))
+
+
 parser = optparse.OptionParser()
-parser.add_option("--debug",action="store_true",default="False")
+parser.add_option("--debug",dest="debug",action="store_true",default="False")
 parser.add_option("-S","--site",action="store",dest="site", \
         default="Boulby",help="Input which experimental site you are" + \
             "assuming for WATCHMAN (Boulby and Fairport implemented")
@@ -35,10 +41,14 @@ parser.add_option('-e','--efficiency',action="store",dest="efficiency", \
 parser.add_option('-p','--photocov',action="store",dest="pc", \
         type="float",default=None,help="Photocoverage of WATCHMAN" + \
         "to use(0.25 only implemented)")
+parser.add_option('-j','--jobnum',action="store",dest="jobnum", \
+        type="int",default=0,help="Job number (for saving data/grid use)")
 
 (options,args) = parser.parse_args()
 PHOTOCOVERAGE = options.pc
+DEBUG = options.debug
 DETECTION_EFF = options.efficiency
+jn = options.jobnum
 SITE = options.site
 RESOLUTION = options.resolution  #In days
 OFF_TIME = options.offtime       #In days
@@ -100,23 +110,28 @@ if __name__=='__main__':
     gr.Plot_OnOffDiff_A2(Analysis2)
     #Now, run 100 experiments, determination days from each experiment,
     #And fill a histogram
-    experiments = np.arange(0,10000,1)
-    determination_days = []
+    experiments = np.arange(0,10,1)
 
     for experiment in experiments:
         Run = eg.ExperimentGenerator(signals, OFF_TIME, UP_TIME, RESOLUTION, cores, \
             TOTAL_RUN)
         Analysis2(Run)
-    print("# EXP. WITH NO DETERMINATION IN TIME ALOTTED: \n")
-    print(Analysis2.num_nodetermine)
-    h.hPlot_Determ_InExpDays(Analysis2.determination_days, \
-            np.max(Analysis2.determination_days),0.5, \
-            (np.max(Analysis2.determination_days) + 0.5))
+    determination_data = Analysis2.determination_days
+    datadict = {"Site": SITE,"pc":PHOTOCOVERAGE,"on/offdays": [UP_TIME,OFF_TIME],
+            "determination_days":determination_data}
+    with open(savepath + "/results_j"+str(jn)+".json","w") as datafile:
+        json.dump(datadict,datafile,sort_keys=True,indent=4)
+    if DEBUG is True:
+        print("# EXP. WITH NO DETERMINATION IN TIME ALOTTED: \n")
+        print(Analysis2.num_nodetermine)
+        h.hPlot_Determ_InExpDays(Analysis2.determination_days, \
+                np.max(Analysis2.determination_days),0.5, \
+                (np.max(Analysis2.determination_days) + 0.5))
 
-    #Takes the determination day spread filled in Analysis2 and fits it to a 
-    #Poisson distribution
-    TITLE = str('# Days of data needed to distinguish on/off reactor states' + \
-            '(PC = {0}, off-time = {1} days)'.format(PHOTOCOVERAGE,OFF_TIME))
-    c1, h = ef.PoissonFit(TITLE,Analysis2.determination_days)
-    c1.Draw()
-    h.Draw()
+        #Takes the determination day spread filled in Analysis2 and fits it to a 
+        #Poisson distribution
+        TITLE = str('# Days of data needed to distinguish on/off reactor states' + \
+                '(PC = {0}, off-time = {1} days)'.format(PHOTOCOVERAGE,OFF_TIME))
+        c1, h = ef.PoissonFit(TITLE,Analysis2.determination_days)
+        c1.Draw()
+        h.Draw()
