@@ -117,7 +117,7 @@ class ExperimentGenerator(object):
             elif core in self.coredict["unknown_cores"]:
                 shutoff_day = UNKNOWN_FIRSTOFF
             core_shutoffs[core].append(shutoff_day)
-            while ((shutoff_day + self.uptime) < (self.totaldays - self.offtime)):
+            while ((shutoff_day +self.offtime+ self.uptime) < self.totaldays):
                 shutoff_day = (shutoff_day + self.offtime) + self.uptime
                 core_shutoffs[core].append(shutoff_day)
         
