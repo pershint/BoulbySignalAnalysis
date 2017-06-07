@@ -42,8 +42,8 @@ class ExperimentGenerator(object):
             self.events_allcoreson += self.unknown_core_events
     
         #Now, remove events based on days a core is off
-        self.known_core_onoffdays = []
-        self.unknown_core_onoffdays = []
+        self.known_core_onoffdays = np.zeros(self.totaldays)
+        self.unknown_core_onoffdays = np.zeros(self.totaldays)
         self.removeCoreOffEvents()
         self.core_status_array = self.known_core_onoffdays 
         self.events = self.NR_bkg + self.known_core_events 
@@ -89,7 +89,7 @@ class ExperimentGenerator(object):
 
     #Takes in a set of binned events and removes all events past
     #The day at which reactors are scheduled for permanent shutdown
-    def stripSDDays(binned_events):
+    def stripSDDays(self,binned_events):
         for j,day in enumerate(self.experiment_days):
             if self.experiment_days[j] > self.killreacs:
                 #set events in that bin to zero
@@ -138,9 +138,11 @@ class ExperimentGenerator(object):
                 shutoff_day = (shutoff_day + self.offtime) + self.uptime
                 core_shutoffs[core].append(shutoff_day)
         
-        #Generate a day-by-day map of each reactor's state (1-on, 0-off)
+        #Generate a day-by-day map of each reactor's state
+        #0 - all cores off, 1 - one core on, 2 - two cores on, etc.
         for core in core_shutoffs:
             onoffdays = np.ones(self.totaldays)
+            #first, set all events past the final shutdown to zero
             for shutdown_day in core_shutoffs[core]:
                 j = shutdown_day - 1
                 while j < ((shutdown_day - 1) + self.offtime):
@@ -151,7 +153,12 @@ class ExperimentGenerator(object):
             if core == self.coredict["known_core"]:
                 self.known_core_onoffdays = onoffdays
             elif core in self.coredict["unknown_cores"]:
-                self.unknown_core_onoffdays = onoffdays
+                self.unknown_core_onoffdays += onoffdays
+        #if there's a permanent shutdown of all reactors, turn all
+        #onoffdays to zero past that day
+        if self.killreacs != None:
+            self.known_core_onoffdays[self.killreacs:self.totaldays] = 0
+            self.unknown_core_onoffdays[self.killreacs:self.totaldays] = 0
 
         #Now, go through each bin of core data and remove the appropriate
         #portion of reactor flux for the shutoff
