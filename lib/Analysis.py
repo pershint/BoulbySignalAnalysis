@@ -6,33 +6,32 @@ class ExperimentalAnalysis(object):
     def __init__(self, sitename):
         self.sitename = sitename
         #Holds metadata of current experiment in analysis
-        self.Current_Experiment = 'no current experiment'
+        self.Current_Experiment = None
         #Arrays that hold the event rate for each day where both
         #reactors are on or where one reactor is off
         self.onday_events = []
         self.offday_events = []
 
         #Array of ones and zeroes, each representing a day in the experiment
-        #(1 - both reactors were on on this day, 0 - a reactor was off)
+        #(0 no reactors on this day, 1 - one reactor on, etc.
         self.onoff_record = []
 
     def __call__(self, ExpGen):
         self.Current_Experiment = ExpGen
 
-    def OnOffGroup(self, ExpGen):
+    def OnOffGroup(self):
         '''
         Takes an experiment and groups together the days of data where
-        both reactors were on, and groups days where reactor was off.
-        Can only be called if ExpGen.resolution = 1.
+        both reactors were on, and groups days where at least one reactor was off.
         '''
         offday_events = []
         onday_events = []
-        days_bothreacson = ExpGen.either_core_onoffdays
-        for j,day in enumerate(ExpGen.experiment_days):
-            if  days_bothreacson[j] == 1:
-                onday_events.append(ExpGen.events[j])
+        days_bothreacson = self.Current_Experiment.core_status_array
+        for j,day in enumerate(self.Current_Experiment.experiment_days):
+            if  days_bothreacson[j] == self.Current_Experiment.numcores:
+                onday_events.append(self.Current_Experiment.events[j])
             else:
-                offday_events.append(ExpGen.events[j])
+                offday_events.append(self.Current_Experiment.events[j])
         offday_events = np.array(offday_events)
         onday_events = np.array(onday_events)
         self.onday_events = onday_events
@@ -58,11 +57,7 @@ class Analysis2(ExperimentalAnalysis):
 
     def __call__(self, ExpGen):
         super(Analysis2, self).__call__(ExpGen)
-        if self.Current_Experiment.resolution != 1:
-            print("Cannot perform OnOffComparison on this experiment. " + \
-                    'Experiment resolution is not one day per bin. \n')
-            return
-        self.OnOffGroup(self.Current_Experiment)
+        self.OnOffGroup()
         self.CalcDailyAvgAndUnc()
         self.Get3SigmaDay()
 
@@ -77,9 +72,9 @@ class Analysis2(ExperimentalAnalysis):
         onavg_cumul = []
         onavg_cumul_unc = []
         experiment_day = 0
-        #status codes: 0 - one core off, 1 - both cores on
+        #status codes: 0 - no cores on, 1 - one core on, etc.
         for j,status in enumerate(self.onoff_record):
-            if status == 1:
+            if status != self.Current_Experiment.numcores:
                 #Get all previous data from 'cores off' days
                 currentsum,daysofdata = self.GetDataToCurrentDay((j+1),'off')
                 thisdays_offavg = (float(currentsum)/float(daysofdata))
@@ -94,8 +89,9 @@ class Analysis2(ExperimentalAnalysis):
                 else:
                     onavg_cumul.append(onavg_cumul[j-1])
                     onavg_cumul_unc.append(onavg_cumul_unc[j-1])
-            if status == 2:
-                #Get all previous data from 'cores off' days
+
+            if status == self.Current_Experiment.numcores:
+                #Get all previous data from 'cores on' days
                 currentsum,daysofdata = self.GetDataToCurrentDay((j+1),'on')
                 thisdays_onavg = (float(currentsum)/float(daysofdata))
                 onavg_cumul.append(thisdays_onavg)
@@ -104,8 +100,8 @@ class Analysis2(ExperimentalAnalysis):
                 onavg_cumul_unc.append(float(thisdays_onavg)/np.sqrt(daysofdata))
                 #Didn't get new off-day data; carry over the last day's statistics
                 if j == 0:
-                    offavg_cumul.append(1)
-                    offavg_cumul_unc.append(1)
+                    offavg_cumul.append(0)
+                    offavg_cumul_unc.append(0)
                 else:
                     offavg_cumul.append(offavg_cumul[j-1])
                     offavg_cumul_unc.append(offavg_cumul_unc[j-1])
@@ -117,7 +113,7 @@ class Analysis2(ExperimentalAnalysis):
 
     def GetDataToCurrentDay(self, day, status):
         '''
-        For the given status ('both on' or 'one core off'), get all days of data
+        For the given status ('all on' or 'at least one off'), get all days of data
         in the vent BEFORE the given day summed together. returns the number of
         events and the number of days summed.
         '''
@@ -126,13 +122,13 @@ class Analysis2(ExperimentalAnalysis):
             for j,state in enumerate(self.onoff_record):
                 if j == day:  #we've gotten our days.  break.
                     break
-                if state == 2:
+                if state == self.Current_Experiment.numcores:
                     events_tosum.append(self.Current_Experiment.events[j])
         elif status == 'off':
             for j,state in enumerate(self.onoff_record):
                 if j == day:
                     break
-                if state == 1:
+                if state < self.Current_Experiment.numcores:
                     events_tosum.append(self.Current_Experiment.events[j])
         summed_events = np.sum(events_tosum)
         days_summed = len(events_tosum)
@@ -214,11 +210,6 @@ class ExperimentAnalysis1(object):
 
     def __call__(self, ExpGen):
         self.Current_Experiment = ExpGen
-
-        if self.Current_Experiment.resolution != 1:
-            print("Cannot perform OnOffComparison on this experiment. " + \
-                    'Experiment resolution is not one day per bin. \n')
-            return
 
         self.OnOffGroup(self.Current_Experiment)
         AvgLargerSetEvents = True
@@ -320,7 +311,7 @@ class ExperimentAnalysis1(object):
         '''
         offday_events = []
         onday_events = []
-        days_bothreacson = ExpGen.either_core_onoffdays
+        days_bothreacson = ExpGen.core_status_array
         for j,day in enumerate(ExpGen.experiment_days):
             if  days_bothreacson[j] == 1:
                 onday_events.append(ExpGen.events[j])

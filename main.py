@@ -23,17 +23,20 @@ parser.add_option("--debug",dest="debug",action="store_true",default="False")
 parser.add_option("-S","--site",action="store",dest="site", \
         default="Boulby",help="Input which experimental site you are" + \
             "assuming for WATCHMAN (Boulby and Fairport implemented")
+parser.add_option("-k","--killreacs",action="store",dest="killreacs", \
+        type="int",default=None,help="If defined, both reactors will" + \
+        "shut down for all days following the input day")
 parser.add_option("-r","--resolution",action="store",dest="resolution", \
-        type="int",default=30,help="Specify the number of days per bin " +\
+        type="int",default=1,help="Specify the number of days per bin " +\
         "for the produced experimental data")
 parser.add_option("-u","--uptime",action="store",dest="uptime", \
-        type="int",default=180,help="Specify the uptime, in days, " + \
+        type="int",default=1080,help="Specify the uptime, in days, " + \
         "for a reactor between outages")
 parser.add_option("-d","--days",action="store",dest="days", \
-        type="int",default=1080,help="Total number of days of candidate " + \
+        type="int",default=1800,help="Total number of days of candidate " + \
         "events produced")
 parser.add_option('-t',"--offtime",action="store",dest="offtime", \
-        type="int",default=16,help="Average # days that a reactor is off for " + \
+        type="int",default=60,help="Average # days that a reactor is off for " + \
         "maintenance")
 parser.add_option('-e','--efficiency',action="store",dest="efficiency", \
         type="float",default=None,help="Detector efficiency (0.2,0.4,0.6,0.8,"+\
@@ -51,11 +54,11 @@ DETECTION_EFF = options.efficiency
 jn = options.jobnum
 SITE = options.site
 RESOLUTION = options.resolution  #In days
-OFF_TIME = options.offtime       #In days
-UP_TIME = options.uptime         #In days
-TOTAL_RUN = options.days    #In Days (NOTE: If not divisible by RESOLUTION, will round
-                 #down to next lowest number divisible by RESOLUTION)
-
+schedule_dict = {}  #All entries given in days
+schedule_dict["OFF_TIME"] = options.offtime
+schedule_dict["UP_TIME"] = options.uptime
+schedule_dict["KILL_DAY"] = options.killreacs
+schedule_dict["TOTAL_RUN"] = options.days
 
 
 def StatFlucDemo(lamb, title):
@@ -85,6 +88,9 @@ if __name__=='__main__':
     elif DETECTION_EFF is not None:
         signals = dp.Signals(DETECTION_EFF, SITE)
         print(signals.signals)
+    elif DETECTION_EFF is None and PHOTOCOVERAGE is None:
+        print("CHOOSE A PHOTOCOVERAGE OR EFFICIENCY YO")
+        sys.exit(0)
 
     #------------- BEGIN DEMO OF HOW STATS ARE FLUCTUATED ----------#
     title = "Events fired distribution for " + str(cores["known_core"]) + "in a single" + \
@@ -92,8 +98,7 @@ if __name__=='__main__':
     #StatFlucDemo(Boulby.signals[KNOWN_CORE]*RESOLUTION, title)
     #------------- END DEMO OF HOW STATS ARE FLUCTUATED ------------#
 
-    Run1 = eg.ExperimentGenerator(signals, OFF_TIME, UP_TIME, RESOLUTION, cores, \
-        TOTAL_RUN)
+    Run1 = eg.ExperimentGenerator(signals, schedule_dict, RESOLUTION, cores)
     if DEBUG is True:
         Run1.show()  #Shows output of some experiment run details
 #    gr.Plot_NRBackgrounds(Run1)
@@ -113,11 +118,10 @@ if __name__=='__main__':
     experiments = np.arange(0,100,1)
 
     for experiment in experiments:
-        Run = eg.ExperimentGenerator(signals, OFF_TIME, UP_TIME, RESOLUTION, cores, \
-            TOTAL_RUN)
+        Run = eg.ExperimentGenerator(signals, schedule_dict, RESOLUTION, cores)
         Analysis2(Run)
     determination_data = Analysis2.determination_days
-    datadict = {"Site": SITE,"pc":PHOTOCOVERAGE,"on/offdays": [UP_TIME,OFF_TIME],
+    datadict = {"Site": SITE,"pc":PHOTOCOVERAGE, "schedule_dict": schedule_dict,
             "determination_days":determination_data,"no3sigmadays":Analysis2.num_nodetermine}
     with open(savepath + "/results_j"+str(jn)+".json","w") as datafile:
         json.dump(datadict,datafile,sort_keys=True,indent=4)

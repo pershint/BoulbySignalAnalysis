@@ -9,21 +9,20 @@ DEBUG = False
 #Class takes in a signal class as defined in DBParse.py and creates the spectrum
 #For an experiment.
 class ExperimentGenerator(object):
-    def __init__(self,signalClass, offtime, uptime, resolution, cores, totaldays):
+    def __init__(self,signalClass, schedule_dict, resolution, cores):
         self.signals = signalClass.signals
         ##self.efficiency = signalClass.efficiency
-        self.offtime = offtime
-        self.uptime = uptime
-        self.totaldays = totaldays
-        self.resolution = resolution
+        self.offtime = schedule_dict["OFF_TIME"]
+        self.uptime = schedule_dict["UP_TIME"]
+        self.totaldays = schedule_dict["TOTAL_RUN"]
+        self.killreacs = schedule_dict["KILL_DAY"]
         self.coredict = cores
+        self.numcores = len(cores)
         self.allcores = self.parsecores()
         self.areunknowns = False
         if self.coredict["unknown_cores"]:
             self.areunknowns = True
-        self.numcycles = self.totaldays / self.resolution #Number of resolution periods measured
-        self.experiment_days = np.arange(1*self.resolution,(self.numcycles+1)* \
-                self.resolution, self.resolution)
+        self.experiment_days = np.arange(1,self.totaldays+1,1)
 
         #First, populate non-reactor backgrounds
         self.avg_NRbackground = 0 #In events/resolution width
@@ -46,12 +45,19 @@ class ExperimentGenerator(object):
         self.known_core_onoffdays = []
         self.unknown_core_onoffdays = []
         self.removeCoreOffEvents()
-        self.either_core_onoffdays = self.known_core_onoffdays 
+        self.core_status_array = self.known_core_onoffdays 
         self.events = self.NR_bkg + self.known_core_events 
         if self.areunknowns:
-            self.either_core_onoffdays +=self.unknown_core_onoffdays
+            self.core_status_array +=self.unknown_core_onoffdays
             self.events += self.unknown_core_events
         self.events_unc = np.sqrt(self.events)
+
+        #Define your experiment_days and events, but rebinned as requested
+        self.resolution = resolution
+        self.numbins = self.totaldays / self.resolution #Number of resolution periods measured
+        self.rb_experiment_days = np.arange(1*self.resolution,(self.numbins+1)* \
+                self.resolution, self.resolution)
+        #FIXME: Need to write a function to collapse event binning
 
     #Returns a list of all cores from the given core dictionary       
     def parsecores(self):
@@ -66,12 +72,12 @@ class ExperimentGenerator(object):
     def generateNRBKG(self):
         bkg_signal_dict = {}
         avg_NRbackground = 0. #In events/day
-        #Fire average events for each
+        #Fire average events for each non-reactor BKG signal for each day
         for signal in self.signals:
             if signal not in self.allcores:
-                avg_events = self.signals[signal]*self.resolution
+                avg_events = self.signals[signal]
                 avg_NRbackground = avg_NRbackground + avg_events
-                events = pd.RandShoot_p(avg_events, self.numcycles)
+                events = pd.RandShoot_p(avg_events, self.totaldays)
                 bkg_signal_dict[signal] = events
         self.avg_NRbackground = avg_NRbackground
         self.NR_bkg = [] #clear out NR_bkg if already filled previously
@@ -81,6 +87,15 @@ class ExperimentGenerator(object):
         self.NR_bkg_unc = []
         self.NR_bkg_unc = np.sqrt(self.NR_bkg)
 
+    #Takes in a set of binned events and removes all events past
+    #The day at which reactors are scheduled for permanent shutdown
+    def stripSDDays(binned_events):
+        for j,day in enumerate(self.experiment_days):
+            if self.experiment_days[j] > self.killreacs:
+                #set events in that bin to zero
+                binned_events[j] = 0.0
+        return binned_events
+
     #Generates core events for known core (reactor background) and unknown core
     #DOES NOT assume shut-offs occur.
     def generateCoreEvents(self):
@@ -88,8 +103,10 @@ class ExperimentGenerator(object):
         core_binavg_dict = {}
         for signal in self.signals:
             if signal in self.allcores:
-                core_binavg = self.signals[signal]*float(self.resolution)
-                binned_events = pd.RandShoot_p(core_binavg, self.numcycles)
+                core_binavg = self.signals[signal]
+                binned_events = pd.RandShoot_p(core_binavg, self.totaldays)
+                if self.killreacs != None:
+                    binned_events = self.stripSDDays(binned_events)
                 core_signal_dict[signal] = binned_events
                 core_binavg_dict[signal] = core_binavg
         for core in core_signal_dict:
@@ -142,31 +159,17 @@ class ExperimentGenerator(object):
         for core in core_shutoffs:
             for shutdown_day in core_shutoffs[core]:
                 OT_complete = False
-                for j,daybin in enumerate(self.experiment_days):
+                for j,day in enumerate(self.experiment_days):
                     flux_scaler = 1.0 #Stays 1 if no off-days in bin
                     #If a shutdown happened, scale the events according to
                     #Days on before offtime begins
-                    if shutdown_day <= daybin:
-                        dayson_beforeOT = (self.resolution-1) - (daybin - shutdown_day)
-                        if dayson_beforeOT > 0:
-                            flux_scaler = (float(dayson_beforeOT) / float(self.resolution))
-                        else:
-                            flux_scaler = 0
-                    #If a reactor started back up, add back the proper
-                    #flux ratio
-                    if ((shutdown_day + self.offtime) <= daybin):
-                            dayson_afterOT = (daybin + 1) - (shutdown_day + self.offtime)
-                            flux_scaler += (float(dayson_afterOT) / float(self.resolution))
+                    if ((shutdown_day + self.offtime) <= day):
                             OT_complete = True
-                    #After calculating how much this bin should be scaled for
-                    #This day, re-fire the bin value if re-scaled 
-                    #statistics are needed
-                    if flux_scaler < 1.0:
+                    elif shutdown_day <= day:
                         if core == self.coredict["known_core"]:
-                            self.known_core_events[j] = pd.RandShoot_p((flux_scaler * self.known_core_binavg), 1)
+                            self.known_core_events[j] = 0.0
                         elif core in self.coredict["unknown_cores"]:
-                            self.unknown_core_events[j] = pd.RandShoot_p( \
-                                    (flux_scaler * self.unknown_core_binavg), 1)
+                            self.unknown_core_events[j] = 0.0
                     if OT_complete:
                         break
  
@@ -175,5 +178,5 @@ class ExperimentGenerator(object):
                 str(self.avg_NRbackground))
         print("Background array: \n" + str(self.NR_bkg))
         print("day of experiment array: \n" + str(self.experiment_days))
-        print("#Cores on for a day: \n" + str(self.either_core_onoffdays))
+        print("#Cores on for a day: \n" + str(self.core_status_array))
 
