@@ -1,7 +1,7 @@
 import playDarts as pd
 import numpy as np
 
-UNKNOWN_FIRSTOFF = 0
+UNKNOWN_FIRSTOFF = 300
 KNOWN_FIRSTOFF = 570
 
 DEBUG = False
@@ -148,7 +148,7 @@ class ExperimentGenerator(object):
                 while j < ((shutdown_day - 1) + self.offtime):
                     if(j == self.totaldays):
                         break
-                    onoffdays[j] = 0.
+                    onoffdays[j] = 0
                     j+=1
             if core == self.coredict["known_core"]:
                 self.known_core_onoffdays = onoffdays
@@ -167,7 +167,6 @@ class ExperimentGenerator(object):
             for shutdown_day in core_shutoffs[core]:
                 OT_complete = False
                 for j,day in enumerate(self.experiment_days):
-                    flux_scaler = 1.0 #Stays 1 if no off-days in bin
                     #If a shutdown happened, scale the events according to
                     #Days on before offtime begins
                     if ((shutdown_day + self.offtime) <= day):

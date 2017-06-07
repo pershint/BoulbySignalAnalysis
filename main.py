@@ -28,7 +28,7 @@ parser.add_option("-k","--killreacs",action="store",dest="killreacs", \
         "shut down for all days following the input day")
 parser.add_option("-r","--resolution",action="store",dest="resolution", \
         type="int",default=1,help="Specify the number of days per bin " +\
-        "for the produced experimental data")
+        "for the rebinned data output in Exp_Generator")
 parser.add_option("-u","--uptime",action="store",dest="uptime", \
         type="int",default=1080,help="Specify the uptime, in days, " + \
         "for a reactor between outages")
@@ -135,7 +135,7 @@ if __name__=='__main__':
         #Takes the determination day spread filled in Analysis2 and fits it to a 
         #Poisson distribution
         TITLE = str('# Days of data needed to distinguish on/off reactor states' + \
-                '(PC = {0}, off-time = {1} days)'.format(PHOTOCOVERAGE,OFF_TIME))
+                '(PC = {0}, off-time = {1} days)'.format(PHOTOCOVERAGE,schedule_dict["OFF_TIME"]))
         #c1, h = ef.PoissonFit(TITLE,Analysis2.determination_days)
         #c1.Draw()
         h.Draw()
