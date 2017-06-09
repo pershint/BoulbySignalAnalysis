@@ -7,7 +7,6 @@ import os.path
 import sys
 import lib.playDarts as pd
 import lib.DBParse as dp
-import graph.Histogram as h
 import lib.Exp_Generator as eg
 import lib.Analysis as a
 import graph.Exp_Graph as gr
@@ -59,7 +58,11 @@ schedule_dict["OFF_TIME"] = options.offtime
 schedule_dict["UP_TIME"] = options.uptime
 schedule_dict["KILL_DAY"] = options.killreacs
 schedule_dict["TOTAL_RUN"] = options.days
+schedule_dict["FIRST_KNOWNSHUTDOWN"] = eg.KNOWN_FIRSTOFF
+schedule_dict["FIRST_UNKNOWNSHUTDOWN"] = eg.UNKNOWN_FIRSTOFF
 
+if DEBUG is True:
+    import graph.Histogram as h
 
 def StatFlucDemo(lamb, title):
     '''
