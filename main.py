@@ -9,7 +9,6 @@ import lib.playDarts as pd
 import lib.DBParse as dp
 import lib.Exp_Generator as eg
 import lib.Analysis as a
-import graph.Exp_Graph as gr
 import numpy as np
 #import lib.ExpFitting as ef
 
@@ -63,6 +62,7 @@ schedule_dict["FIRST_UNKNOWNSHUTDOWN"] = eg.UNKNOWN_FIRSTOFF
 
 if DEBUG is True:
     import graph.Histogram as h
+    import graph.Exp_Graph as gr
 
 def StatFlucDemo(lamb, title):
     '''
