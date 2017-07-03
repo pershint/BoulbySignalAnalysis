@@ -1,8 +1,8 @@
 import playDarts as pd
 import numpy as np
 
-UNKNOWN_FIRSTOFF = 300
-KNOWN_FIRSTOFF = 570
+UNKNOWN_FIRSTOFF = 740
+KNOWN_FIRSTOFF = 0
 
 DEBUG = False
 
@@ -17,7 +17,8 @@ class ExperimentGenerator(object):
         self.totaldays = schedule_dict["TOTAL_RUN"]
         self.killreacs = schedule_dict["KILL_DAY"]
         self.coredict = cores
-        self.numcores = len(cores)
+        self.numcores = len(cores["known_cores"]) + len(cores["unknown_cores"])
+        print(self.numcores)
         self.allcores = self.parsecores()
         self.areunknowns = False
         if self.coredict["unknown_cores"]:
@@ -62,7 +63,9 @@ class ExperimentGenerator(object):
     #Returns a list of all cores from the given core dictionary       
     def parsecores(self):
         corelist = []
-        corelist.append(self.coredict["known_core"])
+        kcs = self.coredict["known_cores"]
+        for kc in kcs:
+            corelist.append(kc)
         ukcs = self.coredict["unknown_cores"]
         for ukc in ukcs:
             corelist.append(ukc)
@@ -110,7 +113,7 @@ class ExperimentGenerator(object):
                 core_signal_dict[signal] = binned_events
                 core_binavg_dict[signal] = core_binavg
         for core in core_signal_dict:
-            if core == self.coredict["known_core"]:
+            if core in self.coredict["known_cores"]:
                 self.known_core_events = core_signal_dict[core]
                 self.known_core_binavg = core_binavg_dict[core]
             elif core in self.coredict["unknown_cores"]:
@@ -129,7 +132,7 @@ class ExperimentGenerator(object):
         for corename in self.allcores:
             core_shutoffs[corename] = []
         for core in core_shutoffs:
-            if core == self.coredict["known_core"]:
+            if core in self.coredict["known_cores"]:
                 shutoff_day = KNOWN_FIRSTOFF
             elif core in self.coredict["unknown_cores"]:
                 shutoff_day = UNKNOWN_FIRSTOFF
@@ -150,7 +153,7 @@ class ExperimentGenerator(object):
                         break
                     onoffdays[j] = 0
                     j+=1
-            if core == self.coredict["known_core"]:
+            if core in self.coredict["known_cores"]:
                 self.known_core_onoffdays = onoffdays
             elif core in self.coredict["unknown_cores"]:
                 self.unknown_core_onoffdays += onoffdays
@@ -172,7 +175,7 @@ class ExperimentGenerator(object):
                     if ((shutdown_day + self.offtime) <= day):
                             OT_complete = True
                     elif shutdown_day <= day:
-                        if core == self.coredict["known_core"]:
+                        if core in self.coredict["known_cores"]:
                             self.known_core_events[j] = 0.0
                         elif core in self.coredict["unknown_cores"]:
                             self.unknown_core_events[j] = 0.0

@@ -76,10 +76,10 @@ def StatFlucDemo(lamb, title):
 if __name__=='__main__':
     cores = {}
     if SITE=="Boulby":
-        cores["known_core"] = "Core_1"
+        cores["known_cores"] = ["Core_1"]
         cores["unknown_cores"] = ["Core_2"]
     if SITE=="Fairport":
-        cores["known_core"] = "Core_1"
+        cores["known_cores"] = ["Core_1"]
         cores["unknown_cores"] = []
     
     if PHOTOCOVERAGE is not None and DETECTION_EFF is not None:
@@ -96,7 +96,7 @@ if __name__=='__main__':
         sys.exit(0)
 
     #------------- BEGIN DEMO OF HOW STATS ARE FLUCTUATED ----------#
-    title = "Events fired distribution for " + str(cores["known_core"]) + "in a single" + \
+    title = "Events fired distribution for " + str(cores["known_cores"]) + "in a single" + \
         "bin of width " + str(RESOLUTION) + "days"
     #StatFlucDemo(Boulby.signals[KNOWN_CORE]*RESOLUTION, title)
     #------------- END DEMO OF HOW STATS ARE FLUCTUATED ------------#
