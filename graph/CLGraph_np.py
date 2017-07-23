@@ -25,7 +25,7 @@ class Anal2_CLGraph(object):
     def buildcsum(self, ddays):
         c = np.arange(1, len(ddays) + 1, 1)
         h = c/(float(len(ddays)-1))
-        return h
+        return h*100.0
 
     def clear_offtimes(self):
         #Clears knowledge of reactor outages so they are not plotted.
@@ -54,20 +54,42 @@ class Anal2_CLGraph(object):
         #Plot the cumulative sum of determination days
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
-        ax.plot(self.ddays,self.csum_vals, color='green', alpha=0.8, 
-                label="% CL")
+        ax.plot((self.ddays - 13),self.csum_vals, color='green', alpha=0.8, 
+                label="% CL",linewidth=4)
         if self.schedule["KILL_DAY"] is not None:
             ax.axvline(self.schedule["KILL_DAY"], color = "red", alpha = 0.8, 
                     label="Permanent shutdown")
+        #Add the CL lines
+        CL_dict = {"68.3% CL": int(len(self.ddays) * 0.683), \
+                 "95% CL": int(len(self.ddays) * 0.95), \
+                "99.7% CL": int(len(self.ddays) * 0.997)}
+        CL_colors = ["m","k","r"]
+        for j,CL in enumerate(CL_dict):
+            ax.axvline(self.ddays[CL_dict[CL]] - 13, color = CL_colors[j], \
+                    linewidth=2, label = CL)
         if self.off_starts is not None and self.off_ends is not None:
+            haveoffbox = False
             for j,val in enumerate(self.off_starts):
-                ax.axvspan(self.off_starts[j],self.off_ends[j], color='m', 
-                    alpha=0.2, label="Reactor off")
+                if not haveoffbox:
+                    ax.axvspan(self.off_starts[j],self.off_ends[j], color='b', 
+                        alpha=0.2, label="Reactor off")
+                    haveoffbox = True
+                else:
+                    ax.axvspan(self.off_starts[j],self.off_ends[j], color='b', 
+                        alpha=0.2)
         ax.set_xlim([0,np.max(self.ddays)])
-        ax.set_ylim([0,1])
-        ax.set_xlabel("days")
-        ax.set_ylabel("Confidence Limit")
-        ax.set_title("Confidence Limit of days needed until WATCHMAN" + 
-            "confirms on/off cycle at " + self.site)
-        plt.legend(loc = 5)
+        ax.set_ylim([0,100])
+        for tick in ax.xaxis.get_major_ticks():
+            tick.label.set_fontsize(16)
+        for tick in ax.yaxis.get_major_ticks():
+            tick.label.set_fontsize(16)
+        ax.set_xlabel("Experiment day", fontsize=18)
+        ax.set_ylabel("Confidence Limit (%)", fontsize=18)
+        ax.set_title("Confidence Limit of days needed until WATCHMAN " + 
+            "confirms on/off cycle at " + self.site, fontsize=20)
+        #The default order sucks.  I have to define it here
+        handles, labels = ax.get_legend_handles_labels()
+        hand = [handles[0], handles[1], handles[3], handles[2], handles[4]]
+        lab = [labels[0], labels[1], labels[3], labels[2], labels[4]]
+        plt.legend(hand,lab, loc = 5)
         plt.show()

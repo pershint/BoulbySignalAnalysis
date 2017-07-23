@@ -2,7 +2,7 @@ import playDarts as pd
 import numpy as np
 
 UNKNOWN_FIRSTOFF = 740
-KNOWN_FIRSTOFF = 0
+KNOWN_FIRSTOFF = 40
 
 DEBUG = False
 
