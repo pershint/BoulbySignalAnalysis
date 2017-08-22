@@ -57,8 +57,9 @@ schedule_dict["OFF_TIME"] = options.offtime
 schedule_dict["UP_TIME"] = options.uptime
 schedule_dict["KILL_DAY"] = options.killreacs
 schedule_dict["TOTAL_RUN"] = options.days
-schedule_dict["FIRST_KNOWNSHUTDOWN"] = eg.KNOWN_FIRSTOFF
-schedule_dict["FIRST_UNKNOWNSHUTDOWN"] = eg.UNKNOWN_FIRSTOFF
+#FIXME: Make options for these?  Or should we write a config file now?
+schedule_dict["FIRST_KNOWNSHUTDOWN"] = 0
+schedule_dict["FIRST_UNKNOWNSHUTDOWN"] = 570
 
 if DEBUG is True:
     import graph.Histogram as h

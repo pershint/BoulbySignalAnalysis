@@ -1,9 +1,6 @@
 import playDarts as pd
 import numpy as np
 
-UNKNOWN_FIRSTOFF = 740
-KNOWN_FIRSTOFF = 40
-
 DEBUG = False
 
 #Class takes in a signal class as defined in DBParse.py and creates the spectrum
@@ -16,6 +13,8 @@ class ExperimentGenerator(object):
         self.uptime = schedule_dict["UP_TIME"]
         self.totaldays = schedule_dict["TOTAL_RUN"]
         self.killreacs = schedule_dict["KILL_DAY"]
+        self.ufirstoff = schedule_dict["FIRST_UNKNOWNSHUTDOWN"]
+        self.kfirstoff = schedule_dict["FIRST_KNOWNSHUTDOWN"]
         self.coredict = cores
         self.numcores = len(cores["known_cores"]) + len(cores["unknown_cores"])
         print(self.numcores)
@@ -133,9 +132,9 @@ class ExperimentGenerator(object):
             core_shutoffs[corename] = []
         for core in core_shutoffs:
             if core in self.coredict["known_cores"]:
-                shutoff_day = KNOWN_FIRSTOFF
+                shutoff_day = self.kfirstoff
             elif core in self.coredict["unknown_cores"]:
-                shutoff_day = UNKNOWN_FIRSTOFF
+                shutoff_day = self.ufirstoff
             core_shutoffs[core].append(shutoff_day)
             while ((shutoff_day +self.offtime+ self.uptime) < self.totaldays):
                 shutoff_day = (shutoff_day + self.offtime) + self.uptime
