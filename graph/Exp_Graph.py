@@ -12,9 +12,12 @@ def Plot_ReacOnOff(GeneratedExperiment):
 #    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_events, marker = 'o', linestyle='none', color='k')
     ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.known_core_onoffdays,
             color='b', alpha=0.8) 
-    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.known_core_events, marker = 'o', linestyle='none', color = 'b')
+    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_onoffdays,
+            color='k', alpha=0.8) 
+    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.core_status_array,
+            color='m', alpha=0.8) 
     ax.set_xlabel("days")
-    ax.set_ylabel("Reactor state (1-on, 0-off)")
+    ax.set_ylabel("Reactor state (# = # cores on on the day)")
     ax.set_ylim([0,2])
     ax.set_title("Reactor core states during experiment (black - unknown core, " + \
             'blue - known core)')
@@ -33,7 +36,7 @@ def Plot_Analysis1OnOff_poserr(Analysis):
         color='b', alpha=0.7, label='Both cores on')
     ax.errorbar(Analysis.binning_choices, Analysis.offday_avg, \
         xerr=0, yerr=Analysis.offday_stdev, marker='o', linestyle='none', \
-        color='r', alpha=0.7, label='One core off')
+        color='r', alpha=0.7, label='At least one core off')
     ax.set_xlabel("Days of data in a bin")
     ax.set_ylabel("Average IBDs/bin")
     ax.set_title("Average number of IBDs measured for different data binnings\n" + \
@@ -53,7 +56,7 @@ def Plot_Analysis1OnOff(Analysis):
         color='g', alpha=0.7, label='Both cores on')
     ax.errorbar(Analysis.binning_choices, Analysis.offday_avg, \
         xerr=0, yerr=np.sqrt(Analysis.offday_avg), marker='o', linestyle='none', \
-        color='m', alpha=0.7, label='One core off')
+        color='m', alpha=0.7, label='At least one core off')
     ax.set_xlabel("Days of data in a bin")
     ax.set_ylabel("Average IBDs/bin")
     ax.set_title("Average number of IBDs measured for different data binnings\n" + \
@@ -76,7 +79,7 @@ def Plot_OnOffCumSum_A2(Analysis2):
     ax.errorbar(Analysis2.Current_Experiment.experiment_days, \
         Analysis2.offavg_cumul, xerr=0, yerr=Analysis2.offavg_cumul_unc, \
         marker='o', linestyle='none', \
-        color='m', alpha=0.7, label='One core off')
+        color='m', alpha=0.7, label='At least one core off')
     ax.axvline(x=Analysis2.currentexp_determination_day,color='r', \
             label=r'on > off by 3$\sigma$')
     ax.axhline(y=0,color='k')
@@ -131,7 +134,7 @@ def Plot_OnOffCumSum_A1(Analysis1):
         color='g', alpha=0.7, label='Both cores on')
     ax.errorbar(Analysis1.csum_numdays, Analysis1.csum_off, \
         xerr=0, yerr=np.sqrt(Analysis1.csum_off), marker='o', linestyle='none', \
-        color='m', alpha=0.7, label='One core off')
+        color='m', alpha=0.7, label='At least one core off')
     ax.axvline(x=Analysis1.currentexp_determination_day,color='k', \
             label=r'on > off by 3$\sigma$')
     ax.set_xlabel("Number of days of IBD data")

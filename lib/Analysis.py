@@ -64,7 +64,7 @@ class Analysis2(ExperimentalAnalysis):
     def CalcDailyAvgAndUnc(self):
         '''
         Goes day-by-day and gets the average of IBD candidates and it's uncertainty 
-        for 'both cores on' data and 'one core off' data based on all data that has
+        for 'all cores on' data and 'at least one core off' data based on all data that has
         been measured up to the current day.  Does this for every day in the experiment.
         '''
         offavg_cumul = []

@@ -36,6 +36,9 @@ parser.add_option("-d","--days",action="store",dest="days", \
 parser.add_option('-t',"--offtime",action="store",dest="offtime", \
         type="int",default=60,help="Average # days that a reactor is off for " + \
         "maintenance")
+parser.add_option('-m','--maintenances',action="store",dest="maintenances", \
+        type="int",default=None,help="Time interval between large outages" + \
+        "where a week long shutdown will happen")
 parser.add_option('-e','--efficiency',action="store",dest="efficiency", \
         type="float",default=None,help="Detector efficiency (0.2,0.4,0.6,0.8,"+\
         "1.0 only currently implemented")
@@ -57,6 +60,8 @@ schedule_dict["OFF_TIME"] = options.offtime
 schedule_dict["UP_TIME"] = options.uptime
 schedule_dict["KILL_DAY"] = options.killreacs
 schedule_dict["TOTAL_RUN"] = options.days
+schedule_dict["MAINTENANCE_INTERVAL"] = options.maintenances
+schedule_dict["MAINTENANCE_TIME"] = 7
 #FIXME: Make options for these?  Or should we write a config file now?
 schedule_dict["FIRST_KNOWNSHUTDOWN"] = 0
 schedule_dict["FIRST_UNKNOWNSHUTDOWN"] = 570
@@ -64,15 +69,6 @@ schedule_dict["FIRST_UNKNOWNSHUTDOWN"] = 570
 if DEBUG is True:
     import graph.Histogram as h
     import graph.Exp_Graph as gr
-
-def StatFlucDemo(lamb, title):
-    '''
-    Gives a quick demo of the distribution  given when
-    performing a random shoot of a variable.
-    '''
-    #Fire 1000 days to get the afterage nu/day histogram for the known Core
-    events = pd.RandShoot_p(lamb,1000)
-    h.hPlot_SignalHistogram(title, events, 60, -0.5, 60.5)
 
 if __name__=='__main__':
     cores = {}
@@ -96,31 +92,25 @@ if __name__=='__main__':
         print("CHOOSE A PHOTOCOVERAGE OR EFFICIENCY YO")
         sys.exit(0)
 
-    #------------- BEGIN DEMO OF HOW STATS ARE FLUCTUATED ----------#
-    title = "Events fired distribution for " + str(cores["known_cores"]) + "in a single" + \
-        "bin of width " + str(RESOLUTION) + "days"
-    #StatFlucDemo(Boulby.signals[KNOWN_CORE]*RESOLUTION, title)
-    #------------- END DEMO OF HOW STATS ARE FLUCTUATED ------------#
-
-    Run1 = eg.ExperimentGenerator(signals, schedule_dict, RESOLUTION, cores)
+    #Some explicit print stuff
     if DEBUG is True:
+        Run1 = eg.ExperimentGenerator(signals, schedule_dict, RESOLUTION, cores)
         Run1.show()  #Shows output of some experiment run details
-#    gr.Plot_NRBackgrounds(Run1)
-#    gr.Plot_Signal(Run1)
-#    gr.Plot_Cores(Run1)
-#    gr.Plot_ReacOnOff(Run1)
-#    h.hPlot_CoresOnAndOffHist(Run1)
-
-    Analysis2 = a.Analysis2(SITE)
-    if DEBUG is True:
+        gr.Plot_NRBackgrounds(Run1)
+        gr.Plot_Signal(Run1)
+        gr.Plot_Cores(Run1)
+        gr.Plot_ReacOnOff(Run1)
+        h.hPlot_CoresOnAndOffHist(Run1)
+        Analysis2 = a.Analysis2(SITE)
         #Try out the new ExperimentAnalyzer class
         Analysis2(Run1)
         gr.Plot_OnOffCumSum_A2(Analysis2)
         gr.Plot_OnOffDiff_A2(Analysis2)
+
     #Now, run 100 experiments, determination days from each experiment,
     #And fill a histogram
     experiments = np.arange(0,100,1)
-
+    Analysis2 = a.Analysis2(SITE)
     for experiment in experiments:
         Run = eg.ExperimentGenerator(signals, schedule_dict, RESOLUTION, cores)
         Analysis2(Run)
@@ -135,11 +125,3 @@ if __name__=='__main__':
         h.hPlot_Determ_InExpDays(Analysis2.determination_days, \
                 np.max(Analysis2.determination_days),0.5, \
                 (np.max(Analysis2.determination_days) + 0.5))
-
-        #Takes the determination day spread filled in Analysis2 and fits it to a 
-        #Poisson distribution
-        TITLE = str('# Days of data needed to distinguish on/off reactor states' + \
-                '(PC = {0}, off-time = {1} days)'.format(PHOTOCOVERAGE,schedule_dict["OFF_TIME"]))
-        #c1, h = ef.PoissonFit(TITLE,Analysis2.determination_days)
-        #c1.Draw()
-        h.Draw()
