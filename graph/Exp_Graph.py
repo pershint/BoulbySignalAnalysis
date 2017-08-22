@@ -10,17 +10,12 @@ def Plot_ReacOnOff(GeneratedExperiment):
 #    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_onoffdays,
 #            color='k', alpha=0.8)
 #    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_events, marker = 'o', linestyle='none', color='k')
-    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.known_core_onoffdays,
-            color='b', alpha=0.8) 
-    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_onoffdays,
-            color='k', alpha=0.8) 
     ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.core_status_array,
             color='m', alpha=0.8) 
     ax.set_xlabel("days")
     ax.set_ylabel("Reactor state (# = # cores on on the day)")
-    ax.set_ylim([0,2])
-    ax.set_title("Reactor core states during experiment (black - unknown core, " + \
-            'blue - known core)')
+    ax.set_title("Number of cores on at each day in the experiment")
+    ax.set_ylim([0,3])
     plt.show()
 
 #Takes in the first type of experiment analysis and plots the average events
