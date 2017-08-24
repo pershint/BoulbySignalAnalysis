@@ -61,7 +61,7 @@ schedule_dict["UP_TIME"] = options.uptime
 schedule_dict["KILL_DAY"] = options.killreacs
 schedule_dict["TOTAL_RUN"] = options.days
 schedule_dict["MAINTENANCE_INTERVAL"] = options.maintenances
-schedule_dict["MAINTENANCE_TIME"] = 7
+schedule_dict["MAINTENANCE_TIME"] = 10
 #FIXME: Make options for these?  Or should we write a config file now?
 schedule_dict["FIRST_KNOWNSHUTDOWN"] = 0
 schedule_dict["FIRST_UNKNOWNSHUTDOWN"] = 570
