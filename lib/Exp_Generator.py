@@ -163,7 +163,7 @@ class ExperimentGenerator(object):
                     else:
                         while maint_day < (core_shutoffs[core][j+1]):
                             core_maintenances[core].append(maint_day)
-                            maint_day += self.minterval
+                            maint_day += (self.mtime + self.minterval)
 
             #So, you need to take the days in the core_shutoffs dictionary
             #and generate the days where the maintenance periods will start.

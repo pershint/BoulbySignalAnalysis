@@ -61,10 +61,10 @@ schedule_dict["UP_TIME"] = options.uptime
 schedule_dict["KILL_DAY"] = options.killreacs
 schedule_dict["TOTAL_RUN"] = options.days
 schedule_dict["MAINTENANCE_INTERVAL"] = options.maintenances
-schedule_dict["MAINTENANCE_TIME"] = 7
+schedule_dict["MAINTENANCE_TIME"] = 10
 #FIXME: Make options for these?  Or should we write a config file now?
 schedule_dict["FIRST_KNOWNSHUTDOWN"] = 0
-schedule_dict["FIRST_UNKNOWNSHUTDOWN"] = 570
+schedule_dict["FIRST_UNKNOWNSHUTDOWN"] = 548
 
 if DEBUG is True:
     import graph.Histogram as h
@@ -96,9 +96,9 @@ if __name__=='__main__':
     if DEBUG is True:
         Run1 = eg.ExperimentGenerator(signals, schedule_dict, RESOLUTION, cores)
         Run1.show()  #Shows output of some experiment run details
-        gr.Plot_NRBackgrounds(Run1)
-        gr.Plot_Signal(Run1)
-        gr.Plot_Cores(Run1)
+        #gr.Plot_NRBackgrounds(Run1)
+        #gr.Plot_Signal(Run1)
+        #gr.Plot_Cores(Run1)
         gr.Plot_ReacOnOff(Run1)
         h.hPlot_CoresOnAndOffHist(Run1)
         Analysis2 = a.Analysis2(SITE)
