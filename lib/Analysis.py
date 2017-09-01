@@ -81,7 +81,7 @@ class Analysis2(ExperimentalAnalysis):
                 offavg_cumul.append(thisdays_offavg)
                 #The uncertainty is the measured average divided by sqrt # days of
                 #data
-                offavg_cumul_unc.append(float(thisdays_offavg)/np.sqrt(daysofdata))
+                offavg_cumul_unc.append(np.sqrt(float(thisdays_offavg))/np.sqrt(daysofdata))
                 #Didn't get new on-day data; carry over the last day's statistics
                 if j == 0:
                     onavg_cumul.append(0)
@@ -97,7 +97,7 @@ class Analysis2(ExperimentalAnalysis):
                 onavg_cumul.append(thisdays_onavg)
                 #The uncertainty is the measured average divided by sqrt # days of
                 #data
-                onavg_cumul_unc.append(float(thisdays_onavg)/np.sqrt(daysofdata))
+                onavg_cumul_unc.append(np.sqrt(float(thisdays_onavg))/np.sqrt(daysofdata))
                 #Didn't get new off-day data; carry over the last day's statistics
                 if j == 0:
                     offavg_cumul.append(0)
