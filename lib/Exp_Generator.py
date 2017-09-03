@@ -27,29 +27,31 @@ class ExperimentGenerator(object):
         self.experiment_days = np.arange(1,self.totaldays+1,1)
 
         #Generate non-reactor background IBD candidates for each expt. day
-        self.avg_NRbackground = 0 #In events/resolution width
-        self.NR_bkg = []     #Array with experiments' non-reactor backgrounds
+        self.avg_NRbackground = -9999 #In events/resolution width
+        self.NR_bkg = [] #Array with experiments' NR backgrounds for each day
         self.NR_bkg_unc = [] #Uncertainty bar width for each background entry
-        self.generateNRBKG()
+        self.generateNRBKG() #Fills above arrays using DB
 
         #Generate core events as if reacs are always on for each expt. day
-        self.known_core_events = []
+        self.known_core_events = [] #IBDs/day generated for known core
         self.known_core_binavg = -9999
-        self.unknown_core_events = []
+        self.unknown_core_events = [] #IBDs/day generated for unknown core
         self.unknown_core_binavg = -9999
         self.generateCoreEvents()
         self.events_allcoreson = self.NR_bkg + self.known_core_events
         if self.areunknowns:
             self.events_allcoreson += self.unknown_core_events
     
-        self.known_core_onoffdays = np.zeros(self.totaldays)
-        self.unknown_core_onoffdays = np.zeros(self.totaldays)
+        self.known_numcoreson = np.zeros(self.totaldays) # of cores on/day
+        self.unknown_numcoreson = np.zeros(self.totaldays) # of cores on/day
+        self.shutoff_startdays = {}
+        self.maintenance_startdays = {}
         #Now, remove events based on days a core is off
         self.removeCoreOffEvents()
-        self.core_status_array = copy.deepcopy(self.known_core_onoffdays)
+        self.core_status_array = copy.deepcopy(self.known_numcoreson)
         self.events = self.NR_bkg + self.known_core_events 
         if self.areunknowns:
-            self.core_status_array +=self.unknown_core_onoffdays
+            self.core_status_array +=self.unknown_numcoreson
             self.events += self.unknown_core_events
         self.events_unc = np.sqrt(self.events)
 
@@ -84,10 +86,10 @@ class ExperimentGenerator(object):
                 bkg_signal_dict[signal] = events
         self.avg_NRbackground = avg_NRbackground
         self.NR_bkg = [] #clear out NR_bkg if already filled previously
+        self.NR_bkg_unc = []
         for bkg_signal in bkg_signal_dict:
             self.NR_bkg.append(bkg_signal_dict[bkg_signal])
         self.NR_bkg = np.sum(self.NR_bkg, axis=0)
-        self.NR_bkg_unc = []
         self.NR_bkg_unc = np.sqrt(self.NR_bkg)
 
     #Takes in a set of binned events and removes all events past
@@ -140,6 +142,7 @@ class ExperimentGenerator(object):
             while ((shutoff_day +self.offtime+ self.uptime) < self.totaldays):
                 shutoff_day = (shutoff_day + self.offtime) + self.uptime
                 core_shutoffs[core].append(shutoff_day)
+        self.shutoff_startdays = core_shutoffs
         #Take the core shutoff days and build a maintenance schedule
         #That will be built and used in generating the day-by-day map
         if self.minterval is not None:
@@ -165,12 +168,7 @@ class ExperimentGenerator(object):
                             core_maintenances[core].append(maint_day)
                             maint_day += (self.mtime + self.minterval)
 
-            print("MAINTENANCE PERIODS\n")
-            print(core_maintenances)
-            #So, you need to take the days in the core_shutoffs dictionary
-            #and generate the days where the maintenance periods will start.
-            #will also need self.offtime
-
+        self.maintenance_startdays = core_maintenances
 
         #Generate a day-by-day map of each reactor's state
         #0 - all cores off, 1 - one core on, 2 - two cores on, etc.
@@ -195,14 +193,14 @@ class ExperimentGenerator(object):
                         j+=1
             #Add this core's schedule map to the full reactor outage map
             if core in self.coredict["known_cores"]:
-                self.known_core_onoffdays += onoffdays
+                self.known_numcoreson += onoffdays
             elif core in self.coredict["unknown_cores"]:
-                self.unknown_core_onoffdays += onoffdays
+                self.unknown_numcoreson += onoffdays
         #if there's a permanent shutdown of all reactors, turn all
         #onoffdays to zero past that day
         if self.killreacs != None:
-            self.known_core_onoffdays[self.killreacs:self.totaldays] = 0
-            self.unknown_core_onoffdays[self.killreacs:self.totaldays] = 0
+            self.known_core_numcoreson[self.killreacs:self.totaldays] = 0
+            self.unknown_core_numcoreson[self.killreacs:self.totaldays] = 0
 
         #Now, go through each bin of core data and remove the appropriate
         #portion of reactor flux for the shutoff

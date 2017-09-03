@@ -92,9 +92,11 @@ if __name__=='__main__':
         print("CHOOSE A PHOTOCOVERAGE OR EFFICIENCY YO")
         sys.exit(0)
 
-    #Some explicit print stuff
+    #Run once, add the maintenance and core shutoffs to schedule_dict
+    Run1 = eg.ExperimentGenerator(signals, schedule_dict, RESOLUTION, cores)
+    schedule_dict["MAINTENANCE_STARTDAYS"] = Run1.maintenance_startdays
+    schedule_dict["SHUTDOWN_STARTDAYS"] = Run1.shutoff_startdays
     if DEBUG is True:
-        Run1 = eg.ExperimentGenerator(signals, schedule_dict, RESOLUTION, cores)
         Run1.show()  #Shows output of some experiment run details
         #gr.Plot_NRBackgrounds(Run1)
         #gr.Plot_Signal(Run1)
@@ -111,7 +113,7 @@ if __name__=='__main__':
 
     #Now, run 100 experiments, determination days from each experiment,
     #And fill a histogram
-    experiments = np.arange(0,100,1)
+    experiments = np.arange(0,5,1)
     Analysis2 = a.Analysis2(SITE)
     for experiment in experiments:
         Run = eg.ExperimentGenerator(signals, schedule_dict, RESOLUTION, cores)
