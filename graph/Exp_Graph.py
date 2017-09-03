@@ -18,13 +18,32 @@ def Plot_ReacOnOff(GeneratedExperiment):
     ax.set_ylim([0,3])
     plt.show()
 
-def Plot_RadioOnOffDays(GeneratedExperiment):
+def Plot_PercentOffDays(GeneratedExperiment):
+    fig=plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    off_percent = []
+    total_days = 0.
+    num_offdays = 0.
+    for j, status in enumerate(GeneratedExperiment.core_status_array):
+        total_days+=1.
+        if status != GeneratedExperiment.numcores:
+            num_offdays += 1.
+        off_percent.append(num_offdays * 100 / total_days)
+    ax.plot(GeneratedExperiment.experiment_days, off_percent,
+            color='m', marker = 'o', alpha=0.8, linestyle='none') 
+    ax.set_xlabel("days")
+    ax.set_ylabel("%days where a core is off up to this day")
+    ax.set_title("% of off days given the day in the experiment")
+    ax.set_ylim([0,101])
+    plt.show()
+
+def Plot_RatioOnOffDays(GeneratedExperiment):
     fig=plt.figure()
     ax = fig.add_subplot(1,1,1)
     on_off_ratio = []
-    num_ondays = 0.
-    num_offdays = 0.
-    for j, status in GeneratedExperiment.core_status_array:
+    num_ondays = 0.00001
+    num_offdays = 0.00001
+    for j, status in enumerate(GeneratedExperiment.core_status_array):
         if status == GeneratedExperiment.numcores:
             num_ondays += 1.
         else:
@@ -33,7 +52,7 @@ def Plot_RadioOnOffDays(GeneratedExperiment):
     ax.plot(GeneratedExperiment.experiment_days, on_off_ratio,
             color='m', marker = 'o', alpha=0.8, linestyle='none') 
     ax.set_xlabel("days")
-    ax.set_ylabel("Ratio of # on days/ # off days at this day")
+    ax.set_ylabel("Ratio of # off days/ # on days at this day")
     ax.set_title("On/Off ratio")
     ax.set_ylim([0,3])
     plt.show()

@@ -165,6 +165,8 @@ class ExperimentGenerator(object):
                             core_maintenances[core].append(maint_day)
                             maint_day += (self.mtime + self.minterval)
 
+            print("MAINTENANCE PERIODS\n")
+            print(core_maintenances)
             #So, you need to take the days in the core_shutoffs dictionary
             #and generate the days where the maintenance periods will start.
             #will also need self.offtime
@@ -220,21 +222,21 @@ class ExperimentGenerator(object):
                             self.unknown_core_events[j] = 0.0
                     if OT_complete:
                         break
-        if self.minterval is not None:
-            for maintenance_day in core_maintenances[core]:
-                   MT_complete = False
-                   for j,day in enumerate(self.experiment_days):
-                       #If a maintenance happened, set the IBD events for days
-                       #During the shutdown to zero for the core
-                       if ((maintenance_day + self.mtime) <= day):
-                               MT_complete = True
-                       elif maintenance_day <= day:
-                           if core in self.coredict["known_cores"]:
-                               self.known_core_events[j] = 0.0
-                           elif core in self.coredict["unknown_cores"]:
-                               self.unknown_core_events[j] = 0.0
-                       if MT_complete:
-                           break
+            if self.minterval is not None:
+                for maintenance_day in core_maintenances[core]:
+                       MT_complete = False
+                       for j,day in enumerate(self.experiment_days):
+                           #If a maintenance happened, set the IBD events for days
+                           #During the shutdown to zero for the core
+                           if ((maintenance_day + self.mtime) <= day):
+                                   MT_complete = True
+                           elif maintenance_day <= day:
+                               if core in self.coredict["known_cores"]:
+                                   self.known_core_events[j] = 0.0
+                               elif core in self.coredict["unknown_cores"]:
+                                   self.unknown_core_events[j] = 0.0
+                           if MT_complete:
+                               break
 
     def show(self):
         print("Average Non-Reactor background events per division: " + \
