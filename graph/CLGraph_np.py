@@ -7,7 +7,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-class Anal2_CLGraph(object):
+class CLGraph(object):
     def __init__(self, AnalDict):
         self.site = AnalDict["Site"]
         self.ddays = np.sort(AnalDict["determination_days"])
@@ -33,23 +33,19 @@ class Anal2_CLGraph(object):
         self.off_ends = None
 
     def init_offtimes(self):
-        self.off_starts = []
-        self.off_ends = []
-        #Create arrays that have the outages of all reactors. These are
-        #filled in and used in plots
-        firstoff_days = {"known": self.schedule["FIRST_KNOWNSHUTDOWN"],
-            "unknown": self.schedule["FIRST_UNKNOWNSHUTDOWN"]}
-        off_time = self.schedule["OFF_TIME"]
-        for firstoff in firstoff_days:
-            off_day = firstoff_days[firstoff]
-            while off_day < self.schedule["TOTAL_RUN"]:
-                if self.schedule["KILL_DAY"] is not None:
-                    if off_day > self.schedule["KILL_DAY"]:
-                        break
-                self.off_starts.append(off_day)
-                self.off_ends.append(off_day + off_time)
-                off_day = off_day + off_time + self.schedule["UP_TIME"]
-
+        self.shutoff_starts = np.empty(0)
+        self.shutoff_ends = np.empty(0)
+        self.maint_starts = np.empty(0) 
+        self.maint_ends = np.empty(0)
+        for core in self.schedule["SHUTDOWN_STARTDAYS"]:
+            self.shutoff_starts = np.append(self.shutoff_starts, \
+                    self.schedule["SHUTDOWN_STARTDAYS"][core])
+        self.shutoff_ends = self.shutoff_starts + self.schedule["OFF_TIME"]
+        for core in self.schedule["MAINTENANCE_STARTDAYS"]:
+            self.maint_starts = np.append(self.maint_starts, \
+                    self.schedule["MAINTENANCE_STARTDAYS"][core])
+        self.maint_ends = self.maint_starts + self.schedule["MAINTENANCE_TIME"]
+        
     def plot_cumsum(self):
         #Plot the cumulative sum of determination days
         fig = plt.figure()
@@ -67,16 +63,26 @@ class Anal2_CLGraph(object):
         for j,CL in enumerate(CL_dict):
             ax.axvline(self.ddays[CL_dict[CL]] - 13, color = CL_colors[j], \
                     linewidth=2, label = CL)
-        if self.off_starts is not None and self.off_ends is not None:
-            haveoffbox = False
-            for j,val in enumerate(self.off_starts):
-                if not haveoffbox:
-                    ax.axvspan(self.off_starts[j],self.off_ends[j], color='b', 
-                        alpha=0.2, label="Reactor off")
-                    haveoffbox = True
+        if self.shutoff_starts is not None:
+            havesoffbox = False
+            for j,val in enumerate(self.shutoff_starts):
+                if not havesoffbox:
+                    ax.axvspan(self.shutoff_starts[j],self.shutoff_ends[j], color='b', 
+                        alpha=0.2, label="Large Shutdown")
+                    havesoffbox = True
                 else:
-                    ax.axvspan(self.off_starts[j],self.off_ends[j], color='b', 
+                    ax.axvspan(self.shutoff_starts[j],self.shutoff_ends[j], color='b', 
                         alpha=0.2)
+        if self.maint_starts is not None:
+            havemoffbox = False
+            for j,val in enumerate(self.maint_starts):
+                if not havemoffbox:
+                    ax.axvspan(self.maint_starts[j],self.maint_ends[j], color='orange', 
+                        alpha=0.4, label="Maintenance")
+                    havemoffbox = True
+                else:
+                    ax.axvspan(self.maint_starts[j],self.maint_ends[j], color='orange', 
+                        alpha=0.4)
         ax.set_xlim([0,np.max(self.ddays)])
         ax.set_ylim([0,100])
         for tick in ax.xaxis.get_major_ticks():
@@ -89,7 +95,9 @@ class Anal2_CLGraph(object):
             "confirms on/off cycle at " + self.site, fontsize=20)
         #The default order sucks.  I have to define it here
         handles, labels = ax.get_legend_handles_labels()
-        hand = [handles[0], handles[1], handles[3], handles[2], handles[4]]
-        lab = [labels[0], labels[1], labels[3], labels[2], labels[4]]
+        hand = [handles[0], handles[1], handles[3], handles[2],\
+                handles[4],handles[5]]
+        lab = [labels[0], labels[1], labels[3], labels[2],\
+                labels[4],labels[5]]
         plt.legend(hand,lab, loc = 5)
         plt.show()
