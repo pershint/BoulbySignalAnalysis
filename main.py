@@ -113,7 +113,7 @@ if __name__=='__main__':
 
     #Now, run 100 experiments, determination days from each experiment,
     #And fill a histogram
-    experiments = np.arange(0,5,1)
+    experiments = np.arange(0,100,1)
     Analysis2 = a.Analysis2(SITE)
     for experiment in experiments:
         Run = eg.ExperimentGenerator(signals, schedule_dict, RESOLUTION, cores)
