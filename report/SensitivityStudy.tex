@@ -32,8 +32,9 @@ was performed for the Proposed Boulby and Hartlepool sites. It is assumed that
 the exact reactor outage schedules were known.  For the Boubly site, confirmation
 of the two neighboring reactors turning on and off by measuring the IBD event 
 rate is expected in
-425 days of running (68.3\% CL).  For the Fairport site, confirmation of the one
-neighboring reactor turning on and off is expected within 74 days of running (68.3\% CL).
+less than 600 days of running (95\% CL).  For the Fairport site, confirmation of the one
+neighboring reactor turning on and off is expected within 4 days of the first
+change of power state (95\% CL).
 % \end{abstract}
 
 %----------------------------------------------------------------------------------------
@@ -47,29 +48,232 @@ We then provide an overview of the WATer CHerenkov Monitor of ANtineutrinos
 (WATCHMAN) detector.  A brief summary of the difference in each proposed detector
 site is presented.
 
-\subsection{Reactor Antineutrinos}
+\subsection{Reactor antineutrinos}
 
-Need to wrap antineutrinos into how we want to search for smaller reactors.  
+Antineutrinos are constantly emitted from operating nuclear reactor complexes.
+As nuclear reactors convert the energy release from nuclear fissions 
+to electrical power, antineutrinos are emitted in the beta decays of 
+isotopes left over following a fission. For each fission, an average of six
+antineutrinos will be released in the decay of daugher isotopes.  The thermal
+power output of a reactor is directly proportional to the total antineutrino
+flux emitted from a reactor.  A $3GW_{t}$ reactor will typically emit on the
+order of $10^{20}$ antineutrinos per second.
+
+Note that the reactor type (as well as the reactor fuel composition used by the
+reactor type) and operating thermal power are the key factors that vary
+the antineutrino flux. Commonly deployed nuclear reactor models in the modern 
+day include pressurized water reactors (PWR), boiling water reactors (BWR),
+CANDU reactors, and advanced gas-cooled reactors (AGR).  The water reactors
+employ light water as their moderating medium.  Different reactors have
+different fueling cycles and maintenance requirements.  For all of these
+nuclear reactors, the antineutrino flux is determined almost completely by 
+the isotopic abundance (and fissioning) of $^{235}U$, $^{238}U$, 
+$^{239}Pu$, and $^{241}Pu$.
+
+
 Measuring the antineutrino flux from a reactor as a means of discovering rogue
 reactors or monitoring a reactor's power cycles is powerful for two reasons:
-
+\begin{itemize}
 \item{Shielding cannot stop antineutrinos and prevent observation}
 \item{Antineutrinos interact weakly, and as such travel far.  This provides
     opportunities for reactor monitoring/discovery at a distance.}
+\end{itemize}
 
-Reactor antineutrinos are antineutrinos emitted both during the fission process
-and in the beta decays of isotopes left over following a fission. 
-Note that the reactor type (i.e. the reactor fuel composition used by the
-reactor type) and operating thermal power are the key factors that vary
-the antineutrino flux.
+\subsection{The inverse beta decay}
+Antineutrinos emitted from reactors are primarily detected using a delayed
+coincidence signal produced by the inverse beta decay (IBD) interaction.  
+The IBD interaction proceeds as follows:
 
-%The antineutrino flux is determined almost completely by the fissions of 
-%$^{235}U$, $^{238}U$, $^{239}Pu$, and $^{241}Pu$.
+$\nu_{e} \, + \, p \, \rightarrow \, e^{+} \, + \, n$
 
-\subsection{Detector Overview}
+In a water Cherenkov detector, the antineutrino will generally interact with
+a hydrogen proton in water.  Prompt light is visible in the detector from the
+positron's Cherenkov light and eventual annihilation with a positron.  After
+some time (~typically tens/hundreds of microseconds), the neutron produced
+will thermalize and be captured, producing the delayed light signal.
 
-The WATCHMAN
+%FIXME: ADD THAT NICE IBD FIGURE I USED IN THE POSTER?
 
+In pure water, the free neutron is typically captured by another proton.  This
+capture forms an excited deuteron, which will de-excite and emit a 2.2 MeV
+gamma.  The gamma will compton scatter off of electrons in the water; these
+electrons can emit Cherenkov light visible in the detector.  Unfortunately,
+a combination of this energy lying within many natural background signals 
+(naturally occuring radioactivity present in the water, PMTs, etc.) and the
+large energy resolution (~hundreds of keV) reduces the detection efficiency of
+this delayed signal considerably.
+
+The WATCHMAN detector will use gadolinium-doped water to increase the delayed
+signal detection efficiency.  Gadolinium boosts the coincidence trigger
+efficiency in two ways:
+\begin{enumerate}
+    \item Gadolinium has a large thermal neutron cross-section. This results
+        in a faster neutron capture time (\~20-30 microseconds) than pure water.
+    \item After thermal capture, gadolinium (specifically $^{155}Gd$ and 
+        $^{157}Gd$ de-excites and emits 3-4 gammas for a total of 7-8 MeV
+        energy release.
+\end{enumerate}
+
+A Gadolinium source was developed by the SuperKamiokande collaboration and
+deployed in SuperK to determine the energy profile of gadolinium de-excitation
+in ultrapure water (SOURCE THIS).  The average energy detected was 4.3 MeV,
+a considerable energy increase (see figure AAH).
+%FIXME: ADD THE SUPERK FIGURE ABOVE AND SOURCE THIS MAN
+
+\subsection{Detector overview}
+
+The WATCHMAN demonstration is a proposed Gadolinium-doped water Cherenkov
+detector.  ~0.1\% Gadolinium would be loaded into ultrapure water, with a 
+final detection volume mass of 1 kiloton.  WATCHMAN would utilize ~3000
+high quantum efficiency,low radioactivity photomultiplier tubes (PMTs) to
+detect the IBD events occuring in the detection volume.
+
+\subsubsection{Detector location}
+The WATCHMAN deployment location has been narrowed down to two locations.
+The first location would be the IMB mine in Painesville, Ohio.  The IMB
+mine is 13 kilometers from the Perry Reactor Facility.  The Perry Reactor
+Facility has one core with a operating thermal power of 3875 MW. The reactor
+is a pressurized water reactor. 
+The second location would be the Boulby underground science laboratory in
+Boulby, England.  The boulby site is 25 kilometers from the Hartlepool
+reactor facility.  The Hartlepool reactor facility has two reactor cores
+that each operate at 1500 MW.  The reactors are advanced gas-cooled reactors.
+%FIXME: INCLUDE FIGURE FROM TALKS WITH OVERVIEWS OF EACH SITE AND WATCHMAN?
+
+
+\section{Sensitivity study}
+
+With two sites in consideration for deployment, an estimation of the 
+detector's success in reactor monitoring was needed for each site.
+As a first figure of merit, the following scenario was considered:
+
+\vspace{1cm}
+\textit{Assume that we know the exact outage schedule of both cores at the 
+    Heartlepool reactor near Boulby, or Perry’s one reactor core near
+    Fairport.  For each site, how many days would WATCHMAN need to 
+    operate to see a clear 3σ difference between the “core(s) on” data
+    and “one core off” data?}
+\vspace{1cm}
+
+This study was meant as a first step in comparing the detection capability
+at each site.  Further important studies would include evaluating
+WATCHMAN's sensitivity to reactor on and off states with no prior
+schedule knowledge.
+
+The study was completed in two main stages:
+\begin{enumerate}
+    \item For each site, use RAT-PAC to simulate 
+        the average IBD candidates/day expected in WATCHMAN
+        due to signal sources (the neighboring reactors) and background
+        sources (other reactors, accidentals, fast neutrons, and
+        radionuclides).
+    \item Using the averages output from RAT-PAC, statistically generate
+        many experiments using the expected event rates at each site.  
+        For each experiment, determine the day at which a 3-sigma difference
+        is seen between the event rate in the "cores on" days data set and
+        the "one core off" days data set.
+\end{enumerate}
+
+\subsection{RAT-PAC generated event rates}
+This document focuses on the software used to statistically generate the
+WATCHMAN experiments.  For more information on RAT-PAC and how the 
+average IBD event rates are simulated, see here.
+%FIXME: ASK MARC BERGEVIN FOR A SOURCE TO POINT TO.
+
+The average IBD rates output from RAT-PAC for each deployment option
+(and used for the results in the statistically generated experiments)
+can be found below.  Note that the photocoverage is chosen as 20\% for the
+IMB mine deployment and 25\% for the Boulby mine deployment.  These are
+the proposed photocoverages for each site as of July 2017.
+%FIXME: ADD THE JSON FILES THAT HAVE THE EVENT RATES FOR EACH PC.
+
+\subsection{Statistical generation of WATCHMAN experiments}
+
+A program was written in python to utilize the RAT-PAC event rates to produce
+statistically generate experiments. The program can be found at the following
+github repository:
+
+\vspace{1cm}
+https://github.com/pershint/BoulbySignalAnalysis.git
+\vspace{1cm}
+
+See the README included for tips on adjusting the experimental parameters 
+(experimental photocoverage, reactor schedule, addition of maintenance outages,
+etc.).
+
+When a single statistical experiment is generated, the following steps are
+executed in the code:
+
+\begin{itemize}
+    \item For the selected photocoverage and experiment location, the average
+        IBD rates for each signal & background source are acquired from the
+        local database (found in the DB directory).
+    \item For a single day in the experiment, a # IBD events due to each signal 
+        and background source is determined by randomly sampling from a Poisson
+        distribution with the average acquired from the database. The
+        neighboring reactors are assumed to be on for every day.
+    \item The above step is repeated for every day in the experiment.
+    \item The reactor outage schedule selected at script start is then used to
+        set the neighboring reactor IBD events to 0 on days where the reactor
+        is turned off.
+\end{itemize}
+
+Graphing tools to see the output from a generated experiment can be found in
+the "graph" directory of the main repository.
+
+\subsection{Extraction of WATCHMAN sensitivity from generated experiments}
+
+The expected WATCHMAN sensitivity to a reactor's on\/off schedule is 
+determined by generating many experiments as described above.  For each
+individual generated experiment, the day at which a clear three-sigma difference
+between the IBD rate in the data set where all neighboring cores are on and
+the IBD rate in the data where at least one neighboring core is off is found.
+Then, the distribution of these determination
+days is plotted and used to provide confidence limits regarding how quickly
+WATCHMAN can confirm a reactor's operating schedule.
+
+\subsubsection{Finding the day of schedule confirmation
+(i.e. determination day)}
+
+For a generated experiment, the data are first collected into two subsets. One
+set contains the IBD candidates that occured on days where all neighboring
+reactors were on.  The second set contains the #IBD events that occured
+on days where at least one neighboring reactor is off.
+
+Consider the data set where all neighboring reactors are on.  For a given day
+$D$ in the experiment, the average IBD rate observed in this data set on
+day $D$ will be:
+
+$$\Gamma_{on} = \frac{N_{on}}{t_{on}}$$
+
+Where $N_{on}$ is the total number of IBD candidates in the "on" data set, and
+$t_{on}$ is the number of days all neighboring reactors are on up to day $D$.
+The uncertainty on this average (assuming no error in the number of days) will
+then be:
+
+$$\sigma_{\Gamma_{on}} = \frac{\sqrt{N_{on}}}{t_{on}} = \sqrt{\frac{
+    \Gamma_{on}}{t_{on}} $$
+
+The same average and uncertainty can be calculated for the data set where at
+least one neighboring reactor is off.
+
+To find the schedule confirmation day, the difference between the "on" and "off"
+data set described above is calculated for each day.  The total error on this
+difference is given by:
+
+$$\sigma_{tot} = \sqrt{(\sigma_{\Gamma_{on}})^{2} + (\sigma_{\Gamma_{on}})^{2}}$$
+
+The schedule confirmation day is the first day at which the following relation
+is true, and remains true for 14 days:
+
+$$\Gamma_{on} - \Gamma_{off} > 3 \sigma_{tot}$$
+
+An example of a statistically generated experiment showing $\Gamma_{on}$, 
+$\Gamma_{off}$, and the difference of the two can be found below.
+
+%FIXME: ADD FIGURES WITH AN EXAMPLE OF FINDING THE DETERMINATION DAY.
+
+\subsubsection{
 
 %----------------------------------------------------------------------------------------
 %	SECTION 2

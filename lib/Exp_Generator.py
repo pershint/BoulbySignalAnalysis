@@ -145,8 +145,8 @@ class ExperimentGenerator(object):
         self.shutoff_startdays = core_shutoffs
         #Take the core shutoff days and build a maintenance schedule
         #That will be built and used in generating the day-by-day map
+        core_maintenances = {}
         if self.minterval is not None:
-            core_maintenances = {}
             for corename in self.allcores:
                 core_maintenances[corename] = []
             for core in core_maintenances:
