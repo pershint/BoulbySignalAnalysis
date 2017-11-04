@@ -63,8 +63,12 @@ schedule_dict["TOTAL_RUN"] = options.days
 schedule_dict["MAINTENANCE_INTERVAL"] = options.maintenances
 schedule_dict["MAINTENANCE_TIME"] = 10
 #FIXME: Make options for these?  Or should we write a config file now?
-schedule_dict["FIRST_KNOWNSHUTDOWN"] = 1
-schedule_dict["FIRST_UNKNOWNSHUTDOWN"] = 549
+schedule_dict["FIRST_KNOWNSHUTDOWNS"] = [1, 549]
+schedule_dict["FIRST_UNKNOWNSHUTDOWNS"] = []
+schedule_dict["UNDECLARED_OUTAGE_START"] = 108
+schedule_dict["UNDECLARED_OUTAGE_CORE"] = "Core_1"
+schedule_dict["UNDECLARED_OUTAGE_LENGTH"] = 30
+
 
 if DEBUG is True:
     import graph.Histogram as h
@@ -73,8 +77,8 @@ if DEBUG is True:
 if __name__=='__main__':
     cores = {}
     if SITE=="Boulby":
-        cores["known_cores"] = ["Core_1"]
-        cores["unknown_cores"] = ["Core_2"]
+        cores["known_cores"] = ['Core_1','Core_2']
+        cores["unknown_cores"] = []
     if SITE=="Fairport":
         cores["known_cores"] = ["Core_1"]
         cores["unknown_cores"] = []
