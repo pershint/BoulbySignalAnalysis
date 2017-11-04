@@ -109,27 +109,27 @@ if __name__=='__main__':
         gr.Plot_RatioOnOffDays(Run1)
         gr.Plot_PercentOffDays(Run1)
         h.hPlot_CoresOnAndOffHist(Run1)
-        Analysis2 = a.Analysis2(SITE)
+        ScheduleAnalysis = a.ScheduleAnalysis(SITE)
         #Try out the new ExperimentAnalyzer class
-        Analysis2(Run1)
-        gr.Plot_OnOffCumSum_A2(Analysis2)
-        gr.Plot_OnOffDiff_A2(Analysis2)
+        ScheduleAnalysis(Run1)
+        gr.Plot_OnOffCumSum_A2(ScheduleAnalysis)
+        gr.Plot_OnOffDiff_A2(ScheduleAnalysis)
 
     #Now, run 100 experiments, determination days from each experiment,
     #And fill a histogram
     experiments = np.arange(0,100,1)
-    Analysis2 = a.Analysis2(SITE)
+    ScheduleAnalysis = a.ScheduleAnalysis(SITE)
     for experiment in experiments:
         Run = eg.ExperimentGenerator(signals, schedule_dict, RESOLUTION, cores)
-        Analysis2(Run)
-    determination_data = Analysis2.determination_days
+        ScheduleAnalysis(Run)
+    determination_data = ScheduleAnalysis.determination_days
     datadict = {"Site": SITE,"pc":PHOTOCOVERAGE, "schedule_dict": schedule_dict,
-            "determination_days":determination_data,"no3sigmadays":Analysis2.num_nodetermine}
+            "determination_days":determination_data,"no3sigmadays":ScheduleAnalysis.num_nodetermine}
     with open(savepath + "/results_j"+str(jn)+".json","w") as datafile:
         json.dump(datadict,datafile,sort_keys=True,indent=4)
     if DEBUG is True:
         print("# EXP. WITH NO DETERMINATION IN TIME ALOTTED: \n")
-        print(Analysis2.num_nodetermine)
-        h.hPlot_Determ_InExpDays(Analysis2.determination_days, \
-                np.max(Analysis2.determination_days),0.5, \
-                (np.max(Analysis2.determination_days) + 0.5))
+        print(ScheduleAnalysis.num_nodetermine)
+        h.hPlot_Determ_InExpDays(ScheduleAnalysis.determination_days, \
+                np.max(ScheduleAnalysis.determination_days),0.5, \
+                (np.max(ScheduleAnalysis.determination_days) + 0.5))
