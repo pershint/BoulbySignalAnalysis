@@ -7,40 +7,34 @@ class ExperimentalAnalysis(object):
         self.sitename = sitename
         #Holds metadata of current experiment in analysis
         self.Current_Experiment = None
-        #Arrays that hold the event rate for each day where both
-        #reactors are on or where one reactor is off
-        self.onday_events = []
-        self.offday_events = []
-
-        #Array of ones and zeroes, each representing a day in the experiment
-        #(0 no reactors on this day, 1 - one reactor on, etc.
-        self.onoff_record = []
 
     def __call__(self, ExpGen):
         self.Current_Experiment = ExpGen
 
-    def OnOffGroup(self):
-        '''
-        Takes an experiment and groups together the days of data where
-        both reactors were on, and groups days where at least one reactor was off.
-        '''
-        offday_events = []
-        onday_events = []
-        days_allreacson = self.Current_Experiment.core_status_array
-        for j,day in enumerate(self.Current_Experiment.experiment_days):
-            if  days_allreacson[j] == self.Current_Experiment.numcores:
-                onday_events.append(self.Current_Experiment.events[j])
-            else:
-                offday_events.append(self.Current_Experiment.events[j])
-        offday_events = np.array(offday_events)
-        onday_events = np.array(onday_events)
-        self.onday_events = onday_events
-        self.offday_events = offday_events
-        self.onoff_record = days_allreacson
+
+class UndeclaredAnalysis(ExperimentalAnalysis):
+    def __init(self, sitename):
+        super(UndeclaredAnalysis, self).__init__(sitename)
+    
+    def __call(self, ExpGen):
+        super(UndeclaredAnalysis, self).__call__(ExpGen)
+        self.doAnaly()
+
+    def doAnaly(self):
+        print("So it begins")
+
 
 class ScheduleAnalysis(ExperimentalAnalysis):
     def __init__(self, sitename):
         super(ScheduleAnalysis, self).__init__(sitename)
+
+        #Arrays that hold the event rate for each day where both
+        #reactors are on or where at least one reactor is off
+        self.onday_events = []
+        self.offday_events = []
+        #Array of ones and zeroes, each representing a day in the experiment
+        #(0 no reactors on this day, 1 - one reactor on, etc.
+        self.onoff_record = []
 
         #containers for results of CalcDailyAvgAndUnc
         self.onavg_cumul = []
@@ -60,6 +54,25 @@ class ScheduleAnalysis(ExperimentalAnalysis):
         self.OnOffGroup()
         self.CalcDailyAvgAndUnc()
         self.Get3SigmaDay()
+
+    def OnOffGroup(self):
+        '''
+        Takes an experiment and groups together the days of data where
+        both reactors were on, and groups days where at least one reactor was off.
+        '''
+        offday_events = []
+        onday_events = []
+        days_allreacson = self.Current_Experiment.core_status_array
+        for j,day in enumerate(self.Current_Experiment.experiment_days):
+            if  days_allreacson[j] == self.Current_Experiment.numcores:
+                onday_events.append(self.Current_Experiment.events[j])
+            else:
+                offday_events.append(self.Current_Experiment.events[j])
+        offday_events = np.array(offday_events)
+        onday_events = np.array(onday_events)
+        self.onday_events = onday_events
+        self.offday_events = offday_events
+        self.onoff_record = days_allreacson
 
     def CalcDailyAvgAndUnc(self):
         '''
