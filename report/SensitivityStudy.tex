@@ -141,7 +141,7 @@ that each operate at 1500 MW.  The reactors are advanced gas-cooled reactors.
 %FIXME: INCLUDE FIGURE FROM TALKS WITH OVERVIEWS OF EACH SITE AND WATCHMAN?
 
 
-\section{Sensitivity study}
+\section{Sensitivity study overview}
 
 With two sites in consideration for deployment, an estimation of the 
 detector's success in reactor monitoring was needed for each site.
@@ -273,7 +273,43 @@ $\Gamma_{off}$, and the difference of the two can be found below.
 
 %FIXME: ADD FIGURES WITH AN EXAMPLE OF FINDING THE DETERMINATION DAY.
 
-\subsubsection{
+\subsubsection{Confidence limits using generated determination days}
+
+Many statistically generated experiments are used to determine the
+confidence limit for when WATCHMAN would confirm a clear separation in
+ the "reactors on" and "at least one reactor off" data.  The determination
+ days are placed into a histogram giving the determination day distribution
+ as a function of day in the experiment.  Using the cumulative sum of the
+ distribution, the 68.3\%, 95\%, and 99.7\% CLs can be determined. Examples
+ of the determination day distribution and associated CL graph can be
+ found below.
+
+%FIXME: ADD IN THE CL AND PURPLE HISTOGRAM EXAMPLES AS FIGURES
+
+ One must be careful to generate enough experiments such that the tail of
+ the determination day distribution is populated with a decent number of
+ events.  A lack of determination days in the tail may result in a large
+ error on the CLs drawn (especially in the 99.7\% CL value).
+
+\section{Sensitivity study results}
+
+The expected sensitivity for the WATCHMAN detector at the Boulby and Fairport
+deployment options are shown below.  The photocoverage for the Boulby and
+Fairport configuration are 25\% and 20\%, respectively.
+
+\subsection{Fairport sensitivity}
+%FIXME: Need the plots that show the determination day starting right when
+%WATCHMAN turns off, and when it turns off 40 days in
+Discuss how the determination happens within several days of the detector's
+state changing.  Again, this result only confirms when we would see a clear
+difference in the "on" and "one reactor off" data set assuming the complex
+follows the given schedule.  The speed at which confirmation is accomplished,
+however, is a strong indicator that any single power state change lasting
+even a week long will likely be visible.  A follow-up study focusing on the
+sensitivity to single power-state changes would be necessary to confirm this.
+
+\
+
 
 %----------------------------------------------------------------------------------------
 %	SECTION 2
