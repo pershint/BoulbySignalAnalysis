@@ -21,6 +21,9 @@ class CLGraph(object):
             self.kill_day = self.schedule["KILL_DAY"]
         else:
             self.kill_day = None
+        
+        #Initializes the off time plot elements for what is initially loaded
+        self.init_offtimes()
 
     def buildcsum(self, ddays):
         c = np.arange(1, len(ddays) + 1, 1)
@@ -46,7 +49,7 @@ class CLGraph(object):
                     self.schedule["MAINTENANCE_STARTDAYS"][core])
         self.maint_ends = self.maint_starts + self.schedule["MAINTENANCE_TIME"]
         
-    def plot_cumsum(self):
+    def plot_cumulsum(self):
         #Plot the cumulative sum of determination days
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
