@@ -1,6 +1,9 @@
 #Here we'll write a config file to read from, rather than all of the input
 #optons that we are seeing right now.  It's getting too hectic in the main.
+import config_checks as cc
+from .. import DBParse as dp
 
+########################BEGIN CONFIGURABLES#############################
 SITE = "Boulby"  #Either Boulby or Fairport implemented
 
 ##### Choose either a photoverage or an efficiency, not both #####
@@ -27,5 +30,25 @@ schedule_dict["UNDECLARED_OUTAGE_START"] = 108
 schedule_dict["UNDECLARED_OUTAGE_CORE"] = "Core_1"
 schedule_dict["UNDECLARED_OUTAGE_LENGTH"] = 30
 
+####################END CONFIGURABLES##################################
 
+###################BEGIN CONFIGURING BASED ON OPTIONS ABOVE############
+signals={}
+if PHOTOCOVERAGE is not None:
+    signals = dp.Signals_PC(PHOTOCOVERAGE, SITE)
+elif DETECTION_EFF is not None:
+    signals = dp.Signals(DETECTION_EFF, SITE)
+
+cores = {}
+if SITE=="Boulby":
+    cores["known_cores"] = ['Core_1','Core_2']  #Must match entries in DB used
+    cores["unknown_cores"] = []
+if SITE=="Fairport":
+    cores["known_cores"] = ["Core_1"]
+    cores["unknown_cores"] = []
+
+###########END CONFIGURING BASED ON OPTIONS ABOVE#####################
+
+##########RUN CHECKS FOR SENSIBLE CONFIGURATION#######################
+cc.runchecks()
 
