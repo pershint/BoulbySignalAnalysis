@@ -23,12 +23,12 @@ schedule_dict["KILL_DAY"] = None
 schedule_dict["TOTAL_RUN"] = 1800
 schedule_dict["MAINTENANCE_INTERVAL"] = None
 schedule_dict["MAINTENANCE_TIME"] = 10
-#FIXME: Make options for these?  Or should we write a config file now?
+
 schedule_dict["FIRST_KNOWNSHUTDOWNS"] = [1, 549]
 schedule_dict["FIRST_UNKNOWNSHUTDOWNS"] = []
-schedule_dict["UNDECLARED_OUTAGE_START"] = 108
+schedule_dict["UNDECLARED_OUTAGE_STARTS"] = [108]
 schedule_dict["UNDECLARED_OUTAGE_CORE"] = "Core_1"
-schedule_dict["UNDECLARED_OUTAGE_LENGTH"] = 30
+schedule_dict["UNDECLARED_OUTAGE_LENGTH"] = [30]
 
 ####################END CONFIGURABLES##################################
 

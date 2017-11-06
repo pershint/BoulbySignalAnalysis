@@ -9,7 +9,7 @@ DEBUG = False
 class ExperimentGenerator(object):
     def __init__(self,signalClass, schedule_dict, resolution, cores):
         self.signals = signalClass.signals
-        ##self.efficiency = signalClass.efficiency
+
         self.offtime = schedule_dict["OFF_TIME"]
         self.uptime = schedule_dict["UP_TIME"]
         self.totaldays = schedule_dict["TOTAL_RUN"]
@@ -18,8 +18,9 @@ class ExperimentGenerator(object):
         self.kfirstoffs = schedule_dict["FIRST_KNOWNSHUTDOWNS"]
         self.minterval = schedule_dict["MAINTENANCE_INTERVAL"]
         self.mtime = schedule_dict["MAINTENANCE_TIME"]
-        self.undecstart = schedule_dict["UNDECLARED_OUTAGE_START"]
-        self.undecday = schedule_dict["UNDECLARED_OUTAGE_LENGTH"]
+        self.undecstarts = schedule_dict["UNDECLARED_OUTAGE_STARTS"]
+        self.undecdays = schedule_dict["UNDECLARED_OUTAGE_LENGTHS"]
+        self.undeccore = schedule_dict["UNDECLARED_OUTAGE_CORE"]
         self.coredict = cores
         self.numcores = len(cores["known_cores"]) + len(cores["unknown_cores"])
         self.allcores = self.parsecores()
