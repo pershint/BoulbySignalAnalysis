@@ -50,14 +50,24 @@ class ExperimentGenerator(object):
             for core in self.coredict["unknown_cores"]:
                 self.events_allcoreson += self.unknown_core_events[core]
 
-        #Arrays showing what # cores are on in a day for each type
+        #Define the scheduled days for each core in the experiment to 
+        #Turn off for a long outage or a short maintenance period
+        self.core_shutoff_startdays = {}
+        self.core_maintenance_startdays = {}
+        self.BuildShutdownMaintSchedules()
+
+        #With the schedule constructed, build a day-by-day map of how many
+        #Cores are on or off for a given day
         self.known_numcoreson = np.zeros(self.totaldays) # of cores on/day
         self.unknown_numcoreson = np.zeros(self.totaldays) # of cores on/day
+        self.BuildNumCoresOnMaps()
 
-        #Now, remove events based on days a core is off
-        self.shutoff_startdays = {}
-        self.maintenance_startdays = {}
-        self.removeCoreOffEvents()
+        #Use the outage schedule to remove events based on when cores are off
+        self.removeDeclaredOutageEvents()
+
+        #Now, if there's an undeclared outage, strip the events from that core
+        self.undeclared_daysoff = np.zeros(self.totaldays) #1 if off, 0 if on
+        self.removeUndeclaredOutageEvents()
 
         #Define core_status_array, which tells you the total number of
         #reactors on in a given day, and the final #events/day for the
@@ -141,12 +151,10 @@ class ExperimentGenerator(object):
                 self.unknown_core_events[core] = core_signal_dict[core]
                 self.unknown_core_binavg += core_binavg_dict[core]
 
-    def removeCoreOffEvents(self):
+    def BuildShutdownMaintSchedules(self):
         '''
-        Code defines the first shutoff days for each reactor.  Then,
-        goes through the experiment, bin by bin, and re-shoots a value
-        for each bin with the average scaled by how many days the reactor
-        was off for that bin.
+        Builds the schedules used to remove events according to when
+        A core shuts off for a long outage or a maintenance period.
         '''
         #generate the days that each reactor shuts off
         core_shutoffs = {}
@@ -164,7 +172,7 @@ class ExperimentGenerator(object):
             while ((shutoff_day +self.offtime+ self.uptime) < self.totaldays):
                 shutoff_day = (shutoff_day + self.offtime) + self.uptime
                 core_shutoffs[corename].append(shutoff_day)
-        self.shutoff_startdays = core_shutoffs
+        self.core_shutoff_startdays = core_shutoffs
         #Take the core shutoff days and build a maintenance schedule
         #That will be built and used in generating the day-by-day map
         core_maintenances = {}
@@ -190,14 +198,18 @@ class ExperimentGenerator(object):
                             core_maintenances[core].append(maint_day)
                             maint_day += (self.mtime + self.minterval)
 
-        self.maintenance_startdays = core_maintenances
+        self.core_maintenance_startdays = core_maintenances
 
-        #Generate a day-by-day map of each reactor's state
-        #0 - all cores off, 1 - one core on, 2 - two cores on, etc.
-        for core in core_shutoffs:
+    def BuildNumCoresOnMaps(self):
+        '''
+        Generate a day-by-day map of the core states for the known
+        and unknown reactors defined.
+        0 - all cores off, 1 - one core on, 2 - two cores on, etc.
+        '''
+        for core in self.core_shutoff_startdays:
             onoffdays = np.ones(self.totaldays)
             #first, identify off days associated with big shutdowns
-            for shutdown_day in core_shutoffs[core]:
+            for shutdown_day in self.core_shutoff_startdays[core]:
                 j = shutdown_day - 1
                 while j < ((shutdown_day - 1) + self.offtime):
                     if(j == self.totaldays):
@@ -206,7 +218,7 @@ class ExperimentGenerator(object):
                     j+=1
             #now, identify off days associated with maintenance periods
             if self.minterval is not None:
-                for maintenance_day in core_maintenances[core]:
+                for maintenance_day in self.core_maintenance_startdays[core]:
                     j = maintenance_day - 1
                     while j < ((maintenance_day - 1) + self.mtime):
                         if(j == self.totaldays):
@@ -224,11 +236,19 @@ class ExperimentGenerator(object):
             self.known_core_numcoreson[self.killreacs:self.totaldays] = 0
             self.unknown_core_numcoreson[self.killreacs:self.totaldays] = 0
 
+
+    def removeDeclaredOutageEvents(self):
+        '''
+        Code defines the first shutoff days for each reactor.  Then,
+        goes through the experiment, bin by bin, and re-shoots a value
+        for each bin with the average scaled by how many days the reactor
+        was off for that bin.
+        '''
         #Now, go through each bin of core data and remove the appropriate
         #portion of reactor flux for the shutoff
         #FIXME: There's optimization to be done here for sure
-        for core in core_shutoffs:
-            for shutdown_day in core_shutoffs[core]:
+        for core in self.core_shutoff_startdays:
+            for shutdown_day in self.core_shutoff_startdays[core]:
                 OT_complete = False
                 for j,day in enumerate(self.experiment_days):
                     #If a shutdown happened, set the IBD events for days
@@ -243,7 +263,7 @@ class ExperimentGenerator(object):
                     if OT_complete:
                         break
             if self.minterval is not None:
-                for maintenance_day in core_maintenances[core]:
+                for maintenance_day in self.core_maintenance_startdays[core]:
                        MT_complete = False
                        for j,day in enumerate(self.experiment_days):
                            #If a maintenance happened, set the IBD events for days
@@ -257,6 +277,17 @@ class ExperimentGenerator(object):
                                    self.unknown_core_events[core][j] = 0.0
                            if MT_complete:
                                break
+
+    def removeUndeclaredOutageEvents(self):
+        '''
+        Code defines the first shutoff days for each reactor.  Then,
+        goes through the experiment, bin by bin, and re-shoots a value
+        for each bin with the average scaled by how many days the reactor
+        was off for that bin.
+        '''
+        for outage in self.undecstarts:
+            #Build your undeclared map of 0's and 1's first
+            print("THE DREAM")
 
     def show(self):
         print("Average Non-Reactor background events per division: " + \

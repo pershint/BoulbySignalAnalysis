@@ -49,8 +49,8 @@ if __name__=='__main__':
     Run1 = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
             c.cores)
     #FIXME: A bit dirty adding this in after the fact and not in config..
-    c.schedule_dict["MAINTENANCE_STARTDAYS"] = Run1.maintenance_startdays
-    c.schedule_dict["SHUTDOWN_STARTDAYS"] = Run1.shutoff_startdays
+    c.schedule_dict["MAINTENANCE_STARTDAYS"] = Run1.core_maintenance_startdays
+    c.schedule_dict["SHUTDOWN_STARTDAYS"] = Run1.core_shutoff_startdays
     if DEBUG is True:
         Run1.show()  #Shows output of some experiment run details
         #gr.Plot_NRBackgrounds(Run1)

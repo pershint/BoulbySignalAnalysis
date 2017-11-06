@@ -28,7 +28,7 @@ schedule_dict["FIRST_KNOWNSHUTDOWNS"] = [1, 549]
 schedule_dict["FIRST_UNKNOWNSHUTDOWNS"] = []
 schedule_dict["UNDECLARED_OUTAGE_STARTS"] = [108]
 schedule_dict["UNDECLARED_OUTAGE_CORE"] = "Core_1"
-schedule_dict["UNDECLARED_OUTAGE_LENGTH"] = [30]
+schedule_dict["UNDECLARED_OUTAGE_LENGTHS"] = [30]
 
 ####################END CONFIGURABLES##################################
 
