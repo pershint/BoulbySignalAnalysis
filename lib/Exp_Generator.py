@@ -23,6 +23,7 @@ class ExperimentGenerator(object):
         self.undeccore = schedule_dict["UNDECLARED_OUTAGE_CORE"]
         self.coredict = cores
         self.numcores = len(cores["known_cores"]) + len(cores["unknown_cores"])
+        self.numknowncores = len(cores["known_cores"])
         self.allcores = self.parsecores()
         self.areunknowns = False
         if self.coredict["unknown_cores"]:
@@ -70,15 +71,14 @@ class ExperimentGenerator(object):
         self.removeUndeclaredOutageEvents()
 
         #Define core_status_array, which tells you the total number of
-        #reactors on in a given day, and the final #events/day for the
+        #known reactors on in a given day, and the final #events/day for the
         #whole experiment with outages included.
         self.core_status_array = copy.deepcopy(self.known_numcoreson)
         self.events = copy.deepcopy(self.NR_bkg)
         for core in self.coredict["known_cores"]:
             self.events += self.known_core_events[core]
         if self.areunknowns:
-            for core in self.coredict["known_cores"]:
-                self.core_status_array +=self.unknown_numcoreson[core]
+            for core in self.coredict["unknown_cores"]:
                 self.events += self.unknown_core_events[core]
         self.events_unc = np.sqrt(self.events)
 

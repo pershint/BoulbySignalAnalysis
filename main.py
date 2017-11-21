@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 #Main script for outputting reactor sensitivity study at Boulby in WATCHMAN
+import matplotlib.pyplot as plt
 import optparse
 import json
 import os.path
@@ -56,9 +57,10 @@ if __name__=='__main__':
         #gr.Plot_NRBackgrounds(Run1)
         #gr.Plot_Signal(Run1)
         #gr.Plot_Cores(Run1)
-        gr.Plot_ReacOnOff(Run1)
-        gr.Plot_RatioOnOffDays(Run1)
-        gr.Plot_PercentOffDays(Run1)
+        gr.Plot_KnownReacOnOff(Run1)
+        gr.Plot_AllReacOnOff(Run1)
+        gr.Plot_KnownRatioOnOffDays(Run1)
+        gr.Plot_KnownPercentOffDays(Run1)
         h.hPlot_CoresOnAndOffHist(Run1)
         ScheduleAnalysis = a.ScheduleAnalysis(c.SITE)
         #Try out the new ExperimentAnalyzer class
@@ -66,17 +68,22 @@ if __name__=='__main__':
         gr.Plot_OnOffCumSum_A2(ScheduleAnalysis)
         gr.Plot_OnOffDiff_A2(ScheduleAnalysis)
 
+    
     #Initialize our analysis class.  The scheduleanalysis takes in multiple
     #Experiments generated and holds statistics regarding at what day into
     #The experiment WATCHMAN observes a 3sigma difference in the "reactor on"
     #and "reactor off" days of data
     experiments = np.arange(0,100,1)
     ScheduleAnalysis = a.ScheduleAnalysis(c.SITE)
+    UnknownCoreAnalysis = a.UnknownCoreAnalysis(c.SITE)
+
     for experiment in experiments:
         Run = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                 c.cores)
-        ScheduleAnalysis(Run)
-
+        #ScheduleAnalysis(Run)
+        UnknownCoreAnalysis(Run)
+    plt.hist(UnknownCoreAnalysis.mu_offbinfits, 12)
+    plt.show()
     #The Analysis is complete.  Save the results from the Schedule Analysis
     determination_data = ScheduleAnalysis.determination_days
     datadict = {"Site": c.SITE,"pc":c.PHOTOCOVERAGE, 

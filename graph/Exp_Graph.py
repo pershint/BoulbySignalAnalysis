@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def Plot_ReacOnOff(GeneratedExperiment):
+def Plot_KnownReacOnOff(GeneratedExperiment):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
 #    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_onoffdays,
@@ -13,12 +13,28 @@ def Plot_ReacOnOff(GeneratedExperiment):
     ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.core_status_array,
             color='m', alpha=0.8) 
     ax.set_xlabel("days")
-    ax.set_ylabel("Reactor state (# = # cores on on the day)")
-    ax.set_title("Number of cores on at each day in the experiment")
+    ax.set_ylabel("Known reactor state (# = # cores on on the day)")
+    ax.set_title("Number of known cores on at each day in the experiment")
     ax.set_ylim([0,3])
     plt.show()
 
-def Plot_PercentOffDays(GeneratedExperiment):
+def Plot_AllReacOnOff(GeneratedExperiment):
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+#    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_onoffdays,
+#            color='k', alpha=0.8)
+#    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_events, marker = 'o', linestyle='none', color='k')
+    ax.plot(GeneratedExperiment.experiment_days, \
+            GeneratedExperiment.known_numcoreson + \
+            GeneratedExperiment.unknown_numcoreson,
+            color='m', alpha=0.8) 
+    ax.set_xlabel("days")
+    ax.set_ylabel("Total reactor state (# = # cores on on the day)")
+    ax.set_title("Number of total cores on at each day in the experiment")
+    ax.set_ylim([0,3])
+    plt.show()
+
+def Plot_KnownPercentOffDays(GeneratedExperiment):
     fig=plt.figure()
     ax = fig.add_subplot(1,1,1)
     off_percent = []
@@ -26,7 +42,7 @@ def Plot_PercentOffDays(GeneratedExperiment):
     num_offdays = 0.
     for j, status in enumerate(GeneratedExperiment.core_status_array):
         total_days+=1.
-        if status != GeneratedExperiment.numcores:
+        if status != GeneratedExperiment.numknowncores:
             num_offdays += 1.
         off_percent.append(num_offdays * 100 / total_days)
     ax.plot(GeneratedExperiment.experiment_days, off_percent,
@@ -37,14 +53,14 @@ def Plot_PercentOffDays(GeneratedExperiment):
     ax.set_ylim([0,101])
     plt.show()
 
-def Plot_RatioOnOffDays(GeneratedExperiment):
+def Plot_KnownRatioOnOffDays(GeneratedExperiment):
     fig=plt.figure()
     ax = fig.add_subplot(1,1,1)
     on_off_ratio = []
     num_ondays = 0.00001
     num_offdays = 0.00001
     for j, status in enumerate(GeneratedExperiment.core_status_array):
-        if status == GeneratedExperiment.numcores:
+        if status == GeneratedExperiment.numknowncores:
             num_ondays += 1.
         else:
             num_offdays +=1.
