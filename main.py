@@ -73,7 +73,7 @@ if __name__=='__main__':
     #Experiments generated and holds statistics regarding at what day into
     #The experiment WATCHMAN observes a 3sigma difference in the "reactor on"
     #and "reactor off" days of data
-    experiments = np.arange(0,100,1)
+    experiments = np.arange(0,1000,1)
     ScheduleAnalysis = a.ScheduleAnalysis(c.SITE)
     UnknownCoreAnalysis = a.UnknownCoreAnalysis(c.SITE)
 
@@ -82,7 +82,13 @@ if __name__=='__main__':
                 c.cores)
         #ScheduleAnalysis(Run)
         UnknownCoreAnalysis(Run)
-    plt.hist(UnknownCoreAnalysis.mu_offbinfits, 12)
+    plt.hist(UnknownCoreAnalysis.chisq_offbinfits, 25, range=(0.0,5.0))
+    plt.xlabel("Distribution of Chi-Squareds for each 600 day experiment")
+    plt.title("Chi squared values")
+    plt.show()
+    plt.hist(UnknownCoreAnalysis.mu_offbinfits, 30, range=(0.0,6.0))
+    plt.xlabel("Distribution of Poisson average for each 600 day experiment")
+    plt.title(r"$\mu$ best fit")
     plt.show()
     #The Analysis is complete.  Save the results from the Schedule Analysis
     determination_data = ScheduleAnalysis.determination_days

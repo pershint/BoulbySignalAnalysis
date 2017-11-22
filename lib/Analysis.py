@@ -22,6 +22,7 @@ class UnknownCoreAnalysis(ExperimentalAnalysis):
         super(UnknownCoreAnalysis, self).__init__(sitename)
         self.par2_offbinfits = []
         self.mu_offbinfits = []
+        self.chisq_offbinfits = []
     def __call__(self, ExpGen):
         super(UnknownCoreAnalysis, self).__call__(ExpGen)
         self.ExpCheck()
@@ -44,8 +45,6 @@ class UnknownCoreAnalysis(ExperimentalAnalysis):
         day_reacoff = []
         events_offdays = []
         events_rebinned = []
-        print("KNOWN CORE STATUS ARRAY")
-        print(self.Current_Experiment.core_status_array)
         for j,n_on in enumerate(self.Current_Experiment.core_status_array):
             if n_on == 0:   #Day where known core is off
                 day_reacoff.append(self.Current_Experiment.experiment_days[j])
@@ -65,33 +64,34 @@ class UnknownCoreAnalysis(ExperimentalAnalysis):
         for entry in events_rebinned:
             values.Fill(entry)
         PoissonFit = ROOT.TF1('PoissonFit', self.fitfunction_poisson, \
-                np.min(events_rebinned), np.max(events_rebinned), 3)
+                np.min(events_rebinned), np.max(events_rebinned), 2)
         PoissonFit.SetParameter(0, 1)
         PoissonFit.SetParameter(1, 1)
-        PoissonFit.SetParameter(2, 1)
-        PoissonFit.SetParNames('par0', 'par1', 'par2')
+        #PoissonFit.SetParameter(2, 1)
+        PoissonFit.SetParNames('par0', 'par1')#, 'par2')
         PoissonFit.SetLineColor(4)
         PoissonFit.SetLineWidth(2)
         PoissonFit.SetLineStyle(2)
         ROOT.gStyle.SetOptFit(0157)
 #        ROOT.gPad.Modified()
-        values.Fit('PoissonFit', 'R')
-        par2 = PoissonFit.GetParameter('par2')
+        values.Fit('PoissonFit','L') #'q' for quiet
+        #par2 = PoissonFit.GetParameter('par2')
         mu = PoissonFit.GetParameter('par1')
-        self.par2_offbinfits.append(par2)
+        chisq = PoissonFit.GetChisquare()
+        #self.par2_offbinfits.append(par2)
+        self.chisq_offbinfits.append(chisq)
         self.mu_offbinfits.append(mu)
-        #values.Draw()
-        #PoissonFit.Draw('same')
+        values.Draw()
+        PoissonFit.Draw('same')
+        time.sleep(50)
 
     def fitfunction_poisson(self, x, par):
-        if par[2] != 0:
-            if ROOT.TMath.Gamma((x[0]/par[2])+1) != 0:
-                poisson = par[0] * ROOT.TMath.Power((par[1]/par[2]),(x[0]/par[2])) * (ROOT.TMath.Exp(-(par[1]/par[2])))/ROOT.TMath.Gamma((x[0]/par[2])+1)
-            else:
-                poisson = 0
-        else:
-            poisson = 0
-        return poisson
+        #if par[2] != 0:
+           #if ROOT.TMath.Gamma((x[0]/par[2])+1) != 0:
+            #    poisson = par[0] * ROOT.TMath.Power((par[1]/par[2]),(x[0]/par[2])) * (ROOT.TMath.Exp(-(par[1]/par[2])))/ROOT.TMath.Gamma((x[0]/par[2])+1)
+        #else:
+        #    poisson = 0
+        return par[0]*ROOT.TMath.Poisson(x[0], par[1])
 
 class ScheduleAnalysis(ExperimentalAnalysis):
     def __init__(self, sitename):
