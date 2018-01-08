@@ -15,6 +15,161 @@ class ExperimentalAnalysis(object):
     def __call__(self, ExpGen):
         self.Current_Experiment = ExpGen
 
+#This class runs an sequential probability ratio test.  First, the 
+#Null hypothesis is treated as the first 100 days of data's average.
+#From there, SPRT is run assuming underlying poisson distributions for
+#The null hypothesis and then a second case which is some fraction of
+#The null hypothesis average.
+class SPRTAnalysis(ExperimentalAnalysis):
+    def __init__(self, sitename, CL_turnon=0.997, CL_turnoff=0.997, \
+            initdays=365, numsigma=3.0):
+        super(SPRTAnalysis, self).__init__(sitename)
+        #In below, H = hypothesis
+        self.aon = 1.0 - CL_turnon #Probability for falsely rejecting turn-on H
+        self.aoff = 1.0 - CL_turnoff #Probability of falsely rejecting turn-off H
+        self.numsigma = numsigma #Defines the rate for the other H
+        self.initdays = initdays
+        #Hold results from the most recently run experiment
+        self.SPRTresultday = []
+        self.SPRTresult = []
+        self.SPRTaccbound = []
+        self.SPRTrejbound = []
+        #Hold results from many experiments
+        self.SPRT_rejdays = []
+        self.SPRT_accdays = []
+        self.SPRT_unccount = 0
+
+    def __call__(self, ExpGen):
+        super(SPRTAnalysis, self).__call__(ExpGen)
+        self.ExpCheck()
+        self.RunSPRT()
+
+    def ExpCheck(self):
+        if len(self.Current_Experiment.coredict["known_cores"]) != 1:
+            print("Experiment does not have one known core.  Should not"+\
+                    "run this analysis.")
+
+    def RunSPRT(self):
+        '''
+        This grabs all of the days where the known core was on.  We then
+        calculate the null hypothesis average based on the value in
+        self.initdays.  We then run an SPRT with the data binned into
+        self.daysperbin days and see if we reject the null hypothesis.'''
+        #reinitalize these results in preparation for SPRT results
+        self.SPRTresultday = []
+        self.SPRTtestpredict = []
+        self.SPRTresult = []
+        self.SPRTaccbound = []
+        self.SPRTrejbound = []
+        days_reacon = []
+        events_ondays = []
+        SPRT_daysbinned = []
+        for j,n_on in enumerate(self.Current_Experiment.core_status_array):
+            if n_on == 1:   #Day where known core is on
+                days_reacon.append(self.Current_Experiment.experiment_days[j])
+                events_ondays.append(self.Current_Experiment.events[j])
+        events_ondays = np.array(events_ondays)
+        plt.show()
+        #Calculate the null hypothesis average
+        testavg = float(np.sum(events_ondays[0:self.initdays]))/ \
+                float(self.initdays)
+        testavgunc = np.sqrt(float(np.sum(events_ondays[0:self.initdays])))/ \
+                float(self.initdays)
+        #Other hypothesis is that the average is half that of the nullavg
+        turnoffthresh = testavg - (self.numsigma * testavgunc)
+        turnonthresh = testavg + (self.numsigma * testavgunc)
+        #Only run SPRT with days after first self.initdays amount
+        SPRT_testdays = events_ondays[self.initdays:len(days_reacon)]
+        #Bin the day events according to the input daysperbin
+        determined = False
+        for index in xrange(len(SPRT_testdays)):
+            day = float(index + 1)
+            test_stat = np.sum(SPRT_testdays[0:int(day)]) 
+            #Gives the actual day in the experiment
+            #self.SPRTresultday.append(days_reacon[self.initdays-1 + int(day)])
+            self.SPRTtestpredict.append(testavg*day)
+            self.SPRTresultday.append(days_reacon[self.initdays+int(day)-2])
+            self.SPRTresult.append(test_stat)
+            self.SPRTaccbound.append(self.U(day, turnonthresh,turnoffthresh,Uval=55.))
+            self.SPRTrejbound.append(self.L(day, turnonthresh,turnoffthresh,Lval=-55.))
+            if not determined:
+                if test_stat < self.L(day,turnonthresh,turnoffthresh,Lval=-55.):
+                    determined = True
+                    self.SPRT_rejdays.append(days_reacon[self.initdays-1 + int(day)]) 
+                if test_stat > self.U(day,turnonthresh,turnoffthresh,Uval=55.):
+                    determined = True
+                    self.SPRT_accdays.append(days_reacon[self.initdays-1 + int(day)])
+        if not determined:
+            self.SPRT_unccount+=1
+        return
+
+    def L(self,day, turnonthresh, turnoffthresh,Lval = None):
+        #lower bound for SPRT; assumes poisson probabilities for null & other H
+        if Lval is not None:
+            return (Lval + (day *(turnonthresh - turnoffthresh))) / np.log(turnonthresh/turnoffthresh) 
+        else:
+            return (np.log(self.aon / (1.0 - self.aoff))+ (day *  \
+                (turnonthresh - turnoffthresh))) / np.log(turnonthresh/turnoffthresh)  
+
+    def U(self,day, turnonthresh,turnoffthresh,Uval = None):
+        #lower bound for SPRT; assumes poisson probabilities for null & other H
+        if Uval is not None:
+            return (Uval + (day *(turnonthresh - turnoffthresh))) / np.log(turnonthresh/turnoffthresh) 
+        else:
+            return (np.log((1.0 - self.aon) / self.aoff)+ (day *  \
+                (turnonthresh - turnoffthresh))) / np.log(turnonthresh/turnoffthresh)
+
+#This analysis assumes one known core and some other unknown cores.
+#A running average is performed in the "on" data to see when a difference
+#is seen with >3sigma from the previous taken data.  If there is no 3sigma
+#difference, it is absorbed into the data binned thus far.
+class RunningAverageAnalysis(ExperimentalAnalysis):
+    def __init__(self, sitename):
+        super(RunningAverageAnalysis, self).__init__(sitename)
+        self.par2_offbinfits = []
+        self.mu_offbinfits = []
+        self.csndf_offbinfits = []
+        self.num_failfits = 0
+
+    def __call__(self, ExpGen):
+        super(RunningAverageAnalysis, self).__call__(ExpGen)
+        self.ExpCheck()
+        self.TestBackground(8)
+
+    def ExpCheck(self):
+        if len(self.Current_Experiment.coredict["known_cores"]) != 1:
+            print("Experiment does not have one known core.  Should not"+\
+                    "run this analysis.")
+
+    def RunAverageTest(self, daysperbin):
+        '''
+        This grabs all of the days where the known core was on.  We then
+        bin the data according to the input daysperbin, and see if the
+        binned value at each step is outside the average of the previously
+        collected data.
+        '''
+        day_reacon = []
+        event_ondays = []
+        events_rebinned = []
+        for j,n_on in enumerate(self.Current_Experiment.core_status_array):
+            if n_on == 1:   #Day where known core is on
+                day_reacon.append(self.Current_Experiment.experiment_days[j])
+                events_ondays.append(self.Current_Experiment.events[j])
+        #Now, bin the day events according to the input daysperbin
+        numondays = len(events_ondays)
+        sumindex = 0
+        while sumindex < numondays:
+            binleft = sumindex
+            sumindex+=daysperbin
+            events_rebinned.append(np.sum(events_offdays[binleft:sumindex]))
+        #TODO: we need to go bin by bin and see when/if the current bin
+        #rests outside of the current average to a total of 3sigma difference
+        #May need to increase the number of days in a bin here...
+        #OTHER OPTIONS: if this looks hopeless, investigate using the SPRT
+        #Cause I'm supes worried we don't have the stats to ever do this
+        current_average = 0.0
+        current_avgunc = 0.0
+
 #This analysis is tuned to experiments generated with one known core and
 #one unknown core.  
 class UnknownCoreAnalysis(ExperimentalAnalysis):
@@ -22,11 +177,13 @@ class UnknownCoreAnalysis(ExperimentalAnalysis):
         super(UnknownCoreAnalysis, self).__init__(sitename)
         self.par2_offbinfits = []
         self.mu_offbinfits = []
-        self.chisq_offbinfits = []
+        self.csndf_offbinfits = []
+        self.num_failfits = 0
+
     def __call__(self, ExpGen):
         super(UnknownCoreAnalysis, self).__call__(ExpGen)
         self.ExpCheck()
-        self.TestBackground(4)
+        self.TestBackground(8)
 
     def ExpCheck(self):
         if len(self.Current_Experiment.coredict["known_cores"]) != 1:
@@ -46,7 +203,7 @@ class UnknownCoreAnalysis(ExperimentalAnalysis):
         events_offdays = []
         events_rebinned = []
         for j,n_on in enumerate(self.Current_Experiment.core_status_array):
-            if n_on == 0:   #Day where known core is off
+            if n_on == 1:   #Day where known core is off
                 day_reacoff.append(self.Current_Experiment.experiment_days[j])
                 events_offdays.append(self.Current_Experiment.events[j])
         #Now, bin the day events according to the input daysperbin
@@ -74,16 +231,19 @@ class UnknownCoreAnalysis(ExperimentalAnalysis):
         PoissonFit.SetLineStyle(2)
         ROOT.gStyle.SetOptFit(0157)
 #        ROOT.gPad.Modified()
-        values.Fit('PoissonFit','L') #'q' for quiet
+        values.Fit('PoissonFit','Lq') #'q' for quiet
         #par2 = PoissonFit.GetParameter('par2')
         mu = PoissonFit.GetParameter('par1')
         chisq = PoissonFit.GetChisquare()
-        #self.par2_offbinfits.append(par2)
-        self.chisq_offbinfits.append(chisq)
+        ndf = PoissonFit.GetNDF()
+        if chisq ==0 or ndf==0:
+            self.num_failfits+=1
+            return
+        self.csndf_offbinfits.append(float(chisq) / float(ndf))
         self.mu_offbinfits.append(mu)
-        values.Draw()
-        PoissonFit.Draw('same')
-        time.sleep(50)
+        #values.Draw()
+        #PoissonFit.Draw('same')
+        #time.sleep(50)
 
     def fitfunction_poisson(self, x, par):
         #if par[2] != 0:

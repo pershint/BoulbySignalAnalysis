@@ -1,4 +1,5 @@
 import copy
+import matplotlib.pyplot as plt
 import playDarts as pd
 import numpy as np
 
@@ -13,7 +14,8 @@ class ExperimentGenerator(object):
         self.offtime = schedule_dict["OFF_TIME"]
         self.uptime = schedule_dict["UP_TIME"]
         self.totaldays = schedule_dict["TOTAL_RUN"]
-        self.killreacs = schedule_dict["KILL_DAY"]
+        self.killreacs = schedule_dict["KILL_CORES"]
+        self.killdays = schedule_dict["KILL_DAYS"]
         self.ufirstoffs = schedule_dict["FIRST_UNKNOWNSHUTDOWNS"]
         self.kfirstoffs = schedule_dict["FIRST_KNOWNSHUTDOWNS"]
         self.minterval = schedule_dict["MAINTENANCE_INTERVAL"]
@@ -50,7 +52,6 @@ class ExperimentGenerator(object):
         if self.areunknowns:
             for core in self.coredict["unknown_cores"]:
                 self.events_allcoreson += self.unknown_core_events[core]
-
         #Define the scheduled days for each core in the experiment to 
         #Turn off for a long outage or a short maintenance period
         self.core_shutoff_startdays = {}
@@ -121,12 +122,12 @@ class ExperimentGenerator(object):
 
     #Takes in a set of binned events and removes all events past
     #The day at which reactors are scheduled for permanent shutdown
-    def stripSDDays(self,binned_events):
+    def stripSDDays(self,core_events, killday):
         for j,day in enumerate(self.experiment_days):
-            if self.experiment_days[j] > self.killreacs:
+            if self.experiment_days[j] > killday:
                 #set events in that bin to zero
-                binned_events[j] = 0.0
-        return binned_events
+                core_events[j] = 0.0
+        return core_events
 
     #Generates core events for known core (reactor background) and unknown core
     #DOES NOT assume shut-offs occur.
@@ -137,10 +138,11 @@ class ExperimentGenerator(object):
         for signal in self.signals:
             if signal in self.allcores:
                 core_binavg = self.signals[signal]
-                binned_events = pd.RandShoot_p(core_binavg, self.totaldays)
-                if self.killreacs != None:
-                    binned_events = self.stripSDDays(binned_events)
-                core_signal_dict[signal] = binned_events
+                core_events = pd.RandShoot_p(core_binavg, self.totaldays)
+                for j, killcore in enumerate(self.killreacs):
+                    if signal==killcore:
+                        core_events = self.stripSDDays(core_events,self.killdays[j])
+                core_signal_dict[signal] = core_events
                 core_binavg_dict[signal] = core_binavg
         #Place the values into their proper class containers
         for core in core_signal_dict:
@@ -225,16 +227,15 @@ class ExperimentGenerator(object):
                             break
                         onoffdays[j] = 0
                         j+=1
+            #if this core has a permanent shutdown, set it's status to zero
+            for j, killcore in enumerate(self.killreacs):
+                if core==killcore:
+                    onoffdays[self.killdays[j]:self.totaldays] = 0
             #Add this core's schedule map to the full reactor outage map
             if core in self.coredict["known_cores"]:
                 self.known_numcoreson += onoffdays
             elif core in self.coredict["unknown_cores"]:
                 self.unknown_numcoreson += onoffdays
-        #if there's a permanent shutdown of all reactors, turn all
-        #onoffdays to zero past that day
-        if self.killreacs != None:
-            self.known_core_numcoreson[self.killreacs:self.totaldays] = 0
-            self.unknown_core_numcoreson[self.killreacs:self.totaldays] = 0
 
 
     def removeDeclaredOutageEvents(self):

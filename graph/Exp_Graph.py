@@ -11,11 +11,16 @@ def Plot_KnownReacOnOff(GeneratedExperiment):
 #            color='k', alpha=0.8)
 #    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_events, marker = 'o', linestyle='none', color='k')
     ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.core_status_array,
-            color='m', alpha=0.8) 
-    ax.set_xlabel("days")
-    ax.set_ylabel("Known reactor state (# = # cores on on the day)")
+            color='m', alpha=0.8, linewidth=3) 
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(16)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(16)
+    ax.set_xlabel("days",fontsize=18)
+    ax.set_ylabel("Known reactor state (# = # cores on on the day)",fontsize=18)
     ax.set_title("Number of known cores on at each day in the experiment")
     ax.set_ylim([0,3])
+    ax.grid(True)
     plt.show()
 
 def Plot_AllReacOnOff(GeneratedExperiment):
@@ -27,11 +32,16 @@ def Plot_AllReacOnOff(GeneratedExperiment):
     ax.plot(GeneratedExperiment.experiment_days, \
             GeneratedExperiment.known_numcoreson + \
             GeneratedExperiment.unknown_numcoreson,
-            color='m', alpha=0.8) 
-    ax.set_xlabel("days")
-    ax.set_ylabel("Total reactor state (# = # cores on on the day)")
+            color='g', alpha=0.8, linewidth = 3) 
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(16)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(16)
+    ax.set_xlabel("days", fontsize = 18)
+    ax.set_ylabel("Total reactor state (# = # cores on on the day)", fontsize=18)
     ax.set_title("Number of total cores on at each day in the experiment")
     ax.set_ylim([0,3])
+    ax.grid(True)
     plt.show()
 
 def Plot_KnownPercentOffDays(GeneratedExperiment):

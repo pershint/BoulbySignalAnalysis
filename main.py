@@ -28,11 +28,21 @@ parser.add_option('-e','--efficiency',action="store",dest="efficiency", \
 parser.add_option('-p','--photocov',action="store",dest="pc", \
         type="float",default=None,help="Photocoverage of WATCHMAN" + \
         "to use(0.25 only implemented)")
+parser.add_option('-c','--schedule',action="store_true",dest="schedule", \
+        default="False",help="Search for difference in IBD numbers in known"+\
+        "reactor on and reactor off data sets")
+parser.add_option('-f','--poisfit',action="store_true",dest="posfit", \
+        default="False",help="Fit a poisson to 'rector off' data for known reactors")
+parser.add_option('-s','--SPRT',action="store_true",dest="sprt", \
+        default="False",help="Run an SPRT over all on days for known reactors")
 parser.add_option('-j','--jobnum',action="store",dest="jobnum", \
         type="int",default=0,help="Job number (for saving data/grid use)")
 
 (options,args) = parser.parse_args()
 DEBUG = options.debug
+SPRT = options.sprt
+POISFIT = options.posfit
+SCHED = options.schedule
 jn = options.jobnum
 
 if options.pc is not None:
@@ -73,35 +83,84 @@ if __name__=='__main__':
     #Experiments generated and holds statistics regarding at what day into
     #The experiment WATCHMAN observes a 3sigma difference in the "reactor on"
     #and "reactor off" days of data
-    experiments = np.arange(0,1000,1)
     ScheduleAnalysis = a.ScheduleAnalysis(c.SITE)
     UnknownCoreAnalysis = a.UnknownCoreAnalysis(c.SITE)
-
-    for experiment in experiments:
-        Run = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
-                c.cores)
-        #ScheduleAnalysis(Run)
-        UnknownCoreAnalysis(Run)
-    plt.hist(UnknownCoreAnalysis.chisq_offbinfits, 25, range=(0.0,5.0))
-    plt.xlabel("Distribution of Chi-Squareds for each 600 day experiment")
-    plt.title("Chi squared values")
-    plt.show()
-    plt.hist(UnknownCoreAnalysis.mu_offbinfits, 30, range=(0.0,6.0))
-    plt.xlabel("Distribution of Poisson average for each 600 day experiment")
-    plt.title(r"$\mu$ best fit")
-    plt.show()
-    #The Analysis is complete.  Save the results from the Schedule Analysis
-    determination_data = ScheduleAnalysis.determination_days
+    SPRTAnalysis = a.SPRTAnalysis(c.SITE)
+    #Datadict object will save the output configuration and results of analysis
     datadict = {"Site": c.SITE,"pc":c.PHOTOCOVERAGE, 
-            "schedule_dict": c.schedule_dict,
-            "determination_days":ScheduleAnalysis.determination_days,
-            "no3sigmadays":ScheduleAnalysis.num_nodetermine}
+            "schedule_dict": c.schedule_dict, "Analysis": None}
+    if SPRT is True:
+        datadict["Analysis"] = "SPRT"
+        experiments = np.arange(0,20000,1)
+        for experiment in experiments:
+            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
+                    c.cores)
+            SPRTAnalysis(SingleRun)
+        datadict["above_null_days"] = SPRTAnalysis.SPRT_accdays
+        datadict["below_null_days"] = SPRTAnalysis.SPRT_rejdays
+        datadict["no_hypothesis"] = SPRTAnalysis.SPRT_unccount
+        if DEBUG:
+            plt.plot(SPRTAnalysis.SPRTresultday, SPRTAnalysis.SPRTresult, \
+                    linestyle='none', marker='o', label='# IBD Candidates')
+            plt.plot(SPRTAnalysis.SPRTresultday, SPRTAnalysis.SPRTaccbound, \
+                    linestyle='none', marker='o', color = 'g', label=r'Accept $\mu+3\sigma_{\mu}$')
+            plt.plot(SPRTAnalysis.SPRTresultday, SPRTAnalysis.SPRTrejbound, \
+                    linestyle='none', marker='o', color = 'r', label=r"Accept $\mu-3\sigma_{\mu} '$")
+            if c.schedule_dict['KILL_DAYS'] is not None:
+                for day in c.schedule_dict['KILL_DAYS']:
+                    plt.axvline(day, linewidth = 3, color='m', label='Core shutdown')
+            plt.plot(SPRTAnalysis.SPRTresultday, SPRTAnalysis.SPRTtestpredict, \
+                    linewidth=3, color='k',label='Avg. prediction for # IBDs')
+            plt.title("SPRT Result for generated experiment using on data \n" + \
+                    "for known core")
+            plt.xlabel("Day in experiment")
+            plt.ylabel("Number of IBD candidates")
+            plt.legend(loc=2)
+            plt.grid()
+            plt.show()
+            #print("NUMBER OF ACCEPTANCE DAYS: " + str(len(SPRTAnalysis.SPRT_accdays)))
+            #plt.hist(SPRTAnalysis.SPRT_accdays,np.max(SPRTAnalysis.SPRT_accdays))
+            #plt.show()
+            print("NUMBER OF REJECTION DAYS: " + str(len(SPRTAnalysis.SPRT_rejdays)))
+            if len(SPRTAnalysis.SPRT_rejdays) != 0:
+                plt.hist(SPRTAnalysis.SPRT_rejdays,np.max(SPRTAnalysis.SPRT_rejdays))
+                plt.show()
+            print("NUMBER OF NO CONCLUSIONS: " + str(SPRTAnalysis.SPRT_unccount))
+
+    if POISFIT is True:
+        datadict["Analysis"] = "POISSON_FIT"
+        experiments = np.arange(0,100,1)
+        for experiment in experiments:
+            Run = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
+                    c.cores)
+            UnknownCoreAnalysis(Run)
+        print("NUM FAILED FITS: " + str(UnknownCoreAnalysis.num_failfits))
+        plt.hist(UnknownCoreAnalysis.csndf_offbinfits, 40, range=(0.0,8.0))
+        plt.xlabel("Distribution of Chi-Squared/NDF for each 1800 day experiment")
+        plt.title("Chi squared/NDF")
+        plt.show()
+        plt.hist(UnknownCoreAnalysis.mu_offbinfits, 30, range=(0.0,6.0))
+        plt.xlabel("Distribution of Poisson average for each 1800 day experiment")
+        plt.title(r"$\mu$ best fit")
+        plt.show()
+    if SCHED is True:
+        datadict["Analysis"] = "ONOFF_DIFFERENCE"
+        experiments = np.arange(0,1000,1)
+        for experiment in experiments:
+            Run = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
+                    c.cores)
+            ScheduleAnalysis(Run)
+            datadict["determination_days"] = ScheduleAnalysis.determination_days,
+            datadict["no3sigmadays"] = ScheduleAnalysis.num_nodetermine
+        if DEBUG is True:
+            print("# EXP. WITH NO DETERMINATION IN TIME ALOTTED: \n")
+            print(ScheduleAnalysis.num_nodetermine)
+            h.hPlot_Determ_InExpDays(ScheduleAnalysis.determination_days, \
+                    np.max(ScheduleAnalysis.determination_days),0.5, \
+                    (np.max(ScheduleAnalysis.determination_days) + 0.5))
+    
+    #The Analysis is complete.  Save the results from the Schedule Analysis
     with open(savepath + "/results_j"+str(jn)+".json","w") as datafile:
         json.dump(datadict,datafile,sort_keys=True,indent=4)
 
-    if DEBUG is True:
-        print("# EXP. WITH NO DETERMINATION IN TIME ALOTTED: \n")
-        print(ScheduleAnalysis.num_nodetermine)
-        h.hPlot_Determ_InExpDays(ScheduleAnalysis.determination_days, \
-                np.max(ScheduleAnalysis.determination_days),0.5, \
-                (np.max(ScheduleAnalysis.determination_days) + 0.5))
+
