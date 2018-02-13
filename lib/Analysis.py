@@ -256,7 +256,7 @@ class UnknownCoreAnalysis(ExperimentalAnalysis):
 class ScheduleAnalysis(ExperimentalAnalysis):
     def __init__(self, sitename):
         super(ScheduleAnalysis, self).__init__(sitename)
-
+        self.num3siginarow = 14
         #Arrays that hold the event rate for each day where both
         #reactors are on or where at least one reactor is off
         self.onday_events = []
@@ -384,7 +384,6 @@ class ScheduleAnalysis(ExperimentalAnalysis):
         '''
         daysofrunning = self.Current_Experiment.experiment_days
         dcount = 0
-        d_days = 14  #Number of days in a row of 3sigma required for determination
         dfound = False
         for j,day in enumerate(daysofrunning):
             day_onoffdiff = abs(self.onavg_cumul[j] - self.offavg_cumul[j])
@@ -402,7 +401,7 @@ class ScheduleAnalysis(ExperimentalAnalysis):
                     continue
                 if (day_onoffdiff > (3 * day_sigma)):
                     dcount += 1
-                    if dcount == 14:
+                    if dcount == self.num3siginarow:
                         self.currentexp_determination_day = day
                         self.determination_days.append(day)
                         dfound = True

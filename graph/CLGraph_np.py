@@ -71,12 +71,12 @@ class CLGraph(object):
             #FIXME: Want to have a label shoing which core shut down
             for kd in self.kill_days:
                 ax.axvline(kd, color = "blue", alpha = 0.8, linewidth = 3, 
-                        label="Unknown Full shutdown")
+                        label="Permanent shutdown")
         #Add the CL lines
         CL_dict = {"68.3% CL": int(len(ddays) * 0.683), \
-                 "95% CL": int(len(ddays) * 0.95)}# \
-                #"99.7% CL": int(len(ddays) * 0.997)}
-        CL_colors = ["m","k"]#,"r"]
+                 "95% CL": int(len(ddays) * 0.95), \
+                 "99.7% CL": int(len(ddays) * 0.997)}
+        CL_colors = ["m","k","r"]
         for j,CL in enumerate(CL_dict):
             ax.axvline(ddays[CL_dict[CL]], color = CL_colors[j], \
                     linewidth=2, label = CL)
@@ -112,14 +112,17 @@ class CLGraph(object):
         #The default order sucks.  I have to define it here
         handles, labels = ax.get_legend_handles_labels()
         hand = [handles[0], handles[1], handles[3], handles[2],\
-                handles[4],handles[5]]#,handles[6]]
+                handles[4],handles[5]]
         lab = [labels[0], labels[1], labels[3], labels[2],\
-                labels[4],labels[5]]#,labels[6]]
+                labels[4],labels[5]]
+        for i in xrange(len(handles)-len(hand)): #add any extras
+            hand.append(handles[len(hand)+i])
+            lab.append(labels[len(lab)+i])
         plt.legend(hand,lab, loc = 2)
         plt.show()       
 
 class OnOffCL(CLGraph):
-    def __init__(self, AnalDict,Num3SigmaDays):
+    def __init__(self, AnalDict):
         super(OnOffCL, self).__init__(AnalDict)
         try:
             self.ddays = np.sort(AnalDict["determination_days"])
@@ -128,7 +131,7 @@ class OnOffCL(CLGraph):
             print("No rejection or acceptance of null hypothesis days present.")
             print("Are you loading the correct dictionary result type?")
             return
-        self.num3SigRequired = Num3SigmaDays
+        self.num3SigRequired = AnalDict["num3siginarow"]
         self.csum_vals = self.buildcsum(self.ddays)
         self.plot_title = "Confidence Limit of days needed until WATCHMAN " + \
             "confirms on/off cycle at " + self.site 

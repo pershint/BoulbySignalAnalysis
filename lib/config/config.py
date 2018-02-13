@@ -9,21 +9,22 @@ SITE = "Boulby"  #Either Boulby or Fairport implemented
 ##### Choose either a photoverage or an efficiency, not both #####
 PHOTOCOVERAGE = 0.25  #Choose the photocoverage you want from the database
 DETECTION_EFF = None #Detection efficiency for IBDs
+NEXPERIMENTS = 10 #Number of experiments generated in analysis run
 
 RESOLUTION = 1 #Exp_Generator does re-binning of data by request; this gives
                #The bin resolution in days
 
 schedule_dict = {}
-schedule_dict["OFF_TIME"] = 60
-schedule_dict["UP_TIME"] = 1035
-schedule_dict["KILL_CORES"] = ["Core_2"]
-schedule_dict["KILL_DAYS"] = [700]
-schedule_dict["TOTAL_RUN"] = 1550 
-schedule_dict["MAINTENANCE_INTERVAL"] = 106#None
+schedule_dict["OFF_TIME"] = 60    #Days that cores turn off for a long outage
+schedule_dict["UP_TIME"] = 1035   #Day interval between long outages
+schedule_dict["KILL_CORES"] = []#"Core_2"] #List the name of core(s) to shut down
+schedule_dict["KILL_DAYS"] = []#700] #List the days where cores in KILL_CORES shuts down
+schedule_dict["TOTAL_RUN"] = 1550  #Total length of experiment
 schedule_dict["MAINTENANCE_TIME"] = 10
+schedule_dict["MAINTENANCE_INTERVAL"] = 106 #Day interval between maintenance outages
 
-schedule_dict["FIRST_KNOWNSHUTDOWNS"] = [1]
-schedule_dict["FIRST_UNKNOWNSHUTDOWNS"] = [549]
+schedule_dict["FIRST_KNOWNSHUTDOWNS"] = [1,549]
+schedule_dict["FIRST_UNKNOWNSHUTDOWNS"] = []
 
 #NOTE: These are not implemented for any use yet
 schedule_dict["UNDECLARED_OUTAGE_CORE"] = "Core_1"
@@ -41,8 +42,8 @@ elif DETECTION_EFF is not None:
 
 cores = {}
 if SITE=="Boulby":
-    cores["known_cores"] = ['Core_1']  #Must match entries in DB used
-    cores["unknown_cores"] = ['Core_2']
+    cores["known_cores"] = ['Core_1','Core_2']  #Must match entries in DB used
+    cores["unknown_cores"] = []
 if SITE=="Fairport":
     cores["known_cores"] = ["Core_1"]
     cores["unknown_cores"] = []

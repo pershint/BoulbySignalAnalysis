@@ -91,7 +91,7 @@ if __name__=='__main__':
             "schedule_dict": c.schedule_dict, "Analysis": None}
     if SPRT is True:
         datadict["Analysis"] = "SPRT"
-        experiments = np.arange(0,10000,1)
+        experiments = np.arange(0,c.NEXPERIMENTS,1)
         for experiment in experiments:
             SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
@@ -99,7 +99,7 @@ if __name__=='__main__':
         datadict["above_null_days"] = SPRTAnalysis.SPRT_accdays
         datadict["below_null_days"] = SPRTAnalysis.SPRT_rejdays
         datadict["no_hypothesis"] = SPRTAnalysis.SPRT_unccount
-        if DEBUG:
+        if DEBUG is True:
             plt.plot(SPRTAnalysis.SPRTresultday, SPRTAnalysis.SPRTresult, \
                     linestyle='none', marker='o', label='# IBD Candidates')
             plt.plot(SPRTAnalysis.SPRTresultday, SPRTAnalysis.SPRTaccbound, \
@@ -129,7 +129,7 @@ if __name__=='__main__':
 
     if POISFIT is True:
         datadict["Analysis"] = "POISSON_FIT"
-        experiments = np.arange(0,100,1)
+        experiments = np.arange(0,C.NEXPERIMENTS,1)
         for experiment in experiments:
             Run = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
@@ -145,13 +145,14 @@ if __name__=='__main__':
         plt.show()
     if SCHED is True:
         datadict["Analysis"] = "ONOFF_DIFFERENCE"
-        experiments = np.arange(0,1000,1)
+        experiments = np.arange(0,c.NEXPERIMENTS,1)
         for experiment in experiments:
             Run = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
             ScheduleAnalysis(Run)
-            datadict["determination_days"] = ScheduleAnalysis.determination_days,
+            datadict["determination_days"] = ScheduleAnalysis.determination_days
             datadict["no3sigmadays"] = ScheduleAnalysis.num_nodetermine
+            datadict["num3siginarow"] = ScheduleAnalysis.num3siginarow
         if DEBUG is True:
             print("# EXP. WITH NO DETERMINATION IN TIME ALOTTED: \n")
             print(ScheduleAnalysis.num_nodetermine)
