@@ -90,13 +90,13 @@ class SPRTAnalysis(ExperimentalAnalysis):
             self.SPRTtestpredict.append(testavg*day)
             self.SPRTresultday.append(days_reacon[self.initdays+int(day)-2])
             self.SPRTresult.append(test_stat)
-            self.SPRTaccbound.append(self.U(day, turnonthresh,turnoffthresh,Uval=55.))
-            self.SPRTrejbound.append(self.L(day, turnonthresh,turnoffthresh,Lval=-55.))
+            self.SPRTaccbound.append(self.U(day, turnonthresh,turnoffthresh,Uval=34.))
+            self.SPRTrejbound.append(self.L(day, turnonthresh,turnoffthresh,Lval=-34.))
             if not determined:
-                if test_stat < self.L(day,turnonthresh,turnoffthresh,Lval=-55.):
+                if test_stat < self.L(day,turnonthresh,turnoffthresh,Lval=-34.):
                     determined = True
                     self.SPRT_rejdays.append(days_reacon[self.initdays-1 + int(day)]) 
-                if test_stat > self.U(day,turnonthresh,turnoffthresh,Uval=55.):
+                if test_stat > self.U(day,turnonthresh,turnoffthresh,Uval=34.):
                     determined = True
                     self.SPRT_accdays.append(days_reacon[self.initdays-1 + int(day)])
         if not determined:

@@ -16,9 +16,9 @@ RESOLUTION = 1 #Exp_Generator does re-binning of data by request; this gives
 schedule_dict = {}
 schedule_dict["OFF_TIME"] = 60
 schedule_dict["UP_TIME"] = 1035
-schedule_dict["KILL_CORES"] = ['Core_2']
+schedule_dict["KILL_CORES"] = ["Core_2"]
 schedule_dict["KILL_DAYS"] = [700]
-schedule_dict["TOTAL_RUN"] = 2000
+schedule_dict["TOTAL_RUN"] = 1550 
 schedule_dict["MAINTENANCE_INTERVAL"] = 106#None
 schedule_dict["MAINTENANCE_TIME"] = 10
 

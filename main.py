@@ -91,7 +91,7 @@ if __name__=='__main__':
             "schedule_dict": c.schedule_dict, "Analysis": None}
     if SPRT is True:
         datadict["Analysis"] = "SPRT"
-        experiments = np.arange(0,20000,1)
+        experiments = np.arange(0,10000,1)
         for experiment in experiments:
             SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)

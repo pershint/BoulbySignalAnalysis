@@ -74,9 +74,9 @@ class CLGraph(object):
                         label="Unknown Full shutdown")
         #Add the CL lines
         CL_dict = {"68.3% CL": int(len(ddays) * 0.683), \
-                 "95% CL": int(len(ddays) * 0.95), \
-                "99.7% CL": int(len(ddays) * 0.997)}
-        CL_colors = ["m","k","r"]
+                 "95% CL": int(len(ddays) * 0.95)}# \
+                #"99.7% CL": int(len(ddays) * 0.997)}
+        CL_colors = ["m","k"]#,"r"]
         for j,CL in enumerate(CL_dict):
             ax.axvline(ddays[CL_dict[CL]], color = CL_colors[j], \
                     linewidth=2, label = CL)
@@ -112,9 +112,9 @@ class CLGraph(object):
         #The default order sucks.  I have to define it here
         handles, labels = ax.get_legend_handles_labels()
         hand = [handles[0], handles[1], handles[3], handles[2],\
-                handles[4],handles[5],handles[6]]
+                handles[4],handles[5]]#,handles[6]]
         lab = [labels[0], labels[1], labels[3], labels[2],\
-                labels[4],labels[5],labels[6]]
+                labels[4],labels[5]]#,labels[6]]
         plt.legend(hand,lab, loc = 2)
         plt.show()       
 

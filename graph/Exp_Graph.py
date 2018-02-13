@@ -1,5 +1,5 @@
 #Functions for graphing different properties of a generated experiment
-
+import copy as cp
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -161,13 +161,21 @@ def Plot_OnOffDiff_A2(Analysis2):
     '''
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    high = np.array(Analysis2.onavg_cumul)
-    low = np.array(Analysis2.offavg_cumul)
+    days = list(cp.deepcopy(Analysis2.Current_Experiment.experiment_days))
+    cumulunc = list(cp.deepcopy(Analysis2.tot_cumul_unc))
+    high = cp.deepcopy(Analysis2.onavg_cumul)
+    low = cp.deepcopy(Analysis2.offavg_cumul)
+    del high[0:61]
+    del low[0:61]
+    del cumulunc[0:61]
+    del days[0:61]
+    high = np.array(high)
+    low = np.array(low)
     #ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.NR_bkg, \
     #        'ro', color='blue', alpha=0.8)
-    ax.errorbar(Analysis2.Current_Experiment.experiment_days, \
+    ax.errorbar(days, \
         (high - low), xerr=0, \
-        yerr=Analysis2.tot_cumul_unc, \
+        yerr=cumulunc, \
         marker='o', linestyle='none', color='b', alpha=0.7, label='On - Off')
     ax.axvline(x=Analysis2.currentexp_determination_day,color='r', \
             label=r'(on - off > 0) by 3$\sigma$')
