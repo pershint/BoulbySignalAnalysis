@@ -7,44 +7,14 @@ import sys
 basepath = os.path.dirname(__file__)
 dbpath = os.path.abspath(os.path.join(basepath, "..", "DB"))
 
-BOULBY_SIGNALS = 'BoulbySignals.json'
-BOULBY_SIGNALS_PC = 'BoulbySignals_PC.json'
+BOULBY_SIGNALS_PC = 'BoulbySignalBackground.json'
 FAIRPORT_SIGNALS_PC = "FairportSignals_PC.json"
-#Class takes in an efficiency and holds the IBD events/day for all defined
-#signal sources at Boulby for that efficiency
-class Signals(object):
-    def __init__(self, efficiency, site):
-        self.efficiency = efficiency
-        self.signals = 'none'
-        self.site = site
-        self.DBget()
-
-
-    def DBget(self):
-        if site == "Boulby":
-            sigpath = os.path.abspath(os.path.join(dbpath, BOULBY_SIGNALS))
-        if site == "Fairport":
-            print("No implementation of Fairport site as a function of" + \
-                    "efficiency. Exiting")
-            sys.exit(0)
-        with open(sigpath) as data_file:
-            data = json.load(data_file)
-            for case in data["Efficiency_Cases"]:
-                if case["Detection_Efficiency"] == self.efficiency:
-                    self.signals = case["Signal_Contributions"] 
-            if self.signals == 'none':
-                    print("Efficiency not found in database.  Check your" + \
-                            "efficiency input.")
-                    sys.exit(0)
-
-    def show(self):
-        if self.signals != 'none':
-            for entry in self.signals:
-                print(str(entry) + ":" + str(self.signals[entry]))
 
 class Signals_PC(object):
-    def __init__(self, pc, site):
+    def __init__(self, pc, pmttype, bufsize, site):
         self.pc = pc
+        self.bufsize = bufsize
+        self.pmttype = pmttype 
         self.signals = 'none'
         self.site = site
         self.DBget()
@@ -57,8 +27,9 @@ class Signals_PC(object):
             sigpath = os.path.abspath(os.path.join(dbpath, FAIRPORT_SIGNALS_PC))
         with open(sigpath) as data_file:
             data = json.load(data_file)
-            for case in data["Photocoverage_Cases"]:
-                if case["Photocoverage"] == self.pc:
+            for case in data["SB"]:
+                if case["Photocoverage"] == self.pc and case["pmt_type"]==self.pmttype \
+                        and case["buffersize"] == self.bufsize:
                     self.signals = case["Signal_Contributions"] 
             if self.signals == 'none':
                     print("Photocoverage not found in database.  Check your" + \

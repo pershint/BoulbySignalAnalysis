@@ -1,0 +1,58 @@
+{
+   "SB": [
+    { "Photocoverage": 0.15,
+      "pmt_type":"regular_activity",
+      "buffersize": 1.5,
+    "Signal_Contributions": {
+        "Core_1" : 0.246,
+        "Core_2" : 0.246,
+        "Tot_background": 0.057
+        }
+    },
+    { "Photocoverage": 0.25,
+      "pmt_type":"regular_activity",
+      "buffersize": 1.5,
+    "Signal_Contributions": {
+        "Core_1" : 0.417,
+        "Core_2" : 0.417,
+        "Tot_background": 0.113
+        }
+    },
+    { "Photocoverage": 0.35,
+      "pmt_type":"regular_activity",
+      "buffersize": 1.5,
+    "Signal_Contributions": {
+        "Core_1" : 0.449,
+        "Core_2" : 0.449,
+        "Tot_background": 0.068
+        }
+    },
+  
+    { "Photocoverage": 0.15,
+      "pmt_type":"low_activity",
+      "buffersize": 1.5,
+    "Signal_Contributions": {
+        "Core_1" : 0.499,
+        "Core_2" : 0.499,
+        "Tot_background": 0.098
+        }
+    },
+    { "Photocoverage": 0.25,
+      "pmt_type":"low_activity",
+      "buffersize": 1.5,
+    "Signal_Contributions": {
+        "Core_1" : 0.681,
+        "Core_2" : 0.681,
+        "Tot_background": 0.077
+        }
+    },
+    { "Photocoverage": 0.35,
+      "pmt_type":"low_activity",
+      "buffersize": 1.5,
+    "Signal_Contributions": {
+        "Core_1" : 0.759,
+        "Core_2" : 0.759,
+        "Tot_background": 0.090
+        }
+    }]
+}

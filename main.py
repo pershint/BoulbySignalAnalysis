@@ -8,7 +8,6 @@ import os.path
 import sys
 import lib.playDarts as pd
 import lib.Exp_Generator as eg
-import lib.config.config as c
 import lib.Analysis as a
 import numpy as np
 #import lib.ExpFitting as ef
@@ -28,6 +27,11 @@ parser.add_option('-e','--efficiency',action="store",dest="efficiency", \
 parser.add_option('-p','--photocov',action="store",dest="pc", \
         type="float",default=None,help="Photocoverage of WATCHMAN" + \
         "to use(0.25 only implemented)")
+parser.add_option('-b','--buffersize',action="store",dest="bufsize", \
+        type="float",default=1.5,help="Specify buffer size in meters")
+parser.add_option('-a','--activity',action="store", dest="activity", \
+        type="string",help="Specify what type of PMTs you want the signal"+\
+        "/background for (normal_activity, 5050mix, or low_activity)")
 parser.add_option('-c','--schedule',action="store_true",dest="schedule", \
         default="False",help="Search for difference in IBD numbers in known"+\
         "reactor on and reactor off data sets")
@@ -44,12 +48,14 @@ SPRT = options.sprt
 POISFIT = options.posfit
 SCHED = options.schedule
 jn = options.jobnum
-
 if options.pc is not None:
     PHOTOCOVERAGE = options.pc
-if options.efficiency is not None:
-    DETECTION_EFF = options.efficiency
+if options.activity is not None:
+    PMTTYPE = options.activity
+if options.bufsize is not None:
+    BUFFERSIZE = options.bufsize
 
+import lib.config.config as c
 if DEBUG is True:
     import graph.Histogram as h
     import graph.Exp_Graph as gr
@@ -87,8 +93,8 @@ if __name__=='__main__':
     UnknownCoreAnalysis = a.UnknownCoreAnalysis(c.SITE)
     SPRTAnalysis = a.SPRTAnalysis(c.SITE)
     #Datadict object will save the output configuration and results of analysis
-    datadict = {"Site": c.SITE,"pc":c.PHOTOCOVERAGE, 
-            "schedule_dict": c.schedule_dict, "Analysis": None}
+    datadict = {"Site": c.SITE,"pc":c.PHOTOCOVERAGE,"buffersize":c.BUFFERSIZE, 
+            "pmt_type":c.PMTTYPE,"schedule_dict": c.schedule_dict, "Analysis": None}
     if SPRT is True:
         datadict["Analysis"] = "SPRT"
         experiments = np.arange(0,c.NEXPERIMENTS,1)

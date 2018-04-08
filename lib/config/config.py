@@ -8,7 +8,8 @@ SITE = "Boulby"  #Either Boulby or Fairport implemented
 
 ##### Choose either a photoverage or an efficiency, not both #####
 PHOTOCOVERAGE = 0.25  #Choose the photocoverage you want from the database
-DETECTION_EFF = None #Detection efficiency for IBDs
+BUFFERSIZE = 1.5  #Choose your buffer size, in meters
+PMTTYPE = "regular_activity" #regular_activity, low_activity, or 5050mix
 NEXPERIMENTS = 10 #Number of experiments generated in analysis run
 
 RESOLUTION = 1 #Exp_Generator does re-binning of data by request; this gives
@@ -35,10 +36,7 @@ schedule_dict["UNDECLARED_OUTAGE_LENGTHS"] = [30]
 
 ###################BEGIN CONFIGURING BASED ON OPTIONS ABOVE############
 signals={}
-if PHOTOCOVERAGE is not None:
-    signals = dp.Signals_PC(PHOTOCOVERAGE, SITE)
-elif DETECTION_EFF is not None:
-    signals = dp.Signals(DETECTION_EFF, SITE)
+signals = dp.Signals_PC(PHOTOCOVERAGE,PMTTYPE,BUFFERSIZE, SITE)
 
 cores = {}
 if SITE=="Boulby":

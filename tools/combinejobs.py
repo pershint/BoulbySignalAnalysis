@@ -19,6 +19,8 @@ class dataFuser(object):
         '''
         self.site = seed["Site"]
         self.pc = seed["pc"]
+        self.bufsize = seed["buffersize"]
+        self.pmttype = seed["pmt_type"]
         self.schedule_dict = seed["schedule_dict"]
 
     def clearFuser(self):
@@ -30,6 +32,8 @@ class dataFuser(object):
         self.determination_days = []
         self.no3sigmadays = 0
         self.pc = None
+        self.bufsize = seed["buffersize"]
+        self.pmttype = seed["pmt_type"]
         self.schedule_dict = None
 
     def hassamemeta(self, data):
@@ -37,9 +41,9 @@ class dataFuser(object):
         Checks if the given data dictionary has the same metadata as
         Has been initialized using the initDetails function.
         '''
-        if self.site != data["Site"]:
+        if self.site != data["Site"] or self.pmttype!=data["pmt_type"]:
             return False
-        elif self.pc != data["pc"]:
+        elif self.pc != data["pc"] or self.bufsize!=data["buffersize"]:
             return False
         elif self.schedule_dict != data["schedule_dict"]:
             return False
@@ -80,6 +84,8 @@ class dataFuser(object):
         comb_dict["determination_days"] = self.determination_days
         comb_dict["no3sigmadays"] = self.no3sigmadays
         comb_dict["pc"] = self.pc
+        comb_dict["pmt_type"] = self.pmttype
+        comb_dict["buffersize"] = self.bufsize
         comb_dict["schedule_dict"] = self.schedule_dict
         with open(title, "w") as f:
             json.dump(comb_dict, f, sort_keys=True, indent=4)

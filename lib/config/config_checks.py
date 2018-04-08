@@ -3,11 +3,13 @@
 import config as c
 
 def runchecks():
-    if c.PHOTOCOVERAGE is not None and c.DETECTION_EFF is not None:
-        print("CHOOSE EITHER A PHOTOCOVERAGE OR EFFICIENCY, NOT BOTH.")
+    if c.PHOTOCOVERAGE is None:
+        print("PLEASE SPECIFIY A PHOTOCOVERAGE IN THE CONFIG FILE IN lib/config/")
         sys.exit(0)
-    elif c.DETECTION_EFF is None and c.PHOTOCOVERAGE is None:
-        print("CHOOSE A PHOTOCOVERAGE OR EFFICIENCY YO")
+    if c.BUFFERSIZE is None:
+        print("PLEASE SPECIFY A BUFFER SIZE IN THE CONFIG FILE IN lib/config/")
         sys.exit(0)
-
+    if c.PMTTYPE is None:
+        print("PLEASE SPECIFY A PMT TYPE IN THE CONFIG FILE IN lib/config/")
+        sys.exit(0)
 
