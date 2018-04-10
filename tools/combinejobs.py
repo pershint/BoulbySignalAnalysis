@@ -9,8 +9,10 @@ class dataFuser(object):
         self.site = None
         self.determination_days = []
         self.no3sigmadays = 0
+        self.num3siginarow = None
         self.pc = None
         self.schedule_dict = None
+        self.details_inited = False
 
     def initDetails(self,seed):
         '''
@@ -19,9 +21,11 @@ class dataFuser(object):
         '''
         self.site = seed["Site"]
         self.pc = seed["pc"]
+        self.num3siginarow = seed["num3siginarow"]
         self.bufsize = seed["buffersize"]
         self.pmttype = seed["pmt_type"]
         self.schedule_dict = seed["schedule_dict"]
+        self.details_inited = True
 
     def clearFuser(self):
         '''
@@ -31,16 +35,21 @@ class dataFuser(object):
         self.site = None
         self.determination_days = []
         self.no3sigmadays = 0
+        self.num3siginarow = None
         self.pc = None
-        self.bufsize = seed["buffersize"]
-        self.pmttype = seed["pmt_type"]
+        self.bufsize = None
+        self.pmttype = None
         self.schedule_dict = None
+        self.details_inited = False
 
     def hassamemeta(self, data):
         '''
         Checks if the given data dictionary has the same metadata as
         Has been initialized using the initDetails function.
         '''
+        if self.details_inited is False:
+            print("There's no meta data currently loaded.")
+            return False
         if self.site != data["Site"] or self.pmttype!=data["pmt_type"]:
             return False
         elif self.pc != data["pc"] or self.bufsize!=data["buffersize"]:
@@ -67,9 +76,13 @@ class dataFuser(object):
                 with open(fname,"r") as f:
                     data = json.load(f)
                     #Check if the metadata matches
-                    if self.hassamemeta(data):
+                    if self.hassamemeta(data) is False:
+                        self.initDetails(data)
+                    elif self.hassamemeta(data):
                         self.determination_days.extend(data["determination_days"])
                         self.no3sigmadays += data["no3sigmadays"]
+                    elif self.hassamemeta(data) is False and self.details_inited is True:
+                        print("TRIED TO LOAD DATA WITH DIFFERENT META INFO...")
 #            except:
 #                print("Error loading in file" + str(fname) + ". Continuing")
 #                continue
@@ -83,6 +96,7 @@ class dataFuser(object):
         comb_dict["Site"] = self.site
         comb_dict["determination_days"] = self.determination_days
         comb_dict["no3sigmadays"] = self.no3sigmadays
+        comb_dict["num3siginarow"] = self.num3siginarow
         comb_dict["pc"] = self.pc
         comb_dict["pmt_type"] = self.pmttype
         comb_dict["buffersize"] = self.bufsize
