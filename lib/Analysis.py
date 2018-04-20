@@ -2,7 +2,6 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as scs
-import ROOT
 
 #Class takes in a generated experiment (ExperimentGenerator class) and performs
 #Some Analysis assuming we know exactly the days each core is on or off
@@ -215,6 +214,8 @@ class UnknownCoreAnalysis(ExperimentalAnalysis):
             events_rebinned.append(np.sum(events_offdays[binleft:sumindex]))
         #Now, the maximum likelihood fit for the Poisson distribution's
         #parameter is just the mean.
+
+        import ROOT
         values = ROOT.TH1F("event_hist", "", np.max(events_rebinned) - \
                 np.min(events_rebinned), np.min(events_rebinned), \
                 np.max(events_rebinned))
@@ -251,6 +252,7 @@ class UnknownCoreAnalysis(ExperimentalAnalysis):
             #    poisson = par[0] * ROOT.TMath.Power((par[1]/par[2]),(x[0]/par[2])) * (ROOT.TMath.Exp(-(par[1]/par[2])))/ROOT.TMath.Gamma((x[0]/par[2])+1)
         #else:
         #    poisson = 0
+        import ROOT
         return par[0]*ROOT.TMath.Poisson(x[0], par[1])
 
 class ScheduleAnalysis(ExperimentalAnalysis):
