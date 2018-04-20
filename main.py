@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 #Main script for outputting reactor sensitivity study at Boulby in WATCHMAN
-import matplotlib.pyplot as plt
 import optparse
 import json
 import os.path
@@ -59,7 +58,7 @@ import lib.config.config as c
 if DEBUG is True:
     import graph.Histogram as h
     import graph.Exp_Graph as gr
-
+    import matplotlib.pyplot as plt
 if __name__=='__main__':
    
     #Run once, add the maintenance and core shutoffs to schedule_dict
