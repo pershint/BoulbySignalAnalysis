@@ -38,12 +38,16 @@ parser.add_option('-f','--poisfit',action="store_true",dest="posfit", \
         default="False",help="Fit a poisson to 'rector off' data for known reactors")
 parser.add_option('-s','--SPRT',action="store_true",dest="sprt", \
         default="False",help="Run an SPRT over all on days for known reactors")
+parser.add_option('-l','--Kalman',action="store_true",dest="kalman", \
+        default="False",help="Run the Kalman Filter probability test on"+\
+        "each statistical experiment generated")
 parser.add_option('-j','--jobnum',action="store",dest="jobnum", \
         type="int",default=0,help="Job number (for saving data/grid use)")
 
 (options,args) = parser.parse_args()
 DEBUG = options.debug
 SPRT = options.sprt
+KALMAN = options.kalman
 POISFIT = options.posfit
 SCHED = options.schedule
 jn = options.jobnum
@@ -60,7 +64,7 @@ if DEBUG is True:
     import graph.Exp_Graph as gr
     import matplotlib.pyplot as plt
 if __name__=='__main__':
-   
+    print(str(c.signals.signals)) 
     #Run once, add the maintenance and core shutoffs to schedule_dict
     Run1 = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
             c.cores)
@@ -91,12 +95,20 @@ if __name__=='__main__':
     ScheduleAnalysis = a.ScheduleAnalysis(c.SITE)
     UnknownCoreAnalysis = a.UnknownCoreAnalysis(c.SITE)
     SPRTAnalysis = a.SPRTAnalysis(c.SITE)
+    KalmanAnalysis = a.KalmanFilterAnalysis(c.SITE)
     #Datadict object will save the output configuration and results of analysis
     datadict = {"Site": c.SITE,"pc":c.PHOTOCOVERAGE,"buffersize":c.BUFFERSIZE, 
             "pmt_type":c.PMTTYPE,"schedule_dict": c.schedule_dict, "Analysis": None}
+    experiments = np.arange(0,c.NEXPERIMENTS,1)
+    
+    if KALMAN is True:
+        datadict["Analysis"] = "KALMAN"
+        for experiment in experiments:
+            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
+                    c.cores)
+            KalmanAnalysis(SingleRun)
     if SPRT is True:
         datadict["Analysis"] = "SPRT"
-        experiments = np.arange(0,c.NEXPERIMENTS,1)
         for experiment in experiments:
             SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
@@ -134,7 +146,6 @@ if __name__=='__main__':
 
     if POISFIT is True:
         datadict["Analysis"] = "POISSON_FIT"
-        experiments = np.arange(0,C.NEXPERIMENTS,1)
         for experiment in experiments:
             Run = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
@@ -150,7 +161,6 @@ if __name__=='__main__':
         plt.show()
     if SCHED is True:
         datadict["Analysis"] = "ONOFF_DIFFERENCE"
-        experiments = np.arange(0,c.NEXPERIMENTS,1)
         for experiment in experiments:
             Run = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)

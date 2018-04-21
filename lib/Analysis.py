@@ -2,6 +2,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as scs
+import scipy.misc as scm
 
 #Class takes in a generated experiment (ExperimentGenerator class) and performs
 #Some Analysis assuming we know exactly the days each core is on or off
@@ -13,6 +14,96 @@ class ExperimentalAnalysis(object):
 
     def __call__(self, ExpGen):
         self.Current_Experiment = ExpGen
+
+class KalmanFilterAnalysis(ExperimentalAnalysis):
+    def __init__(self, sitename, prob_ontooff = 17.0/825, prob_offtoon = 17.0/270):
+        super(KalmanFilterAnalysis, self).__init__(sitename)
+        self.PL_distributions  = []
+        self.PH_distributions = []
+        self.prob_ontooff = prob_ontooff
+        self.prob_offtoon = prob_offtoon
+
+
+    def __call__(self, ExpGen,ontototal_ratio_guess=(825.0/1095.0)):
+        super(KalmanFilterAnalysis, self).__call__(ExpGen)
+        self.ExpCheck()
+        self.ontototal_ratio_guess = ontototal_ratio_guess
+        self.total_signal=0.0
+        self.total_background = 0.0
+        for signal in  self.Current_Experiment.signals:
+            if "Core" in signal:
+                self.total_signal+=self.Current_Experiment.signals[signal]
+            else:
+                self.total_background+=self.Current_Experiment.signals[signal]
+        self.RunKF()
+
+    def ExpCheck(self):
+        if self.Current_Experiment.numcores != 2:
+            print("Experiment has less or more than 2 cores..  This analysis is"+\
+                    "only refined to run with two cores currently")
+            time.sleep(2)
+    
+    def RunKF(self):
+        '''
+        Takes the statistical experiment currently loaded and
+        Predicts the probability at each day whether the two neighboring
+        reactors are in the "both on" or "one off" state at each day.
+        '''
+        #Get the experiment's events per day and day array
+        Exp_day = self.Current_Experiment.experiment_days
+        Events_on_day = self.Current_Experiment.events
+        
+        #Initialize day "zero" of the experiment's probabilities as
+        #The ratio of "one off"/total and "both on"/total expected
+        PL_days = [1.0-self.ontototal_ratio_guess]
+        PH_days = [self.ontototal_ratio_guess]
+        
+        #Matrix that propagates our posterior PDF at day N to the prior PDF
+        #at day N+1
+        a = self.prob_offtoon
+        b = self.prob_ontooff
+        propagator = np.matrix([[(1.0-a),b],[a,(1.0-b)]])
+        #Now, go day by day and run the Kalmann Filter likelihood algorithm
+        for j,n in enumerate(Events_on_day):
+            #First, propagate probability distributions one step foward
+            posterPDF_daynm1 = np.matrix([[PL_days[j-1]],[PH_days[j-1]]])
+            priorPDF_dayn = propagator * posterPDF_daynm1
+            #Now,we calculate the probability the event count N on the current day
+            #Came from either a "both on" or "both off" state
+            #FIXME: assumes cores are same signal; we can generalize this better...
+            mu_L = self.total_background + (self.total_signal/2.0)
+            mu_H = self.total_background + (self.total_signal)
+            likelihood_off = self.__poisson(mu_L, n)
+            likelihood_on = self.__poisson(mu_H, n)
+            #Almost ready to find the posterior PDF at the current day.  Need the
+            #Correct normalization factors that will go with the following
+            #Calculation to keep our posterior p_L + p_H = 1
+            
+            normalization = 1.0/(likelihood_off * priorPDF_dayn.item(0) + \
+            likelihood_on * priorPDF_dayn.item(1))
+            #Finally, calculate the posterior PDF for this day
+            posteriorPDF_pL = normalization * likelihood_off * priorPDF_dayn.item(0)
+            posteriorPDF_pH = normalization * likelihood_on * priorPDF_dayn.item(1)
+
+            #Append the probability of being low or high on this day to our arrays
+            #holding each day's posterior PL and PH
+            PL_days.append(posteriorPDF_pL)
+            PH_days.append(posteriorPDF_pH)
+        PL_days = PL_days[1:len(PL_days)]
+        PH_days = PH_days[1:len(PH_days)]
+        plt.plot(Exp_day, PL_days, color='b', label='PL')
+        plt.plot(Exp_day, PH_days, color='r', label='PH')
+        plt.legend(loc=1)
+        plt.show()
+        #We've found the probability of being "both on" or "one off" for each day.
+        #Add the arrays of these to our classes' collection of PLs and PHs
+        self.PL_distributions.append(PL_days)
+        self.PH_distributions.append(PH_days)
+
+        return
+    def __poisson(self,mu,x):
+        #TODO: If x > 100, default to a Gaussian
+        return np.exp(-mu)*(mu**(x))/scm.factorial(x)
 
 #This class runs an sequential probability ratio test.  First, the 
 #Null hypothesis is treated as the first 100 days of data's average.
