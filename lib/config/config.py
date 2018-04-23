@@ -10,7 +10,7 @@ SITE = "Boulby"  #Either Boulby or Fairport implemented
 PHOTOCOVERAGE = 0.35  #Choose the photocoverage you want from the database
 BUFFERSIZE = 1.5  #Choose your buffer size, in meters
 PMTTYPE = "low_activity" #regular_activity, low_activity, or 5050mix
-NEXPERIMENTS = 1000 #Number of experiments generated in analysis run
+NEXPERIMENTS = 10 #Number of experiments generated in analysis run
 RESOLUTION = 1 #Exp_Generator does re-binning of data by request; this gives
                #The bin resolution in days
 

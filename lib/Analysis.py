@@ -16,17 +16,23 @@ class ExperimentalAnalysis(object):
         self.Current_Experiment = ExpGen
 
 class KalmanFilterAnalysis(ExperimentalAnalysis):
-    def __init__(self, sitename, prob_ontooff = 17.0/825, prob_offtoon = 17.0/270):
+    def __init__(self, sitename, prob_ontooff = 17.0/825, prob_offtoon = 17.0/270,daysperbin=3):
         super(KalmanFilterAnalysis, self).__init__(sitename)
         self.PL_distributions  = []
         self.PH_distributions = []
         self.prob_ontooff = prob_ontooff
         self.prob_offtoon = prob_offtoon
-
+        self.experiment_days = []
 
     def __call__(self, ExpGen,ontototal_ratio_guess=(825.0/1095.0)):
         super(KalmanFilterAnalysis, self).__call__(ExpGen)
         self.ExpCheck()
+        if len(self.experiment_days) == 0:
+            self.experiment_days = self.Current_Experiment.experiment_days
+        else:
+            if str(self.experiment_days) != str(self.Current_Experiment.experiment_days):
+                print("WARNING: Experiments of different lengths have been"+\
+                        "loaded in/analyzed.  I fear for you")
         self.ontototal_ratio_guess = ontototal_ratio_guess
         self.total_signal=0.0
         self.total_background = 0.0
@@ -89,16 +95,10 @@ class KalmanFilterAnalysis(ExperimentalAnalysis):
             #holding each day's posterior PL and PH
             PL_days.append(posteriorPDF_pL)
             PH_days.append(posteriorPDF_pH)
-        PL_days = PL_days[1:len(PL_days)]
-        PH_days = PH_days[1:len(PH_days)]
-        plt.plot(Exp_day, PL_days, color='b', label='PL')
-        plt.plot(Exp_day, PH_days, color='r', label='PH')
-        plt.legend(loc=1)
-        plt.show()
         #We've found the probability of being "both on" or "one off" for each day.
         #Add the arrays of these to our classes' collection of PLs and PHs
-        self.PL_distributions.append(PL_days)
-        self.PH_distributions.append(PH_days)
+        self.PL_distributions.append(PL_days[1:len(PL_days)])
+        self.PH_distributions.append(PH_days[1:len(PH_days)])
 
         return
     def __poisson(self,mu,x):

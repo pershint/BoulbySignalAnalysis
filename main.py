@@ -107,6 +107,18 @@ if __name__=='__main__':
             SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
             KalmanAnalysis(SingleRun)
+        #if DEBUG is True:
+        datadict["PL_distributions"] = KalmanAnalysis.PL_distributions
+        datadict["PH_distributions"] = KalmanAnalysis.PH_distributions
+        if DEBUG is True:
+            print("SHOWING PLOT OF FIRST EXPERIMENT'S PROBABILITY TRACKING")
+            PL_days = KalmanAnalysis.PL_distributions[0]
+            PH_days = KalmanAnalysis.PH_distributions[0]
+            Exp_day = KalmanAnalysis.experiment_days
+            plt.plot(Exp_day, PL_days, color='b', label='PL')
+            plt.plot(Exp_day, PH_days, color='r', label='PH')
+            plt.legend(loc=1)
+            plt.show()
     if SPRT is True:
         datadict["Analysis"] = "SPRT"
         for experiment in experiments:
