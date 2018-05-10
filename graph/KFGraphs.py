@@ -65,7 +65,7 @@ def OneCoreOff_CL(KalmanAnalysisDict,daysperbin=3,CL=0.683):
     StateProb = np.array(StateProb)
     ax.plot(Exp_days,StateProb, alpha=0.8,linewidth=4,label="")
     CLpc = CL*100
-    plt.title("State of cores as predicted by Kalman Filter (%f CL) \n"%(round(CLpc,1)+\
+    plt.title("State of cores as predicted by Kalman Filter (%f CL) \n"%(CLpc)+\
             "(1=both on, 0=one off, 1/2=indeterminant)",fontsize=36)
     plt.xlabel("Experiment day",fontsize=34)
     plt.ylabel("Predicted reactor state",fontsize=34)
