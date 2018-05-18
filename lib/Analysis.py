@@ -16,7 +16,7 @@ class ExperimentalAnalysis(object):
         self.Current_Experiment = ExpGen
 
 class KalmanFilterAnalysis(ExperimentalAnalysis):
-    def __init__(self, sitename, prob_ontooff = 17.0/825, prob_offtoon = 17.0/270,daysperbin=3):
+    def __init__(self, sitename, prob_ontooff = 26.0/1140, prob_offtoon = 26.0/1140,daysperbin=3):
         super(KalmanFilterAnalysis, self).__init__(sitename)
         self.PL_distributions  = []
         self.PH_distributions = []
@@ -24,7 +24,7 @@ class KalmanFilterAnalysis(ExperimentalAnalysis):
         self.prob_offtoon = prob_offtoon
         self.experiment_days = []
 
-    def __call__(self, ExpGen,ontototal_ratio_guess=(825.0/1095.0)):
+    def __call__(self, ExpGen,ontototal_ratio_guess=(1140.0/1550.0)):
         super(KalmanFilterAnalysis, self).__call__(ExpGen)
         self.ExpCheck()
         if len(self.experiment_days) == 0:
@@ -99,8 +99,8 @@ class KalmanFilterAnalysis(ExperimentalAnalysis):
         #Add the arrays of these to our classes' collection of PLs and PHs
         self.PL_distributions.append(PL_days[1:len(PL_days)])
         self.PH_distributions.append(PH_days[1:len(PH_days)])
-
         return
+
     def __poisson(self,mu,x):
         #TODO: If x > 100, default to a Gaussian
         return np.exp(-mu)*(mu**(x))/scm.factorial(x)

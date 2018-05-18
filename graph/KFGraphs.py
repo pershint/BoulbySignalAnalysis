@@ -19,15 +19,16 @@ def Rebin_PLPH(PL_dist, PH_dist, daysperbin=3):
     PL_rebinned = np.array(PL_rebinned)
     return PL_rebinned, PH_rebinned
 
-def PLPH_Plotter(KalmanAnalysisDict,daysperbin=3):
+def PLPH_Plotter(KalmanAnalysisDict,daysperbin=3,coremap=None):
     '''Plots the first PL and PH distribution in the analysis results dictionary'''
     PH_dist = np.array(KalmanAnalysisDict["PH_distributions"][0])
     PL_dist = np.array(KalmanAnalysisDict["PL_distributions"][0])
-    Exp_days = np.arange(0,KalmanAnalysisDict["schedule_dict"]["TOTAL_RUN"],daysperbin)
-    Exp_days = Exp_days[1:len(Exp_days)]
+    Exp_days = np.arange(1,KalmanAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1,daysperbin)
+    Exp_days = Exp_days[0:len(Exp_days)]
+    print("LEN EXP DAYS: " + str(len(Exp_days)))
     sns.set_style("whitegrid")
     sns.axes_style("whitegrid")
-    xkcd_colors = ['slate blue', 'light eggplant', 'warm pink', 'green', 'grass']
+    xkcd_colors = ['light eggplant', 'black', 'slate blue', 'warm pink', 'green', 'grass']
     sns.set_palette(sns.xkcd_palette(xkcd_colors))#,len(allclasssacs)))
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
@@ -35,8 +36,18 @@ def PLPH_Plotter(KalmanAnalysisDict,daysperbin=3):
     PL_rebinned,PH_rebinned = Rebin_PLPH(PL_dist, PH_dist,daysperbin=daysperbin)
     #Plot the PL days
     ax.plot(Exp_days,PH_rebinned, alpha=0.8,linewidth=4,label="P_high")
-    ax.plot(Exp_days,PL_rebinned, alpha=0.8,linewidth=4,label="P_low")
-    plt.legend(loc=1)
+    if coremap is not None:
+        ax.plot(Exp_days,coremap-1, linewidth=3, label="Core states") 
+    #ax.plot(Exp_days,PL_rebinned, alpha=0.8,linewidth=4,label="P_low")
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.title("Probability of reactor states at Boulby per day\n"
+            "Core state legend: 1=both cores on, 0=one core off",fontsize=32)
+    plt.tick_params(labelsize=26)
+    plt.xlabel("Day in experiment",fontsize=30)
+    plt.ylabel("Probability of state",fontsize=30)
+    #plt.legend(loc=5)
     plt.show()
 
 def OneCoreOff_CL(KalmanAnalysisDict,daysperbin=3,CL=0.683):
