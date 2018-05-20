@@ -16,7 +16,8 @@ class ExperimentalAnalysis(object):
         self.Current_Experiment = ExpGen
 
 class KalmanFilterAnalysis(ExperimentalAnalysis):
-    def __init__(self, sitename, prob_ontooff = 26.0/1140, prob_offtoon = 26.0/1140,daysperbin=3):
+    #TODO: Have prob_ontooff calculated based on input schedule
+    def __init__(self, sitename, prob_ontooff = 26.0/1140, prob_offtoon = 26.0/410,daysperbin=3):
         super(KalmanFilterAnalysis, self).__init__(sitename)
         self.PL_distributions  = []
         self.PH_distributions = []
