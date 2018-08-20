@@ -1,5 +1,32 @@
 {
    "SB": [
+    { "Photocoverage": 0.20,
+      "pmt_type":"R7801_LRI",
+      "buffersize": 1.7,
+    "Signal_Contributions": {
+        "Core_1" : 1.22,
+        "Core_2" : 1.22,
+        "Tot_background": 0.324
+        }
+    },
+    { "Photocoverage": 0.25,
+      "pmt_type":"R11780_SG",
+      "buffersize": 1.6,
+    "Signal_Contributions": {
+        "Core_1" : 0.946,
+        "Core_2" : 0.946,
+        "Tot_background": 0.0737
+        }
+    },
+    { "Photocoverage": 0.20,
+      "pmt_type":"R11780_SG",
+      "buffersize": 1.6,
+    "Signal_Contributions": {
+        "Core_1" : 0.813,
+        "Core_2" : 0.813,
+        "Tot_background": 0.224
+        }
+    },
     { "Photocoverage": 0.15,
       "pmt_type":"regular_activity",
       "buffersize": 1.5,
