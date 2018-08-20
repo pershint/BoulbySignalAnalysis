@@ -7,18 +7,191 @@ import scipy.misc as scm
 #Class takes in a generated experiment (ExperimentGenerator class) and performs
 #Some Analysis assuming we know exactly the days each core is on or off
 class ExperimentalAnalysis(object):
-    def __init__(self, sitename):
-        self.sitename = sitename
+    def __init__(self):
         #Holds metadata of current experiment in analysis
         self.Current_Experiment = None
 
     def __call__(self, ExpGen):
         self.Current_Experiment = ExpGen
 
+class ForwardBackwardAnalysis(ExperimentalAnalysis):
+    '''This analysis uses the forward-backward algorithm to estimate
+    the probability that Hartlepool's reactors are "both on" or "one off".\n\n
+    Inputs on initialization:\n\n
+    prob_ontooff: Probability that a transition happens from a 'both on' state
+    to a 'one off' state on any given day \n
+    prob_offtoon: Probability that a transition happens from a 'one off' state to
+    a 'both on' state on any given day \n
+    (The above two will define the Markov Chain matrix representation)\n\n
+    daysperbin: Binning size for probability vector output; doesn't affect analysis
+    results, only adjusts granularity for eventual plotting \n \n
+
+    Inputs on class call:\n
+    ExpGen: ExperimentGenerator class that contains a statistically generated
+    WATCHMAN experiment \n
+    ontototal_ratio_guess: Guess as to the ratio of on days to off days; used for
+    initializing the probability vector's inputs
+    '''
+    
+    def __init__(self,daysperbin=3):
+        super(ForwardBackwardAnalysis, self).__init__()
+        self.PL_distributions  = []
+        self.PH_distributions = []
+        self.prob_ontooff = None
+        self.prob_offtoon = None
+        self.experiment_length = None
+
+    def __call__(self, ExpGen,ontototal_ratio_guess=(1140.0/1550.0),
+            prob_ontooff = 26.0/1140, prob_offtoon = 26.0/410):
+        '''Runs the Forward-Backward Analysis on the input ExperimentGenerator
+        class and saves the predicted probabilities of being in the "both on" or
+        "one off" states in self.PH_distributions and self.PL_distributions.'''
+
+        super(ForwardBackwardAnalysis, self).__call__(ExpGen)
+        self.ExpCheck()
+        
+        if self.experiment_length is None:
+            self.experiment_length = len(self.Current_Experiment.experiment_days)
+        else:
+            if self.experiment_length != len(self.Current_Experiment.experiment_days):
+                print("WARNING: Experiments of different lengths have been "+\
+                        "loaded in/analyzed.  This could be bad if you are trying "+\
+                        "to compare algorithm performance across multiple experiments")
+        
+        self.ontototal_ratio_guess = ontototal_ratio_guess
+        self.prob_ontooff = prob_ontooff
+        self.prob_offtoon = prob_offtoon
+        #
+        self.total_signal=0.0
+        self.total_background = 0.0
+        for signal in  self.Current_Experiment.signals:
+            if "Core" in signal:
+                self.total_signal+=self.Current_Experiment.signals[signal]
+            else:
+                self.total_background+=self.Current_Experiment.signals[signal]
+        self._RunFB()
+
+    def ExpCheck(self):
+        if self.Current_Experiment.numcores != 2:
+            print("Experiment has less or more than 2 cores..  This analysis is"+\
+                    "only currently able to run with two cores currently")
+            time.sleep(2)
+    
+    def _RunFB(self):
+        '''
+        Takes the statistical experiment currently loaded and
+        Predicts the probability at each day whether the two neighboring
+        reactors are in the "both on" or "one off" state at each day.
+        '''
+        #Get the experiment's events per day and day number array
+        Exp_day = self.Current_Experiment.experiment_days
+        Events_on_day = self.Current_Experiment.events
+        
+        #Initialize day "zero" of the experiment's probabilities as
+        #The ratio of "one off"/total and "both on"/total expected
+        PL_days = 1.0-self.ontototal_ratio_guess
+        PH_days = self.ontototal_ratio_guess
+        pivec = [PH_days, PL_days]
+        
+        #Matrix that propagates our posterior PDF at day N to the prior PDF
+        #at day N+1
+        a = self.prob_offtoon
+        b = self.prob_ontooff
+        propagator = np.array([[(1.0-b),a],[b,(1.0-a)]])
+        #Calculate the forward terms
+        PH_forward, PL_forward = self._calcforwardterms(propagator=propagator,
+                days=Exp_day, events=Events_on_day, pivec=pivec)
+        #Calculate the backward terms
+        PH_backward, PL_backward = self._calcbackwardterms(propagator=propagator,
+                days=Exp_day, events=Events_on_day, pivec=pivec)
+        #Get the normalization factor for our final probability vector elements
+        k = 1.0 / ((PH_forward*PH_backward) + (PL_forward*PL_backward))
+        #Get the unnormalized Probability vectors
+        PH_vec = k*PH_forward*PH_backward
+        PL_vec = k*PL_forward*PL_backward
+        
+        #Append this experiment's results to the distributions array
+        self.PL_distributions.append(PL_vec)
+        self.PH_distributions.append(PH_vec)
+        return
+
+    def _calcbackwardterms(self, propagator=None, days=None, events=None, pivec=None):
+        PH_backward = [1.0]
+        PL_backward = [1.0]
+        for j,n in reversed(list(enumerate(events))):
+            #Now,we calculate the probability the event count N on the current day
+            #Came from either a "both on" or "both off" state
+            #FIXME: assumes cores are same signal; we can generalize this better...
+            mu_L = self.total_background + (self.total_signal/2.0)
+            mu_H = self.total_background + (self.total_signal)
+            likelihood_off = self._poisson(mu_L, n)
+            likelihood_on = self._poisson(mu_H, n)
+            
+            #Make an array out of our "both on" and "one off" probabilities; it's
+            #Just a tool for the algorithm
+            parr = np.array([[likelihood_on, likelihood_off],
+                [likelihood_on, likelihood_off]])
+            #Now, do the Hadamard product with the propagator (element-wise multiply)
+            hmatrix = np.multiply(propagator, parr)
+            
+            #Finally, dot this with our most recent PL and PH backward terms
+            most_recent_backwardterms = np.array([PH_backward[0],PL_backward[0]])
+            this_backwardterm = np.dot(hmatrix,most_recent_backwardterms)
+            #Append the newest backward term to the front of the array
+            PH_backward = [this_backwardterm[0]] + PH_backward
+            PL_backward = [this_backwardterm[1]] + PL_backward
+        #Strip off the initialization PL and PH
+        PH_backward.pop(len(PH_backward)-1)
+        PL_backward.pop(len(PL_backward)-1)
+        #Return the backward term matrices
+        return np.array(PH_backward), np.array(PL_backward)
+
+    def _calcforwardterms(self, propagator=None, days=None, events=None, pivec=None):
+        PH_forward = [pivec[0]]
+        PL_forward = [pivec[1]]
+        for j,n in enumerate(events):
+            #Now,we calculate the probability the event count N on the current day
+            #Came from either a "both on" or "both off" state
+            #FIXME: assumes cores are same signal; we can generalize this better...
+            mu_L = self.total_background + (self.total_signal/2.0)
+            mu_H = self.total_background + (self.total_signal)
+            likelihood_off = self._poisson(mu_L, n)
+            likelihood_on = self._poisson(mu_H, n)
+            if j==0:
+                #Initializtion step of forward calculation; no propagation matrix
+                PH_forward.append(pivec[0]*likelihood_on)
+                PL_forward.append(pivec[1]*likelihood_off)
+                continue
+            
+            #First, propagate probability distributions one step foward
+            posterPDF_daynm1 = np.array([[PH_forward[j]],[PL_forward[j]]])
+            print("POSTPDF: " + str(posterPDF_daynm1)) 
+            priorPDF_dayn = np.dot(propagator , posterPDF_daynm1)
+            
+            #Now, calculate the forward term. You'll notice this algorithm is
+            #Very similar to the Kalman Filter; just no normalization yet
+            posteriorPDF_pH =  likelihood_on * priorPDF_dayn.item(0)
+            posteriorPDF_pL =  likelihood_off * priorPDF_dayn.item(1)
+
+            #Append the probability of being low or high on this day to our arrays
+            #holding each day's posterior PL and PH
+            PH_forward.append(posteriorPDF_pH)
+            PL_forward.append(posteriorPDF_pL)
+        print("PHFORWARD: " + str(PH_forward)) 
+        #Remove our "day zero" guess from algorithm return
+        PH_forward.pop(0)
+        PL_forward.pop(0)
+        #Return the forward term matrices
+        return np.array(PH_forward), np.array(PL_forward)
+
+    def _poisson(self,mu,x):
+        #TODO: If x > 100, default to a Gaussian
+        return np.exp(-mu)*(mu**(x))/scm.factorial(x)
+
 class KalmanFilterAnalysis(ExperimentalAnalysis):
     #TODO: Have prob_ontooff calculated based on input schedule
-    def __init__(self, sitename, prob_ontooff = 26.0/1140, prob_offtoon = 26.0/410,daysperbin=3):
-        super(KalmanFilterAnalysis, self).__init__(sitename)
+    def __init__(self, prob_ontooff = 26.0/1140, prob_offtoon = 26.0/410,daysperbin=3):
+        super(KalmanFilterAnalysis, self).__init__()
         self.PL_distributions  = []
         self.PH_distributions = []
         self.prob_ontooff = prob_ontooff
@@ -69,19 +242,19 @@ class KalmanFilterAnalysis(ExperimentalAnalysis):
         #at day N+1
         a = self.prob_offtoon
         b = self.prob_ontooff
-        propagator = np.matrix([[(1.0-a),b],[a,(1.0-b)]])
+        propagator = np.array([[(1.0-a),b],[a,(1.0-b)]])
         #Now, go day by day and run the Kalmann Filter likelihood algorithm
         for j,n in enumerate(Events_on_day):
             #First, propagate probability distributions one step foward
-            posterPDF_daynm1 = np.matrix([[PL_days[j-1]],[PH_days[j-1]]])
-            priorPDF_dayn = propagator * posterPDF_daynm1
+            posterPDF_daynm1 = np.array([[PL_days[j-1]],[PH_days[j-1]]])
+            priorPDF_dayn = np.dot(propagator , posterPDF_daynm1)
             #Now,we calculate the probability the event count N on the current day
             #Came from either a "both on" or "both off" state
             #FIXME: assumes cores are same signal; we can generalize this better...
             mu_L = self.total_background + (self.total_signal/2.0)
             mu_H = self.total_background + (self.total_signal)
-            likelihood_off = self.__poisson(mu_L, n)
-            likelihood_on = self.__poisson(mu_H, n)
+            likelihood_off = self._poisson(mu_L, n)
+            likelihood_on = self._poisson(mu_H, n)
             #Almost ready to find the posterior PDF at the current day.  Need the
             #Correct normalization factors that will go with the following
             #Calculation to keep our posterior p_L + p_H = 1
@@ -102,7 +275,7 @@ class KalmanFilterAnalysis(ExperimentalAnalysis):
         self.PH_distributions.append(PH_days[1:len(PH_days)])
         return
 
-    def __poisson(self,mu,x):
+    def _poisson(self,mu,x):
         #TODO: If x > 100, default to a Gaussian
         return np.exp(-mu)*(mu**(x))/scm.factorial(x)
 
@@ -112,9 +285,9 @@ class KalmanFilterAnalysis(ExperimentalAnalysis):
 #The null hypothesis and then a second case which is some fraction of
 #The null hypothesis average.
 class SPRTAnalysis(ExperimentalAnalysis):
-    def __init__(self, sitename, CL_turnon=0.997, CL_turnoff=0.997, \
+    def __init__(self, CL_turnon=0.997, CL_turnoff=0.997, \
             initdays=365, numsigma=3.0):
-        super(SPRTAnalysis, self).__init__(sitename)
+        super(SPRTAnalysis, self).__init__()
         #In below, H = hypothesis
         self.aon = 1.0 - CL_turnon #Probability for falsely rejecting turn-on H
         self.aoff = 1.0 - CL_turnoff #Probability of falsely rejecting turn-off H
@@ -215,8 +388,8 @@ class SPRTAnalysis(ExperimentalAnalysis):
 #is seen with >3sigma from the previous taken data.  If there is no 3sigma
 #difference, it is absorbed into the data binned thus far.
 class RunningAverageAnalysis(ExperimentalAnalysis):
-    def __init__(self, sitename):
-        super(RunningAverageAnalysis, self).__init__(sitename)
+    def __init__(self):
+        super(RunningAverageAnalysis, self).__init__()
         self.par2_offbinfits = []
         self.mu_offbinfits = []
         self.csndf_offbinfits = []
@@ -264,8 +437,8 @@ class RunningAverageAnalysis(ExperimentalAnalysis):
 #This analysis is tuned to experiments generated with one known core and
 #one unknown core.  
 class UnknownCoreAnalysis(ExperimentalAnalysis):
-    def __init__(self, sitename):
-        super(UnknownCoreAnalysis, self).__init__(sitename)
+    def __init__(self):
+        super(UnknownCoreAnalysis, self).__init__()
         self.par2_offbinfits = []
         self.mu_offbinfits = []
         self.csndf_offbinfits = []
@@ -348,8 +521,8 @@ class UnknownCoreAnalysis(ExperimentalAnalysis):
         return par[0]*ROOT.TMath.Poisson(x[0], par[1])
 
 class ScheduleAnalysis(ExperimentalAnalysis):
-    def __init__(self, sitename):
-        super(ScheduleAnalysis, self).__init__(sitename)
+    def __init__(self):
+        super(ScheduleAnalysis, self).__init__()
         self.num3siginarow = 14
         #Arrays that hold the event rate for each day where both
         #reactors are on or where at least one reactor is off

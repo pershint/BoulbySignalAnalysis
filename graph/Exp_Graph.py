@@ -124,7 +124,7 @@ def Plot_Analysis1OnOff(Analysis):
     plt.legend(loc = 2)
     plt.show()
 
-def Plot_OnOffCumSum_A2(Analysis2):
+def Plot_OnOffCumSum_A2(Analysis2,sitename=None):
     '''
     Takes in an Analysis2 subclass and plots the results from the 3Sigma
     studies for the current experiment fed into the Analysis2 call.
@@ -145,14 +145,14 @@ def Plot_OnOffCumSum_A2(Analysis2):
     ax.axhline(y=0,color='k')
     ax.set_xlabel("Days since experiment started")
     ax.set_ylabel("Average IBDs/day rate")
-    ax.set_title("Average IBDs/day at WATCHMAN " + Analysis2.sitename + \
+    ax.set_title("Average IBDs/day at WATCHMAN " + str(sitename) + \
             " Site \n" + \
             "Determination day = {}".format(Analysis2.currentexp_determination_day))
     ax.grid(True)
     plt.legend(loc = 2)
     plt.show()
 
-def Plot_OnOffDiff_A2(Analysis2):
+def Plot_OnOffDiff_A2(Analysis2,sitename=None):
     '''
     Takes in an Analysis2 subclass and plots the difference of the
     "Both cores on" and "one core off" data sets' cumulative sums on
@@ -182,7 +182,7 @@ def Plot_OnOffDiff_A2(Analysis2):
     ax.axhline(y=0,color='k')
     ax.set_xlabel("Days since experiment started")
     ax.set_ylabel("Average IBDs/day rate")
-    ax.set_title("Average on-off IBDs/day at WATCHMAN " + Analysis2.sitename + \
+    ax.set_title("Average on-off IBDs/day at WATCHMAN " + str(sitename) + \
             "Site \n" + \
             "Determination day = {}".format(Analysis2.currentexp_determination_day))
     ax.grid(True)

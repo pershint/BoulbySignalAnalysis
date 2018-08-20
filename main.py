@@ -41,6 +41,9 @@ parser.add_option('-s','--SPRT',action="store_true",dest="sprt", \
 parser.add_option('-l','--Kalman',action="store_true",dest="kalman", \
         default="False",help="Run the Kalman Filter probability test on"+\
         "each statistical experiment generated")
+parser.add_option('-o','--FB',action="store_true",dest="forwardbackward", \
+        default="False",help="Run the Forward-Backward probability test on"+\
+        "each statistical experiment generated")
 parser.add_option('-j','--jobnum',action="store",dest="jobnum", \
         type="int",default=0,help="Job number (for saving data/grid use)")
 
@@ -48,6 +51,7 @@ parser.add_option('-j','--jobnum',action="store",dest="jobnum", \
 DEBUG = options.debug
 SPRT = options.sprt
 KALMAN = options.kalman
+FORWARDBACKWARD = options.forwardbackward
 POISFIT = options.posfit
 SCHED = options.schedule
 jn = options.jobnum
@@ -81,7 +85,7 @@ if __name__=='__main__':
         gr.Plot_KnownRatioOnOffDays(Run1)
         gr.Plot_KnownPercentOffDays(Run1)
         h.hPlot_CoresOnAndOffHist(Run1)
-        ScheduleAnalysis = a.ScheduleAnalysis(c.SITE)
+        ScheduleAnalysis = a.ScheduleAnalysis()
         #Try out the new ExperimentAnalyzer class
         ScheduleAnalysis(Run1)
         gr.Plot_OnOffCumSum_A2(ScheduleAnalysis)
@@ -92,15 +96,35 @@ if __name__=='__main__':
     #Experiments generated and holds statistics regarding at what day into
     #The experiment WATCHMAN observes a 3sigma difference in the "reactor on"
     #and "reactor off" days of data
-    ScheduleAnalysis = a.ScheduleAnalysis(c.SITE)
-    UnknownCoreAnalysis = a.UnknownCoreAnalysis(c.SITE)
-    SPRTAnalysis = a.SPRTAnalysis(c.SITE)
-    KalmanAnalysis = a.KalmanFilterAnalysis(c.SITE)
+    ScheduleAnalysis = a.ScheduleAnalysis()
+    UnknownCoreAnalysis = a.UnknownCoreAnalysis()
+    SPRTAnalysis = a.SPRTAnalysis()
+    KalmanAnalysis = a.KalmanFilterAnalysis()
+    ForwardBackwardAnalysis = a.ForwardBackwardAnalysis() 
     #Datadict object will save the output configuration and results of analysis
     datadict = {"Site": c.SITE,"pc":c.PHOTOCOVERAGE,"buffersize":c.BUFFERSIZE, 
             "pmt_type":c.PMTTYPE,"schedule_dict": c.schedule_dict, "Analysis": None}
     experiments = np.arange(0,c.NEXPERIMENTS,1)
-    
+
+    if FORWARDBACKWARD is True:
+        datadict["Analysis"] = "FORWARDBACKWARD"
+        for experiment in experiments:
+            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
+                    c.cores)
+            ForwardBackwardAnalysis(SingleRun)
+        #if DEBUG is True:
+        datadict["PL_distributions"] = ForwardBackwardAnalysis.PL_distributions
+        datadict["PH_distributions"] = ForwardBackwardAnalysis.PH_distributions
+        if DEBUG is True:
+            print("SHOWING PLOT OF FIRST EXPERIMENT'S PROBABILITY TRACKING")
+            PL_days = ForwardBackwardAnalysis.PL_distributions[0]
+            PH_days = ForwardBackwardAnalysis.PH_distributions[0]
+            Exp_day = ForwardBackwardAnalysis.experiment_days
+            plt.plot(Exp_day, PL_days, color='b', label='PL')
+            plt.plot(Exp_day, PH_days, color='r', label='PH')
+            plt.legend(loc=1)
+            plt.show()
+
     if KALMAN is True:
         datadict["Analysis"] = "KALMAN"
         for experiment in experiments:
