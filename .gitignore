@@ -1,3 +1,4 @@
 /jobresults/*
 !/jobresults/.gitkeep
-
+*.pyc
+*__pycache__*

@@ -146,17 +146,16 @@ class OnOffCL(CLGraph):
         self.plot_cumulsum(self.ddays, self.csum_vals,NumConfirmRequired= \
                 self.num3SigRequired,Title=self.plot_title)
 
-    def plot_stackCL(self, fixed_vardict={"buffersize":1.5, "pmt_type":"low_activity"},labelvar="pc"):
+    def plot_stackCL(self, fixed_vardict={"buffersize":1.5, "pmt_type":"low_activity"},labelvar=["pc"]):
         if self.sd is None:
             print("You haven't initialized with an array of dictionaries in the class. Add them in.")
         sns.set_style("whitegrid")
-        sns.axes_style("whitegrid")
-        xkcd_colors = ['slate blue', 'light eggplant', 'warm pink', 'green', 'grass']
+        xkcd_colors = ['blue', 'red', 'black', 'slate blue', 'light eggplant', 'warm pink', 'green', 'grass']
         sns.set_palette(sns.xkcd_palette(xkcd_colors))#,len(allclasssacs)))
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
         #First, get all ddays in a dictionary w/ key as the varying variable
-        colors = ["blue","purple","brown","red","orange","black","purple","pink","cyan","yellow"]
+        colors = ["blue","red","black","blue","red","black","black","pink","cyan","yellow"]
         plotdicts = []
         for results in self.sd:
             thisresdict = {}
@@ -166,18 +165,21 @@ class OnOffCL(CLGraph):
                     matchvars = False
             if matchvars is True:
                 thisentryindex = len(plotdicts)
-                thisresdict["label"] = str(labelvar)+": "+str(results[labelvar])
+                thisresdict["label"]=""
+                for labels in labelvar:
+                    thisresdict["label"] += " %s:%s"%(str(labels),results[labels])
                 thisresdict["labelcolor"] = colors[thisentryindex]
+                thisresdict["linecolor"] = colors[thisentryindex+len(self.sd)]
                 if self.num3SigRequired is not None:
                     thisresdict["ddays"] = np.sort(results["determination_days"]) - int(self.num3SigRequired)
                 else:
                     thisresdict["ddays"] = np.sort(results["determination_days"])
-                thisresdict["CL"] = thisresdict["ddays"][int(len(results["determination_days"]) * 0.95)]
+                thisresdict["CL"] = thisresdict["ddays"][int(len(results["determination_days"]) * 0.90)]
                 thisresdict["csum"] = self.buildcsum(thisresdict["ddays"])
                 plotdicts.append(thisresdict)
         for results in plotdicts:
             print("RESULTS: " + str(results))
-            ax.plot(results["ddays"], results["csum"], alpha=0.8,linewidth=4)
+            ax.plot(results["ddays"], results["csum"], color=results['linecolor'],alpha=0.8,linewidth=4)
 
             ax.axvline(results["CL"], color=results["labelcolor"], \
                     linewidth=3, label = results["label"])
@@ -205,7 +207,7 @@ class OnOffCL(CLGraph):
                 else:
                     ax.axvspan(self.kmaint_starts[j],self.kmaint_ends[j], color='orange', 
                         alpha=0.4)
-        ax.set_xlim([0,800])
+        ax.set_xlim([0,500])
         ax.set_ylim([0,100])
         for tick in ax.xaxis.get_major_ticks():
             tick.label.set_fontsize(24)
@@ -214,7 +216,7 @@ class OnOffCL(CLGraph):
         ax.set_xlabel("Experiment day", fontsize=26)
         ax.set_ylabel("Confidence Limit (%)", fontsize=26)
         self.plot_title = "Confidence Limit of days needed until WATCHMAN " + \
-            "confirms %s on/off cycle (Lines at 0.95 CL)\n" %self.site 
+            "confirms %s on/off cycle (Lines at 0.90 CL)\n" %self.site 
         for var in fixed_vardict:
             self.plot_title+="%s: %s " % (str(var),str(fixed_vardict[var]))
         ax.set_title(self.plot_title,fontsize=32)
