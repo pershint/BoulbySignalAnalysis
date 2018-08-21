@@ -33,14 +33,14 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
     initializing the probability vector's inputs
     '''
     
-    def __init__(self,daysperbin=3):
+    def __init__(self):
         super(ForwardBackwardAnalysis, self).__init__()
         self.PL_distributions  = []
         self.PH_distributions = []
         self.prob_ontooff = None
         self.prob_offtoon = None
         self.experiment_length = None
-
+        self.experiment_days = None
     def __call__(self, ExpGen,ontototal_ratio_guess=(1140.0/1550.0),
             prob_ontooff = 26.0/1140, prob_offtoon = 26.0/410):
         '''Runs the Forward-Backward Analysis on the input ExperimentGenerator
@@ -52,6 +52,7 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         
         if self.experiment_length is None:
             self.experiment_length = len(self.Current_Experiment.experiment_days)
+            self.experiment_days = self.Current_Experiment.experiment_days
         else:
             if self.experiment_length != len(self.Current_Experiment.experiment_days):
                 print("WARNING: Experiments of different lengths have been "+\
@@ -111,8 +112,8 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         PL_vec = k*PL_forward*PL_backward
         
         #Append this experiment's results to the distributions array
-        self.PL_distributions.append(PL_vec)
-        self.PH_distributions.append(PH_vec)
+        self.PL_distributions.append(list(PL_vec))
+        self.PH_distributions.append(list(PH_vec))
         return
 
     def _calcbackwardterms(self, propagator=None, days=None, events=None, pivec=None):
@@ -137,9 +138,12 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
             #Finally, dot this with our most recent PL and PH backward terms
             most_recent_backwardterms = np.array([PH_backward[0],PL_backward[0]])
             this_backwardterm = np.dot(hmatrix,most_recent_backwardterms)
+            #We have to renormalize or things just go to zero after
+            #long enough...
+            k = 1.0 / (np.sum(this_backwardterm))
             #Append the newest backward term to the front of the array
-            PH_backward = [this_backwardterm[0]] + PH_backward
-            PL_backward = [this_backwardterm[1]] + PL_backward
+            PH_backward = [k* this_backwardterm[0]] + PH_backward
+            PL_backward = [k* this_backwardterm[1]] + PL_backward
         #Strip off the initialization PL and PH
         PH_backward.pop(len(PH_backward)-1)
         PL_backward.pop(len(PL_backward)-1)
@@ -165,19 +169,20 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
             
             #First, propagate probability distributions one step foward
             posterPDF_daynm1 = np.array([[PH_forward[j]],[PL_forward[j]]])
-            print("POSTPDF: " + str(posterPDF_daynm1)) 
             priorPDF_dayn = np.dot(propagator , posterPDF_daynm1)
             
             #Now, calculate the forward term. You'll notice this algorithm is
-            #Very similar to the Kalman Filter; just no normalization yet
-            posteriorPDF_pH =  likelihood_on * priorPDF_dayn.item(0)
-            posteriorPDF_pL =  likelihood_off * priorPDF_dayn.item(1)
+            #basically just the Kalman filter
+            k = 1.0/(likelihood_off * priorPDF_dayn.item(0) + \
+            likelihood_on * priorPDF_dayn.item(1))
+ 
+            posteriorPDF_pH =  k* likelihood_on * priorPDF_dayn.item(0)
+            posteriorPDF_pL =  k* likelihood_off * priorPDF_dayn.item(1)
 
             #Append the probability of being low or high on this day to our arrays
             #holding each day's posterior PL and PH
             PH_forward.append(posteriorPDF_pH)
             PL_forward.append(posteriorPDF_pL)
-        print("PHFORWARD: " + str(PH_forward)) 
         #Remove our "day zero" guess from algorithm return
         PH_forward.pop(0)
         PL_forward.pop(0)
@@ -190,7 +195,7 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
 
 class KalmanFilterAnalysis(ExperimentalAnalysis):
     #TODO: Have prob_ontooff calculated based on input schedule
-    def __init__(self, prob_ontooff = 26.0/1140, prob_offtoon = 26.0/410,daysperbin=3):
+    def __init__(self, prob_ontooff = 26.0/1140, prob_offtoon = 26.0/410):
         super(KalmanFilterAnalysis, self).__init__()
         self.PL_distributions  = []
         self.PH_distributions = []

@@ -112,6 +112,7 @@ if __name__=='__main__':
             SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
             ForwardBackwardAnalysis(SingleRun)
+        datadict['known_numcoreson'] = list(SingleRun.known_numcoreson)
         #if DEBUG is True:
         datadict["PL_distributions"] = ForwardBackwardAnalysis.PL_distributions
         datadict["PH_distributions"] = ForwardBackwardAnalysis.PH_distributions
@@ -132,6 +133,7 @@ if __name__=='__main__':
                     c.cores)
             KalmanAnalysis(SingleRun)
         #if DEBUG is True:
+        datadict['known_numcoreson'] = list(SingleRun.known_numcoreson)
         datadict["PL_distributions"] = KalmanAnalysis.PL_distributions
         datadict["PH_distributions"] = KalmanAnalysis.PH_distributions
         if DEBUG is True:
