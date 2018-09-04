@@ -44,6 +44,9 @@ parser.add_option('-l','--Kalman',action="store_true",dest="kalman", \
 parser.add_option('-o','--FB',action="store_true",dest="forwardbackward", \
         default="False",help="Run the Forward-Backward probability test on"+\
         "each statistical experiment generated")
+parser.add_option('-w','--Window',action="store_true",dest="window", \
+        default="False",help="Run the moving window smoothing algorithm on"+\
+        "each statistical experiment generated")
 parser.add_option('-j','--jobnum',action="store",dest="jobnum", \
         type="int",default=0,help="Job number (for saving data/grid use)")
 
@@ -52,6 +55,7 @@ DEBUG = options.debug
 SPRT = options.sprt
 KALMAN = options.kalman
 FORWARDBACKWARD = options.forwardbackward
+WINDOW = options.window
 POISFIT = options.posfit
 SCHED = options.schedule
 jn = options.jobnum
@@ -100,11 +104,35 @@ if __name__=='__main__':
     UnknownCoreAnalysis = a.UnknownCoreAnalysis()
     SPRTAnalysis = a.SPRTAnalysis()
     KalmanAnalysis = a.KalmanFilterAnalysis()
-    ForwardBackwardAnalysis = a.ForwardBackwardAnalysis() 
+    ForwardBackwardAnalysis = a.ForwardBackwardAnalysis()
+    SlidingWindowAnalysis = a.SlidingWindowAnalysis()
     #Datadict object will save the output configuration and results of analysis
     datadict = {"Site": c.SITE,"pc":c.PHOTOCOVERAGE,"buffersize":c.BUFFERSIZE, 
             "pmt_type":c.PMTTYPE,"schedule_dict": c.schedule_dict, "Analysis": None}
     experiments = np.arange(0,c.NEXPERIMENTS,1)
+
+    if WINDOW is True:
+        datadict["Analysis"] = "WINDOW"
+        datadict["Window_type"] = "average"
+        datadict["Window_halfwidth"] = 30 
+        SlidingWindowAnalysis.setHalfWidth(datadict["Window_halfwidth"])
+        SlidingWindowAnalysis.setWindowType(datadict["Window_type"])
+        for experiment in experiments:
+            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
+                    c.cores)
+            SlidingWindowAnalysis(SingleRun)
+        datadict['known_numcoreson'] = list(SingleRun.known_numcoreson)
+        datadict['avg_distributions'] = SlidingWindowAnalysis.averaged_distributions
+        #if DEBUG is True:
+        if DEBUG is True:
+            print("SHOWING PLOT OF FIRST EXPERIMENT'S SMOOTHING")
+            avgdist = SlidingWindowAnalysis.averaged_distributions[0]
+            avgdist_unc = SlidingWindowAnalysis.averaged_distributions_unc[0]
+            Exp_day = SlidingWindowAnalysis.experiment_days
+            plt.errorbar(Exp_day, avgdist, 
+                    yerr=avgdist_unc, color='b', label='Smoothed average')
+            plt.legend(loc=1)
+            plt.show()
 
     if FORWARDBACKWARD is True:
         datadict["Analysis"] = "FORWARDBACKWARD"

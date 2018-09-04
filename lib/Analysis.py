@@ -14,6 +14,79 @@ class ExperimentalAnalysis(object):
     def __call__(self, ExpGen):
         self.Current_Experiment = ExpGen
 
+class SlidingWindowAnalysis(ExperimentalAnalysis):
+    '''This analysis looks at the average events per day in a sliding
+    window of the user's specified half-width.  Array produced for each experiment
+    is the moving window averaged distribution.'''
+
+    def __init__(self):
+        super(SlidingWindowAnalysis, self).__init__()
+        self.window_halfwidth = 5
+        self.wintype = "average"
+        self.averaged_distributions = []
+        self.averaged_distributions_unc = []
+        self.experiment_days = None
+        self.experiment_lengths = None
+
+    def __call__(self,ExpGen):
+        super(SlidingWindowAnalysis, self).__call__(ExpGen)
+        if self.experiment_lengths is None:
+            self.experiment_lengths = len(self.Current_Experiment.experiment_days)
+            self.experiment_days = self.Current_Experiment.experiment_days
+        else:
+            if self.experiment_lengths != len(self.Current_Experiment.experiment_days):
+                print("WARNING: Experiments of different lengths have been "+\
+                        "loaded in/analyzed.  This could be bad if you are trying "+\
+                        "to compare algorithm performance across multiple experiments")
+        
+        if self.wintype == "average":
+            self.RunMovingAverage()
+        elif self.wintype == "median":
+            print("HAVE TO DO THE MEDIAN")
+        else:
+            print("Defined window analysis type not supported.")
+
+    def setHalfWidth(self, width):
+        '''Sets the half-width of the window averaged over'''
+        self.window_halfwidth = width
+
+    def setWindowType(self,wintype):
+        '''Set the type of smoothing to run with the window.  Currently
+        supported is "average" or "median"'''
+        self.wintype = wintype
+
+    def RunMovingAverage(self):
+        '''Performs the moving averaging process on the given experiment's data'''
+        #Get the experiment's events per day and day number array
+        Exp_day = self.Current_Experiment.experiment_days
+        Events_on_day = self.Current_Experiment.events
+        averaged_events = []
+        averaged_events_unc = []
+        for j,day in enumerate(Events_on_day):
+            sumval = 0.0
+            winwidth = 0
+            # if we're in the beginning of our data, only get a part of the window
+            #TODO: Check the index logic here; windows may be a bit off
+            if j < self.window_halfwidth:
+                sumval += np.sum(Events_on_day[0:j])
+                sumval += np.sum(Events_on_day[j:(j+self.window_halfwidth)])
+                winwidth = j + self.window_halfwidth
+            elif j > len(Exp_day) - self.window_halfwidth:
+                sumval += np.sum(Events_on_day[(j-self.window_halfwidth):j])
+                sumval += np.sum(Events_on_day[j:(len(Exp_day)-1)])
+                winwidth = (len(Events_on_day)-j) + self.window_halfwidth
+            else:
+                sumval += np.sum(Events_on_day[j:(j+self.window_halfwidth)])
+                sumval += np.sum(Events_on_day[(j-self.window_halfwidth):j])
+                winwidth = 2*self.window_halfwidth + 1
+            avgval = float(sumval)/winwidth
+            averaged_events.append(avgval)
+            avgval_unc = np.sqrt(avgval)/np.sqrt(winwidth)
+            averaged_events_unc.append(avgval_unc)
+        self.averaged_distributions.append(averaged_events)
+        self.averaged_distributions_unc.append(averaged_events_unc)
+        return
+
 class ForwardBackwardAnalysis(ExperimentalAnalysis):
     '''This analysis uses the forward-backward algorithm to estimate
     the probability that Hartlepool's reactors are "both on" or "one off".\n\n

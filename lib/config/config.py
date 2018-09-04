@@ -7,7 +7,7 @@ from .. import DBParse as dp
 SITE = "Boulby"  #Either Boulby or Fairport implemented
 
 ##### Choose either a photoverage or an efficiency, not both #####
-PHOTOCOVERAGE = 0.35  #Choose the photocoverage you want from the database
+PHOTOCOVERAGE = 0.25  #Choose the photocoverage you want from the database
 BUFFERSIZE = 1.5  #Choose your buffer size, in meters
 PMTTYPE = "low_activity" #regular_activity, low_activity, or 5050mix
 NEXPERIMENTS = 10 #Number of experiments generated in analysis run
