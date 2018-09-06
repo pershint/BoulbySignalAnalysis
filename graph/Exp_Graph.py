@@ -2,7 +2,11 @@
 import copy as cp
 import numpy as np
 import matplotlib.pyplot as plt
-
+import seaborn as sns
+sns.set_style("whitegrid")
+sns.axes_style("whitegrid")
+xkcd_colors = ['light eggplant', 'black', 'slate blue', 'warm pink', 'green', 'grass']
+sns.set_palette(sns.xkcd_palette(xkcd_colors))#,len(allclasssacs)))
 
 def Plot_KnownReacOnOff(GeneratedExperiment):
     fig = plt.figure()
@@ -231,16 +235,20 @@ def Plot_NRBackgrounds(GeneratedExperiment):
 def Plot_Signal(GeneratedExperiment):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    #ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.events, \
-    #        'ro', color='blue', alpha=0.8)
-    ax.errorbar(GeneratedExperiment.experiment_days, GeneratedExperiment.events, \
-        xerr=0, yerr=GeneratedExperiment.events_unc, marker='o',\
-        linestyle='none',color='r', alpha=0.7)
-    ax.axhline(y=GeneratedExperiment.avg_NRbackground,color='k')
-    ax.set_xlabel("days")
-    ax.set_ylabel("Candidate events")
-    ax.set_title("Total signal for WATCHMAN, \n" + \
-            'Event binning = ' + str(GeneratedExperiment.resolution) + 'days')
+    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.events, \
+            linestyle='none', color='red', alpha=0.8,markersize=5,marker='o')
+    #ax.errorbar(GeneratedExperiment.experiment_days, GeneratedExperiment.events, \
+    #    xerr=0, yerr=GeneratedExperiment.events_unc, marker='o',\
+    #    linestyle='none', color='r', alpha=0.7,markersize=4)
+    #ax.axhline(y=GeneratedExperiment.avg_NRbackground,color='r',alpha=0.7)
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(24)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(24)
+    ax.set_xlabel("Experiment day",fontsize=30)
+    ax.set_ylabel("Candidate events",fontsize=30)
+    ax.set_title("Total signal for one statistically generated WATCHMAN experiment",
+            fontsize=32)
     plt.show()
 
 def Plot_Cores(GeneratedExperiment):

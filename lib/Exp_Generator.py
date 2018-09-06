@@ -56,6 +56,7 @@ class ExperimentGenerator(object):
         #Turn off for a long outage or a short maintenance period
         self.core_shutoff_startdays = {}
         self.core_maintenance_startdays = {}
+        self.core_opmap = {}
         self.BuildShutdownMaintSchedules()
 
         #With the schedule constructed, build a day-by-day map of how many
@@ -206,19 +207,14 @@ class ExperimentGenerator(object):
         '''
         Generate a day-by-day map of the core states for the known
         and unknown reactors defined.
+        Also generates the list showing what kind of outage occured on
+        the day.
         0 - all cores off, 1 - one core on, 2 - two cores on, etc.
         '''
         for core in self.core_shutoff_startdays:
             onoffdays = np.ones(self.totaldays)
-            #first, identify off days associated with big shutdowns
-            for shutdown_day in self.core_shutoff_startdays[core]:
-                j = shutdown_day - 1
-                while j < ((shutdown_day - 1) + self.offtime):
-                    if(j == self.totaldays):
-                        break
-                    onoffdays[j] = 0
-                    j+=1
-            #now, identify off days associated with maintenance periods
+            offtype = ["n/a"]*self.totaldays
+            #first, identify off days associated with maintenance periods
             if self.minterval is not None:
                 for maintenance_day in self.core_maintenance_startdays[core]:
                     j = maintenance_day - 1
@@ -226,12 +222,25 @@ class ExperimentGenerator(object):
                         if(j == self.totaldays):
                             break
                         onoffdays[j] = 0
+                        offtype[j] = "M"
                         j+=1
+            #Now, identify off days associated with big shutdowns
+            for shutdown_day in self.core_shutoff_startdays[core]:
+                j = shutdown_day - 1
+                while j < ((shutdown_day - 1) + self.offtime):
+                    if(j == self.totaldays):
+                        break
+                    onoffdays[j] = 0
+                    offtype[j] = "S"
+                    j+=1
             #if this core has a permanent shutdown, set it's status to zero
             for j, killcore in enumerate(self.killreacs):
                 if core==killcore:
                     onoffdays[self.killdays[j]:self.totaldays] = 0
+                    offtype[self.killdays[j]:self.totaldays] = \
+                    ["K"] * (self.totaldays - self.killdays[j])+1
             #Add this core's schedule map to the full reactor outage map
+            self.core_opmap[core] = offtype
             if core in self.coredict["known_cores"]:
                 self.known_numcoreson += onoffdays
             elif core in self.coredict["unknown_cores"]:

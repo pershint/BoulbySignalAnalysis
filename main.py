@@ -82,7 +82,7 @@ if __name__=='__main__':
     if DEBUG is True:
         Run1.show()  #Shows output of some experiment run details
         #gr.Plot_NRBackgrounds(Run1)
-        #gr.Plot_Signal(Run1)
+        gr.Plot_Signal(Run1)
         #gr.Plot_Cores(Run1)
         gr.Plot_KnownReacOnOff(Run1)
         gr.Plot_AllReacOnOff(Run1)
@@ -129,8 +129,18 @@ if __name__=='__main__':
             avgdist = SlidingWindowAnalysis.averaged_distributions[0]
             avgdist_unc = SlidingWindowAnalysis.averaged_distributions_unc[0]
             Exp_day = SlidingWindowAnalysis.experiment_days
-            plt.errorbar(Exp_day, avgdist, 
-                    yerr=avgdist_unc, color='b', label='Smoothed average')
+            fig = plt.figure()
+            ax = fig.add_subplot(1,1,1)
+            ax.plot(Exp_day, avgdist, marker='o',markersize=4, 
+                    color='b', alpha=0.6,linestyle='none', label='Smoothed average')
+            plt.title("WATCHMAN statistically generated data after undergoing\n"+\
+                    "moving average window smoothing",fontsize=32)
+            for tick in ax.xaxis.get_major_ticks():
+                tick.label.set_fontsize(24)
+            for tick in ax.yaxis.get_major_ticks():
+                tick.label.set_fontsize(24)
+            ax.set_xlabel("Day at center of smoothing window",fontsize=30)
+            ax.set_ylabel("Average window event rate (events/day)",fontsize=30)
             plt.legend(loc=1)
             plt.show()
 
@@ -140,10 +150,16 @@ if __name__=='__main__':
             SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
             ForwardBackwardAnalysis(SingleRun)
+        #Train the CL bands based on the assumption we have two cores both doing
+        #outages at different times, with maintenance and large shutdowns
+        ForwardBackwardAnalysis.TrainCLBands(CL=0.90)
         datadict['known_numcoreson'] = list(SingleRun.known_numcoreson)
         #if DEBUG is True:
-        datadict["PL_distributions"] = ForwardBackwardAnalysis.PL_distributions
-        datadict["PH_distributions"] = ForwardBackwardAnalysis.PH_distributions
+        datadict["PH_distributions"] = ForwardBackwardAnalysis.PH_dist_train
+        datadict["PH_CLhi"] = ForwardBackwardAnalysis.PH_CLhi
+        datadict["PH_CLlo"] = ForwardBackwardAnalysis.PH_CLlo
+        datadict["banddict"] = ForwardBackwardAnalysis.banddict
+
         if DEBUG is True:
             print("SHOWING PLOT OF FIRST EXPERIMENT'S PROBABILITY TRACKING")
             PL_days = ForwardBackwardAnalysis.PL_distributions[0]

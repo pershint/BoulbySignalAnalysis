@@ -19,7 +19,7 @@ def Rebin_PLPHs(Prob_array, Exp_days, daysperbin=3):
         Probs_rebinned.append(P_rebinned)
     return Probs_rebinned, np.array(Exp_days)
 
-def PLPH_Plotter(KalmanAnalysisDict,daysperbin=3,use_coremap=True):
+def PLPH_Plotter(KalmanAnalysisDict,daysperbin=3,use_opmap=True):
     '''Plots the first PL and PH distribution in the analysis results dictionary'''
     PH_dist = np.array(KalmanAnalysisDict["PH_distributions"][0])
     PL_dist = np.array(KalmanAnalysisDict["PL_distributions"][0])
@@ -36,30 +36,57 @@ def PLPH_Plotter(KalmanAnalysisDict,daysperbin=3,use_coremap=True):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     #Plot the PL days
-    ax.plot(Exp_days,PH_rebinned, alpha=0.8,linewidth=4,label="P_high")
-    if use_coremap is True:
-        try:
-            fulldays = np.arange(1,KalmanAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1,1)
-            coremap = KalmanAnalysisDict['known_numcoreson']
-            max_coremap = np.max(coremap)
-            ax.plot(fulldays,np.array(coremap)/float(max_coremap), 
-                    linewidth=2, label="Core states") 
-        except KeyError:
-            print("No core map generated/saved in data dictionary.")
-            pass
+    ax.plot(Exp_days,PH_rebinned, alpha=0.8,linewidth=4,label="P(both cores on)")
+    if use_opmap is True:
+        schedule=KalmanAnalysisDict['schedule_dict']
+        kshutoff_starts = np.empty(0)
+        kshutoff_ends = np.empty(0)
+        kmaint_starts = np.empty(0) 
+        kmaint_ends = np.empty(0)
+        for core in schedule["SHUTDOWN_STARTDAYS"]:
+            if core in schedule["CORETYPES"]["known_cores"]:
+                kshutoff_starts = np.append(kshutoff_starts, \
+                    schedule["SHUTDOWN_STARTDAYS"][core])
+                kshutoff_ends = kshutoff_starts + schedule["OFF_TIME"]
+        for core in schedule["MAINTENANCE_STARTDAYS"]:
+            if core in schedule["CORETYPES"]["known_cores"]:
+                kmaint_starts = np.append(kmaint_starts, \
+                         schedule["MAINTENANCE_STARTDAYS"][core])
+                kmaint_ends = kmaint_starts + schedule["MAINTENANCE_TIME"]
+
+        if kshutoff_starts is not None:
+            havesoffbox = False
+            for j,val in enumerate(kshutoff_starts):
+                if not havesoffbox:
+                    ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
+                        alpha=0.2, label="Large Shutdown")
+                    havesoffbox = True
+                else:
+                    ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
+                        alpha=0.2)
+        if kmaint_starts is not None and (int(schedule["MAINTENANCE_TIME"])>0):
+            havemoffbox = False
+            for j,val in enumerate(kmaint_starts):
+                if not havemoffbox:
+                    ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
+                        alpha=0.4, label="Maintenance")
+                    havemoffbox = True
+                else:
+                    ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
+                        alpha=0.4)
     #ax.plot(Exp_days,PL_rebinned, alpha=0.8,linewidth=4,label="P_low")
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.title("Probability of reactor states at Boulby per day\n"
-            "Core state legend: 1=both cores on, 0.5=one core off",fontsize=32)
+    plt.title("Probability of reactor states at Boulby per day\n"+\
+            "as predicted by Forward-Backward Algorithm")
     plt.tick_params(labelsize=26)
     plt.xlabel("Day in experiment",fontsize=30)
     plt.ylabel("Probability of state",fontsize=30)
     #plt.legend(loc=5)
     plt.show()
 
-def PLPH_Spread(KalmanAnalysisDict,daysperbin=7,use_coremap=True):
+def PLPH_Spread(KalmanAnalysisDict,daysperbin=7,use_opmap=True):
     '''Plots the average and standard deviation of PL distribution for all
     simulated experiments in the given results dictionary'''
     PH_dist = np.array(KalmanAnalysisDict["PH_distributions"])
@@ -86,23 +113,50 @@ def PLPH_Spread(KalmanAnalysisDict,daysperbin=7,use_coremap=True):
     ax = fig.add_subplot(1,1,1)
     #Plot the PL days
     ax.errorbar(x=Exp_days,y=PH_avgreb,yerr=PH_stdreb, alpha=0.8,
-            linewidth=5,elinewidth=2,label="P_high")
-    if use_coremap is True:
-        try:
-            fulldays = np.arange(1,KalmanAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1,1)
-            coremap = KalmanAnalysisDict['known_numcoreson']
-            max_coremap = np.max(coremap)
-            ax.plot(fulldays,np.array(coremap)/float(max_coremap), 
-                    linewidth=2, label="Core states") 
-        except KeyError:
-            print("No core map generated/saved in data dictionary.")
-            pass
+            linewidth=5,elinewidth=2,label="P(both cores on)")
+    if use_opmap is True:
+        schedule=KalmanAnalysisDict['schedule_dict']
+        kshutoff_starts = np.empty(0)
+        kshutoff_ends = np.empty(0)
+        kmaint_starts = np.empty(0) 
+        kmaint_ends = np.empty(0)
+        for core in schedule["SHUTDOWN_STARTDAYS"]:
+            if core in schedule["CORETYPES"]["known_cores"]:
+                kshutoff_starts = np.append(kshutoff_starts, \
+                    schedule["SHUTDOWN_STARTDAYS"][core])
+                kshutoff_ends = kshutoff_starts + schedule["OFF_TIME"]
+        for core in schedule["MAINTENANCE_STARTDAYS"]:
+            if core in schedule["CORETYPES"]["known_cores"]:
+                kmaint_starts = np.append(kmaint_starts, \
+                         schedule["MAINTENANCE_STARTDAYS"][core])
+                kmaint_ends = kmaint_starts + schedule["MAINTENANCE_TIME"]
+
+        if kshutoff_starts is not None:
+            havesoffbox = False
+            for j,val in enumerate(kshutoff_starts):
+                if not havesoffbox:
+                    ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
+                        alpha=0.2, label="Large Shutdown")
+                    havesoffbox = True
+                else:
+                    ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
+                        alpha=0.2)
+        if kmaint_starts is not None and (int(schedule["MAINTENANCE_TIME"])>0):
+            havemoffbox = False
+            for j,val in enumerate(kmaint_starts):
+                if not havemoffbox:
+                    ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
+                        alpha=0.4, label="Maintenance")
+                    havemoffbox = True
+                else:
+                    ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
+                        alpha=0.4)
     #ax.plot(Exp_days,PL_rebinned, alpha=0.8,linewidth=4,label="P_low")
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.title("Prediction spread of 'both cores on' probability in %i experiments\n"%(numexpts)+\
-            "Core state legend: 1=both cores on, 0.5=one core off",fontsize=32)
+    plt.title("Prediction spread of 'both cores on' probability in %i experiments\n"%(numexpts),
+            fontsize=32)
     plt.tick_params(labelsize=26)
     plt.xlabel("Day in experiment",fontsize=30)
     plt.ylabel("Probability of state",fontsize=30)
@@ -161,7 +215,7 @@ def _ErrBars_PLPH_Spread_FC(PH_dist, PH_average, CL):
             PH_90lo.append(binedges[avgind-i])
     return PH_90hi, PH_90lo
 
-def PLPH_Spread_FC(KalmanAnalysisDict,daysperbin=7,use_coremap=True,CL=0.90):
+def PLPH_Spread_FC(KalmanAnalysisDict,daysperbin=7,use_opmap=True,CL=0.90):
     '''Plots the average and 90% CL bands (with overcoverage) of PH distribution for all
     simulated experiments in the given results dictionary'''
     PH_dist = np.array(KalmanAnalysisDict["PH_distributions"])
@@ -186,71 +240,194 @@ def PLPH_Spread_FC(KalmanAnalysisDict,daysperbin=7,use_coremap=True,CL=0.90):
     asymm_error = np.array([PH_90loreb, PH_90hireb])
     print(asymm_error)
     ax.plot(Exp_days, PH_avgreb, alpha=0.8, linewidth=5,
-            label="P_high")
+            label="P(both cores on)")
     print(PH_90loreb)
-    if use_coremap is True:
-        try:
-            fulldays = np.arange(1,KalmanAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1,1)
-            coremap = KalmanAnalysisDict['known_numcoreson']
-            max_coremap = np.max(coremap)
-            ax.plot(fulldays,np.array(coremap)/float(max_coremap), 
-                    linewidth=2, label="Core states") 
-        except KeyError:
-            print("No core map generated/saved in data dictionary.")
-            pass
+    if use_opmap is True:
+        schedule=KalmanAnalysisDict['schedule_dict']
+        kshutoff_starts = np.empty(0)
+        kshutoff_ends = np.empty(0)
+        kmaint_starts = np.empty(0) 
+        kmaint_ends = np.empty(0)
+        for core in schedule["SHUTDOWN_STARTDAYS"]:
+            if core in schedule["CORETYPES"]["known_cores"]:
+                kshutoff_starts = np.append(kshutoff_starts, \
+                    schedule["SHUTDOWN_STARTDAYS"][core])
+                kshutoff_ends = kshutoff_starts + schedule["OFF_TIME"]
+        for core in schedule["MAINTENANCE_STARTDAYS"]:
+            if core in schedule["CORETYPES"]["known_cores"]:
+                kmaint_starts = np.append(kmaint_starts, \
+                         schedule["MAINTENANCE_STARTDAYS"][core])
+                kmaint_ends = kmaint_starts + schedule["MAINTENANCE_TIME"]
+
+        if kshutoff_starts is not None:
+            havesoffbox = False
+            for j,val in enumerate(kshutoff_starts):
+                if not havesoffbox:
+                    ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
+                        alpha=0.2, label="Large Shutdown")
+                    havesoffbox = True
+                else:
+                    ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
+                        alpha=0.2)
+        if kmaint_starts is not None and (int(schedule["MAINTENANCE_TIME"])>0):
+            havemoffbox = False
+            for j,val in enumerate(kmaint_starts):
+                if not havemoffbox:
+                    ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
+                        alpha=0.4, label="Maintenance")
+                    havemoffbox = True
+                else:
+                    ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
+                        alpha=0.4)
     ax.vlines(Exp_days, PH_90loreb, PH_90hireb, color='g',alpha=0.8)
     #ax.plot(Exp_days,PL_rebinned, alpha=0.8,linewidth=4,label="P_low")
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.title("Prediction spread of 'both cores on' probability in %i experiments to %f CL\n"%(numexpts,CL)+\
-            "Core state legend: 1=both cores on, 0.5=one core off",fontsize=32)
+    CL = np.round(CL,2)
+    plt.title("Prediction spread of 'both cores on' probability in %i experiments to %s CL\n"%(numexpts,str(CL))
+            ,fontsize=32)
     plt.tick_params(labelsize=26)
     plt.xlabel("Day in experiment",fontsize=30)
     plt.ylabel("Probability of state",fontsize=30)
     #plt.legend(loc=5)
     plt.show()
 
-def _findOpRegions(coremap, PH_90hi, PH_90lo):
+
+def PLPH_Spread_FC_new(KalmanAnalysisDict,daysperbin=7,use_opmap=True,CL=0.90):
+    '''Plots the average and 90% CL bands (with overcoverage) of PH distribution for all
+    simulated experiments in the given results dictionary'''
+    PH_dist = np.array(KalmanAnalysisDict["PH_distributions"])
+    PH_90hi, PH_90lo = KalmanAnalysisDict['PH_CLhi'], KalmanAnalysisDict["PH_CLlo"]
+    numexpts = len(PH_dist)
+    PH_average = np.average(PH_dist, axis=0)
+    #Now, we need to calculate the 90% CL range for each day
+    Exp_days = np.arange(1,KalmanAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1,daysperbin)
+    #First, we rebin the PL and PH distributions
+    parr,Exp_days = Rebin_PLPHs([PH_average,PH_90hi, PH_90lo],
+            Exp_days, daysperbin=daysperbin)
+    [PH_avgreb, PH_90hireb, PH_90loreb] = parr
+    print("LEN EXP DAYS: " + str(len(Exp_days)))
+    print("LEN PH_AVERAGEREBINNED: " + str(len(PH_avgreb)))
+    sns.set_style("whitegrid")
+    sns.axes_style("whitegrid")
+    xkcd_colors = ['green','black', 'grass']
+    sns.set_palette(sns.xkcd_palette(xkcd_colors))#,len(allclasssacs)))
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    #Plot the PL days
+    asymm_error = np.array([PH_90loreb, PH_90hireb])
+    print(asymm_error)
+    ax.plot(Exp_days, PH_avgreb, alpha=0.8, linewidth=5,
+            label="P(both cores on)")
+    print(PH_90loreb)
+    if use_opmap is True:
+        schedule=KalmanAnalysisDict['schedule_dict']
+        kshutoff_starts = np.empty(0)
+        kshutoff_ends = np.empty(0)
+        kmaint_starts = np.empty(0) 
+        kmaint_ends = np.empty(0)
+        for core in schedule["SHUTDOWN_STARTDAYS"]:
+            if core in schedule["CORETYPES"]["known_cores"]:
+                kshutoff_starts = np.append(kshutoff_starts, \
+                    schedule["SHUTDOWN_STARTDAYS"][core])
+                kshutoff_ends = kshutoff_starts + schedule["OFF_TIME"]
+        for core in schedule["MAINTENANCE_STARTDAYS"]:
+            if core in schedule["CORETYPES"]["known_cores"]:
+                kmaint_starts = np.append(kmaint_starts, \
+                         schedule["MAINTENANCE_STARTDAYS"][core])
+                kmaint_ends = kmaint_starts + schedule["MAINTENANCE_TIME"]
+
+        if kshutoff_starts is not None:
+            havesoffbox = False
+            for j,val in enumerate(kshutoff_starts):
+                if not havesoffbox:
+                    ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
+                        alpha=0.2, label="Large Shutdown")
+                    havesoffbox = True
+                else:
+                    ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
+                        alpha=0.2)
+        if kmaint_starts is not None and (int(schedule["MAINTENANCE_TIME"])>0):
+            havemoffbox = False
+            for j,val in enumerate(kmaint_starts):
+                if not havemoffbox:
+                    ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
+                        alpha=0.4, label="Maintenance")
+                    havemoffbox = True
+                else:
+                    ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
+                        alpha=0.4)
+    ax.vlines(Exp_days, PH_90loreb, PH_90hireb, color='g',alpha=0.8)
+    #ax.plot(Exp_days,PL_rebinned, alpha=0.8,linewidth=4,label="P_low")
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    CL = np.round(CL,2)
+    plt.title("Prediction spread of 'both cores on' probability in %i experiments to %s CL\n"%(numexpts,str(CL))
+            ,fontsize=32)
+    plt.tick_params(labelsize=26)
+    plt.xlabel("Day in experiment",fontsize=30)
+    plt.ylabel("Probability of state",fontsize=30)
+    #plt.legend(loc=5)
+    plt.show()
+
+def _findOpRegions(opmap, PH_90hi, PH_90lo):
     '''Returns the high and low bands consistent with "both cores on" and
     "one core off" to the given CL'''
     bothon_CLhi, bothon_CLlo = [], []
-    oneoff_CLhi, oneoff_CLlo = [], []
-    for j,state in enumerate(coremap):
-        if state == 2:
+    offs_CLhi, offs_CLlo = [], []
+    offm_CLhi, offm_CLlo = [], []
+    #First, we build bothon, oneoff_S, and
+    #oneoff_M regions
+
+    for j,state in enumerate(opmap):
+        if state == 'on':
             bothon_CLhi.append(PH_90hi[j])
             bothon_CLlo.append(PH_90lo[j])
-        elif state == 1:
-            oneoff_CLhi.append(PH_90hi[j])
-            oneoff_CLlo.append(PH_90lo[j])
+        elif state == 'off_s':
+            offs_CLhi.append(PH_90hi[j])
+            offs_CLlo.append(PH_90lo[j])
+        elif state == 'off_m':
+            offm_CLhi.append(PH_90hi[j])
+            offm_CLlo.append(PH_90lo[j])
         else:
-            print("Finding OP regions for more than the 'both cores on' and "+\
-                    "'one core off' states is not supported currently.")
+            print("Something went wrong with defining states in your op maps...")
             return
     bothon_hiavg = np.average(bothon_CLhi)
     bothon_loavg = np.average(bothon_CLlo)
-    oneoff_hiavg = np.average(oneoff_CLhi)
-    oneoff_loavg = np.average(oneoff_CLlo)
-    return bothon_hiavg, bothon_loavg, oneoff_hiavg, oneoff_loavg 
+    offs_hiavg = np.average(offs_CLhi)
+    offs_loavg = np.average(offs_CLlo)
+    offm_hiavg = np.average(offm_CLhi)
+    offm_loavg = np.average(offm_CLlo)
+    return bothon_hiavg, bothon_loavg, offs_hiavg, offs_loavg, offm_hiavg, offm_loavg
 
-def PLPH_OpRegions(KalmanAnalysisDict,CL=0.68):
+def PLPH_OpRegions(KalmanAnalysisDict,CL=0.90):
     '''Plots the regions that the "both cores on" and "one core off" should lie
     within to the given CL'''
     try:
         fulldays = np.arange(1,KalmanAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1,1)
-        coremap = KalmanAnalysisDict['known_numcoreson']
+        opmap = ["on"] *KalmanAnalysisDict["schedule_dict"]["TOTAL_RUN"]
     except KeyError:
         print("No core map generated/saved in data dictionary. Cannot run this " +\
                 "function.")
         return
+    coreops = KalmanAnalysisDict['schedule_dict']['OFFTYPE_MAP']
+    for core in coreops:
+        for j,dayop in enumerate(coreops[core]):
+            if dayop == "S":
+                opmap[j] = "off_s" 
+            elif dayop == "M":
+                opmap[j] = "off_m" 
+    print("OPMAP: " + str(opmap))
     PH_dist = np.array(KalmanAnalysisDict["PH_distributions"])
     numexpts = len(PH_dist)
     PH_avg = np.average(PH_dist, axis=0)
     #Now, we need to calculate the 90% CL range for each day
     PH_CLhi, PH_CLlo = _ErrBars_PLPH_Spread_FC(PH_dist, PH_avg, CL)
     Exp_days = np.arange(1,KalmanAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1)
-    bothon_CLhi, bothon_CLlo, oneoff_CLhi, oneoff_CLlo = \
-            _findOpRegions(coremap, PH_CLhi, PH_CLlo)
+    bothon_CLhi, bothon_CLlo, offs_CLhi, offs_CLlo , offm_CLhi, offm_CLlo = \
+            _findOpRegions(opmap, PH_CLhi, PH_CLlo)
     print("BOTHON_LO: " + str(bothon_CLlo))
     #First, we rebin the PL and PH distributions
     sns.set_style("whitegrid")
@@ -264,21 +441,25 @@ def PLPH_OpRegions(KalmanAnalysisDict,CL=0.68):
             "Determined using %i statistical experiments"%(numexpts))
     plt.tick_params(labelsize=26)
     plt.xlabel("Day in experiment",fontsize=30)
-    plt.ylabel("Probability of state",fontsize=30)
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.ylabel("Probability both reactors are on",fontsize=30)
     ax.hlines(y=bothon_CLhi, xmin=Exp_days[0], xmax=Exp_days[len(Exp_days)-1], color='g',
             label='Both on',linewidth=5,alpha=0.8)
     ax.hlines(bothon_CLlo, Exp_days[0], Exp_days[len(Exp_days)-1], color='g',
             linewidth=5,alpha=0.8)
     ax.fill_between(Exp_days, bothon_CLlo, bothon_CLhi, color='g', alpha=0.2)
-    ax.hlines(oneoff_CLhi, Exp_days[0], Exp_days[len(Exp_days)-1], color='b',
-            label='One off', linewidth=5, alpha=0.8)
-    ax.hlines(oneoff_CLlo, Exp_days[0], Exp_days[len(Exp_days)-1], color='b',
+    ax.hlines(offs_CLhi, Exp_days[0], Exp_days[len(Exp_days)-1], color='b',
+            label='One off, shutdown', linewidth=5, alpha=0.8)
+    ax.hlines(offs_CLlo, Exp_days[0], Exp_days[len(Exp_days)-1], color='b',
             linewidth=5, alpha=0.8)
-    ax.fill_between(Exp_days, oneoff_CLlo, oneoff_CLhi, color='b', alpha=0.2)
-    #plt.legend(loc=5)
+    ax.fill_between(Exp_days, offs_CLlo, offs_CLhi, color='b', alpha=0.2)
+    ax.hlines(offm_CLhi, Exp_days[0], Exp_days[len(Exp_days)-1], color='orange',
+            label='One off, maintenance', linewidth=5, alpha=0.8)
+    ax.hlines(offm_CLlo, Exp_days[0], Exp_days[len(Exp_days)-1], color='orange',
+            linewidth=5, alpha=0.8)
+    ax.fill_between(Exp_days, offm_CLlo, offm_CLhi, color='orange', alpha=0.2)
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
 
 

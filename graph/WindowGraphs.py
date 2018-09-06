@@ -116,25 +116,30 @@ def Window_OpRegions(WindowAnalysisDict,CL=0.68):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     #Plot the PL days
-    plt.title("Bands of reactor complex operational state to %f CL\n"%(CL) + \
-            "Determined using %i statistical experiments"%(numexpts))
+    CL = np.round(CL,2)
+    plt.title("Bands of reactor complex operational state to %s CL\n"%(str(CL)) + \
+            "Determined using %i statistical experiments"%(numexpts),fontsize=32)
     plt.tick_params(labelsize=26)
-    plt.xlabel("Day in experiment",fontsize=30)
-    plt.ylabel("Probability of state",fontsize=30)
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.xlabel("Day at center of window",fontsize=30)
+    plt.ylabel("Average event rate (events/day)",fontsize=30)
     ax.hlines(y=bothon_CLhi, xmin=Exp_days[0], xmax=Exp_days[len(Exp_days)-1], color='g',
             label='Both on',linewidth=5,alpha=0.8)
     ax.hlines(bothon_CLlo, Exp_days[0], Exp_days[len(Exp_days)-1], color='g',
             linewidth=5,alpha=0.8)
     ax.fill_between(Exp_days, bothon_CLlo, bothon_CLhi, color='g', alpha=0.2)
+    ax.hlines(y=bothon_CLlo, xmin=Exp_days[0], xmax=Exp_days[len(Exp_days)-1], color='orange',
+            label='Transition',linewidth=5,alpha=0.8)
+    ax.hlines(oneoff_CLhi, Exp_days[0], Exp_days[len(Exp_days)-1], color='orange',
+            linewidth=5,alpha=0.8)
+    ax.fill_between(Exp_days, oneoff_CLhi, bothon_CLlo, color='orange', alpha=0.2)
     ax.hlines(oneoff_CLhi, Exp_days[0], Exp_days[len(Exp_days)-1], color='b',
             label='One off', linewidth=5, alpha=0.8)
     ax.hlines(oneoff_CLlo, Exp_days[0], Exp_days[len(Exp_days)-1], color='b',
             linewidth=5, alpha=0.8)
     ax.fill_between(Exp_days, oneoff_CLlo, oneoff_CLhi, color='b', alpha=0.2)
-    #plt.legend(loc=5)
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
 
 def WindowSpread_FC(WindowAnalysisDict,use_coremap=True,CL=0.90):
@@ -155,27 +160,56 @@ def WindowSpread_FC(WindowAnalysisDict,use_coremap=True,CL=0.90):
     asymm_error = np.array([P_90lo, P_90hi])
     print(asymm_error)
     ax.plot(Exp_days, P_average, alpha=0.8, linewidth=5,
-            label="P_high")
+            label="Average event rate")
     print(P_90lo)
     if use_coremap is True:
-        try:
-            fulldays = np.arange(1,WindowAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1,1)
-            coremap = WindowAnalysisDict['known_numcoreson']
-            max_coremap = np.max(coremap)
-            ax.plot(fulldays,np.array(coremap)/float(max_coremap), 
-                    linewidth=2, label="Core states") 
-        except KeyError:
-            print("No core map generated/saved in data dictionary.")
-            pass
+        schedule=WindowAnalysisDict['schedule_dict']
+        kshutoff_starts = np.empty(0)
+        kshutoff_ends = np.empty(0)
+        kmaint_starts = np.empty(0) 
+        kmaint_ends = np.empty(0)
+        for core in schedule["SHUTDOWN_STARTDAYS"]:
+            if core in schedule["CORETYPES"]["known_cores"]:
+                kshutoff_starts = np.append(kshutoff_starts, \
+                    schedule["SHUTDOWN_STARTDAYS"][core])
+                kshutoff_ends = kshutoff_starts + schedule["OFF_TIME"]
+        for core in schedule["MAINTENANCE_STARTDAYS"]:
+            if core in schedule["CORETYPES"]["known_cores"]:
+                kmaint_starts = np.append(kmaint_starts, \
+                         schedule["MAINTENANCE_STARTDAYS"][core])
+                kmaint_ends = kmaint_starts + schedule["MAINTENANCE_TIME"]
+
+        if kshutoff_starts is not None:
+            havesoffbox = False
+            for j,val in enumerate(kshutoff_starts):
+                if not havesoffbox:
+                    ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
+                        alpha=0.2, label="Large Shutdown")
+                    havesoffbox = True
+                else:
+                    ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
+                        alpha=0.2)
+        if kmaint_starts is not None and (int(schedule["MAINTENANCE_TIME"])>0):
+            havemoffbox = False
+            for j,val in enumerate(kmaint_starts):
+                if not havemoffbox:
+                    ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
+                        alpha=0.4, label="Maintenance")
+                    havemoffbox = True
+                else:
+                    ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
+                        alpha=0.4)
+    
     ax.vlines(Exp_days, P_90lo, P_90hi, color='g',alpha=0.8)
     #ax.plot(Exp_days,PL_rebinned, alpha=0.8,linewidth=4,label="P_low")
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.title("Confidence limits on moving window average (%i expts,%f CL)\n"%(numexpts,CL),
+    CL = np.round(CL,2)
+    plt.title("Confidence limits on average window event rate (%i expts,%s CL)\n"%(numexpts,str(CL)),
             fontsize=32)
     plt.tick_params(labelsize=26)
-    plt.xlabel("Day in experiment",fontsize=30)
-    plt.ylabel("Moving window average",fontsize=30)
+    plt.xlabel("Day at center of window",fontsize=30)
+    plt.ylabel("Average window event rate (events/day)",fontsize=30)
     #plt.legend(loc=5)
     plt.show()

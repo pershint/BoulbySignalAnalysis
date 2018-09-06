@@ -87,6 +87,28 @@ class SlidingWindowAnalysis(ExperimentalAnalysis):
         self.averaged_distributions_unc.append(averaged_events_unc)
         return
 
+    def findOpRegions(coremap, P_CLhi, P_CLlo):
+        '''Returns the high and low bands consistent with "both cores on" and
+        "one core off" to the given CL'''
+        bothon_CLhi, bothon_CLlo = [], []
+        oneoff_CLhi, oneoff_CLlo = [], []
+        for j,state in enumerate(coremap):
+            if state == 2:
+                bothon_CLhi.append(P_CLhi[j])
+                bothon_CLlo.append(P_CLlo[j])
+            elif state == 1:
+                oneoff_CLhi.append(P_CLhi[j])
+                oneoff_CLlo.append(P_CLlo[j])
+            else:
+                print("Finding OP regions for more than the 'both cores on' and "+\
+                        "'one core off' states is not supported currently.")
+                return
+        bothon_hiavg = np.average(bothon_CLhi)
+        bothon_loavg = np.average(bothon_CLlo)
+        oneoff_hiavg = np.average(oneoff_CLhi)
+        oneoff_loavg = np.average(oneoff_CLlo)
+        return bothon_hiavg, bothon_loavg, oneoff_hiavg, oneoff_loavg 
+
 class ForwardBackwardAnalysis(ExperimentalAnalysis):
     '''This analysis uses the forward-backward algorithm to estimate
     the probability that Hartlepool's reactors are "both on" or "one off".\n\n
@@ -108,21 +130,24 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
     
     def __init__(self):
         super(ForwardBackwardAnalysis, self).__init__()
-        self.PL_distributions  = []
-        self.PH_distributions = []
+        self.PH_dist_train = []
+        self.PH_dist_test = []
         self.prob_ontooff = None
         self.prob_offtoon = None
         self.experiment_length = None
         self.experiment_days = None
+        self.core_opmaps = None
+        self.banddict = None
+
     def __call__(self, ExpGen,ontototal_ratio_guess=(1140.0/1550.0),
-            prob_ontooff = 26.0/1140, prob_offtoon = 26.0/410):
+            prob_ontooff = 26.0/1140, prob_offtoon = 26.0/410,exptype="test"):
         '''Runs the Forward-Backward Analysis on the input ExperimentGenerator
         class and saves the predicted probabilities of being in the "both on" or
-        "one off" states in self.PH_distributions and self.PL_distributions.'''
+        "one off" states in self.PH_dist_train and self.PL_dist_train.'''
 
         super(ForwardBackwardAnalysis, self).__call__(ExpGen)
         self.ExpCheck()
-        
+        self.core_opmaps = self.Current_Experiment.core_opmap
         if self.experiment_length is None:
             self.experiment_length = len(self.Current_Experiment.experiment_days)
             self.experiment_days = self.Current_Experiment.experiment_days
@@ -143,7 +168,106 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
                 self.total_signal+=self.Current_Experiment.signals[signal]
             else:
                 self.total_background+=self.Current_Experiment.signals[signal]
-        self._RunFB()
+        if exptype=="train":
+            self._RunFB()
+        if exptype=="test":
+            #We've constructed the desired CL bands; run a test and try to
+            #predict the state of the reactors with it based on the model
+            self._TrackReactors()
+    
+    def TrainCLBands(self,CL=0.90):
+        print("Here, we need to make the CL bands using the current probability"+\
+                "Distributions")
+        #First, find the expected PH spread without labeling 
+        self.PH_CLhi, self.PH_CLlo = self._ErrBars_PH_Spread_FC(self.PH_dist_train, CL)
+        #Now, we find the CL bands for each reactor state pairing each day's
+        #operational state with the PH_90hi and PH_90lo bands at each day
+        self.banddict = self._findOpRegions()
+
+    def _ErrBars_PH_Spread_FC(self,PH_dist, CL=0.90):
+        '''For the array of given PH distributions, calculate the Feldman-
+        Cousins confidence limit interval where the probability curve will
+        lie'''
+        PH_90hi = []
+        PH_90lo = []
+        binwidth=(1.0/60.0)
+        binedges = np.arange(0.0,1.0 + (0.9/60), binwidth)
+        for i in xrange(len(PH_dist[0])): #Gets ith index of each day
+            dayprobs = []
+            for e in xrange(len(PH_dist)):
+                dayprobs.append(PH_dist[e][i])
+            dayprobs = np.array(dayprobs)
+            hist, binedges = np.histogram(dayprobs,bins=binedges)
+            if i == 580:
+                plt.hist(hist,bins=binedges)
+                plt.show()
+            indices = np.arange(0,len(hist),1)
+            #Order the histograms from greatest to least; also order
+            #the indices along the way for the cumulative sum we will do
+            hist_ordered = [x for x,_,_ in sorted(zip(hist,indices,binedges))[::-1]]
+            ind_ordered = [x for _,x,_ in sorted(zip(hist,indices,binedges))[::-1]]
+            bin_ordered = [x for _,_,x in sorted(zip(hist,indices,binedges))[::-1]]
+            #Now, we sum from greatest to least until we are over 90%CL.  We take
+            #the highest and lowest index remaining in the list of ordered indices
+            #and everything inbetween to get overcoverage
+            current_CL = 0.0
+            tot_entries = sum(hist_ordered)
+            past_CL = False
+            print("HIST BINS: " + str(hist_ordered))
+            print("INDI BINS: " + str(ind_ordered))
+            print("BINN EDGE: " + str(bin_ordered))
+            for i in xrange(tot_entries):
+                current_CL += float(hist_ordered[i])/ tot_entries
+                print("CURRENT CL: " + str(current_CL))
+                if current_CL >= CL:
+                    past_CL is True
+                    break
+            #Get the max indices from ind_ordered from 0 to broke at i
+            ind_inCL = ind_ordered[0:i]
+            print("INDICES IN CL: " + str(ind_inCL))
+            binleft = np.min(ind_inCL)
+            binright = np.max(ind_inCL)
+            PH_90hi.append(binedges[binright]+binwidth)
+            PH_90lo.append(binedges[binleft])
+        return PH_90hi, PH_90lo
+
+    def _findOpRegions(self):
+        '''Returns the high and low bands consistent with "both cores on" and
+        "one core off" to the given CL'''
+        bothon_CLhi, bothon_CLlo = [], []
+        offs_CLhi, offs_CLlo = [], []
+        offm_CLhi, offm_CLlo = [], []
+        #First, we build bothon, oneoff_S, and
+        #oneoff_M regions
+        opmap = ["on"] * self.experiment_length 
+        for core in self.core_opmaps:
+            for j,dayop in enumerate(self.core_opmaps[core]):
+                if dayop == "S":
+                    opmap[j] = "off_s" 
+                elif dayop == "M":
+                    opmap[j] = "off_m"  
+        for j,state in enumerate(opmap):
+            if state == 'on':
+                bothon_CLhi.append(self.PH_CLhi[j])
+                bothon_CLlo.append(self.PH_CLlo[j])
+            elif state == 'off_s':
+                offs_CLhi.append(self.PH_CLhi[j])
+                offs_CLlo.append(self.PH_CLlo[j])
+            elif state == 'off_m':
+                offm_CLhi.append(self.PH_CLhi[j])
+                offm_CLlo.append(self.PH_CLlo[j])
+            else:
+                print("Something went wrong with defining states in your op maps...")
+                return
+        bothon_hiavg = np.average(bothon_CLhi)
+        bothon_loavg = np.average(bothon_CLlo)
+        offs_hiavg = np.average(offs_CLhi)
+        offs_loavg = np.average(offs_CLlo)
+        offm_hiavg = np.average(offm_CLhi)
+        offm_loavg = np.average(offm_CLlo)
+        banddict = {'both on': [bothon_loavg,bothon_hiavg], 'one off, shutdown': 
+                [offs_loavg, offs_hiavg], 'one off, maintenance': [offm_loavg, offm_hiavg]}
+        return banddict
 
     def ExpCheck(self):
         if self.Current_Experiment.numcores != 2:
@@ -151,7 +275,7 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
                     "only currently able to run with two cores currently")
             time.sleep(2)
     
-    def _RunFB(self):
+    def _TrackReactors(self):
         '''
         Takes the statistical experiment currently loaded and
         Predicts the probability at each day whether the two neighboring
@@ -185,8 +309,7 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         PL_vec = k*PL_forward*PL_backward
         
         #Append this experiment's results to the distributions array
-        self.PL_distributions.append(list(PL_vec))
-        self.PH_distributions.append(list(PH_vec))
+        self.PH_dist_train.append(list(PH_vec))
         return
 
     def _calcbackwardterms(self, propagator=None, days=None, events=None, pivec=None):
@@ -270,8 +393,8 @@ class KalmanFilterAnalysis(ExperimentalAnalysis):
     #TODO: Have prob_ontooff calculated based on input schedule
     def __init__(self, prob_ontooff = 26.0/1140, prob_offtoon = 26.0/410):
         super(KalmanFilterAnalysis, self).__init__()
-        self.PL_distributions  = []
-        self.PH_distributions = []
+        self.PL_dist_train  = []
+        self.PH_dist_train = []
         self.prob_ontooff = prob_ontooff
         self.prob_offtoon = prob_offtoon
         self.experiment_days = []
@@ -349,8 +472,8 @@ class KalmanFilterAnalysis(ExperimentalAnalysis):
             PH_days.append(posteriorPDF_pH)
         #We've found the probability of being "both on" or "one off" for each day.
         #Add the arrays of these to our classes' collection of PLs and PHs
-        self.PL_distributions.append(PL_days[1:len(PL_days)])
-        self.PH_distributions.append(PH_days[1:len(PH_days)])
+        self.PL_dist_train.append(PL_days[1:len(PL_days)])
+        self.PH_dist_train.append(PH_days[1:len(PH_days)])
         return
 
     def _poisson(self,mu,x):
