@@ -10,7 +10,7 @@ SITE = "Boulby"  #Either Boulby or Fairport implemented
 PHOTOCOVERAGE = 0.25  #Choose the photocoverage you want from the database
 BUFFERSIZE = 1.5  #Choose your buffer size, in meters
 PMTTYPE = "low_activity" #regular_activity, low_activity, or 5050mix
-NEXPERIMENTS = 10 #Number of experiments generated in analysis run
+NEXPERIMENTS = 1000 #Number of experiments generated in analysis run
 RESOLUTION = 1 #Exp_Generator does re-binning of data by request; this gives
                #The bin resolution in days
 
@@ -20,7 +20,7 @@ schedule_dict["UP_TIME"] = 1035   #Day interval between long outages
 schedule_dict["KILL_CORES"] = []#"Core_2"] #List the name of core(s) to shut down
 schedule_dict["KILL_DAYS"] = []#700] #List the days where cores in KILL_CORES shuts down
 schedule_dict["TOTAL_RUN"] = 1550  #Total length of experiment
-schedule_dict["MAINTENANCE_TIME"] = 10
+schedule_dict["MAINTENANCE_TIME"] =10 
 schedule_dict["MAINTENANCE_INTERVAL"] = 106 #Day interval between maintenance outages
 
 schedule_dict["FIRST_KNOWNSHUTDOWNS"] = [1,549]

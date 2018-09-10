@@ -138,7 +138,10 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         self.experiment_days = None
         self.core_opmaps = None
         self.banddict = None
-
+        self.CL = None
+        self.TestExpt_DayPredictions = []
+        self.TestExpt_OpPredictions = []
+    
     def __call__(self, ExpGen,ontototal_ratio_guess=(1140.0/1550.0),
             prob_ontooff = 26.0/1140, prob_offtoon = 26.0/410,exptype="test"):
         '''Runs the Forward-Backward Analysis on the input ExperimentGenerator
@@ -156,33 +159,169 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
                 print("WARNING: Experiments of different lengths have been "+\
                         "loaded in/analyzed.  This could be bad if you are trying "+\
                         "to compare algorithm performance across multiple experiments")
-        
-        self.ontototal_ratio_guess = ontototal_ratio_guess
-        self.prob_ontooff = prob_ontooff
-        self.prob_offtoon = prob_offtoon
-        #
-        self.total_signal=0.0
-        self.total_background = 0.0
-        for signal in  self.Current_Experiment.signals:
-            if "Core" in signal:
-                self.total_signal+=self.Current_Experiment.signals[signal]
-            else:
-                self.total_background+=self.Current_Experiment.signals[signal]
         if exptype=="train":
-            self._RunFB()
+            self.ontototal_ratio_guess = ontototal_ratio_guess
+            self.prob_ontooff = prob_ontooff
+            self.prob_offtoon = prob_offtoon
+            #
+            self.total_signal=0.0
+            self.total_background = 0.0
+            for signal in  self.Current_Experiment.signals:
+                if "Core" in signal:
+                    self.total_signal+=self.Current_Experiment.signals[signal]
+                else:
+                    self.total_background+=self.Current_Experiment.signals[signal]
+            PH_distribution = self._TrackReactors()
+            self.PH_dist_train.append(list(PH_distribution))
         if exptype=="test":
             #We've constructed the desired CL bands; run a test and try to
             #predict the state of the reactors with it based on the model
-            self._TrackReactors()
+            PH_distribution = self._TrackReactors()
+            self.PH_dist_test.append(list(PH_distribution))
+            BandCandidateDays,OpPrediction = self._PredictOp(PHDist=PH_distribution)
+            self.TestExpt_DayPredictions.append(BandCandidateDays)
+            self.TestExpt_OpPredictions.append(OpPrediction)
     
     def TrainCLBands(self,CL=0.90):
-        print("Here, we need to make the CL bands using the current probability"+\
-                "Distributions")
+        self.CL = CL
         #First, find the expected PH spread without labeling 
-        self.PH_CLhi, self.PH_CLlo = self._ErrBars_PH_Spread_FC(self.PH_dist_train, CL)
+        self.PH_CLhi, self.PH_CLlo = self._ErrBars_PH_Spread_FromMed(self.PH_dist_train, CL)
         #Now, we find the CL bands for each reactor state pairing each day's
         #operational state with the PH_90hi and PH_90lo bands at each day
         self.banddict = self._findOpRegions()
+
+    def _PredictOp(self,PHDist=None):
+        '''Here, we use the trained CL bands to try and predict the state of
+        the Hartlepool complex operation to within 90% accuracy, as well as
+        detect deviations to within 90% accuracy.'''
+        if PHDist is None:
+            print("You must feed in a 'probability of being on' distribution"+\
+                    "to run this prediction.")
+        CLLimit = 0.80
+        CLkeys = self.banddict.keys()
+        Day_OpType_Candidates = {}
+        for CL in CLkeys:
+            Day_OpType_Candidates[CL] = []
+        #Go day by day and see if the probability is consistent with any
+        #of our bands
+        for j,day in enumerate(self.experiment_days):
+            for band in self.banddict:
+                if self.banddict[band][0] < PHDist[j] < self.banddict[band][1]:
+                    Day_OpType_Candidates[band].append(day)
+        #Now, we'll try to reconstruct the regions of operation using the
+        #Day_OpType_Candidates
+        RunPredictions = {}
+        days_in_window = []
+        for optype in Day_OpType_Candidates:
+            if optype == "both on":
+                onwindow = 10 
+                bothon_prediction = np.zeros(len(self.experiment_days))
+                for day in Day_OpType_Candidates[optype]:
+                    days_in_window.append(day)
+                    #check if The total num. of events
+                    allinwindow = True
+                    rangeinwindow = max(days_in_window) - min(days_in_window)
+                    if rangeinwindow > onwindow:
+                        allinwindow = False 
+                    while not allinwindow:
+                        del days_in_window[0]
+                        if max(days_in_window) - min(days_in_window) <= onwindow:
+                            allinwindow=True
+                    #If this window is filled with on days above CL, mark them
+                    if (float(len(days_in_window))/onwindow) >= CLLimit:
+                        bothon_prediction[min(days_in_window):max(days_in_window)]=1
+                RunPredictions[optype] = list(bothon_prediction)
+            elif optype == "one off, shutdown":
+                offwindow = 60 
+                shutdown_prediction = np.zeros(len(self.experiment_days))
+                for day in Day_OpType_Candidates[optype]:
+                    days_in_window.append(day)
+                    #check if The total num. of events
+                    allinwindow = True
+                    if max(days_in_window) - min(days_in_window) > offwindow:
+                        allinwindow = False 
+                    while not allinwindow:
+                        del days_in_window[0]
+                        if max(days_in_window) - min(days_in_window) <= offwindow:
+                            allinwindow=True
+                    #If this window is filled with on days above CL, mark them
+                    if (float(len(days_in_window))/offwindow) >= CLLimit:
+                        shutdown_prediction[min(days_in_window):max(days_in_window)]=1
+                        days_in_window = []
+                RunPredictions[optype] = (list(shutdown_prediction))
+            elif optype == "one off, maintenance":
+                offwindow = 10 
+                maint_prediction = np.zeros(len(self.experiment_days))
+                for day in Day_OpType_Candidates[optype]:
+                    days_in_window.append(day)
+                    #check if The total num. of events
+                    allinwindow = True
+                    if max(days_in_window) - min(days_in_window) > offwindow:
+                        allinwindow = False 
+                    while not allinwindow:
+                        del days_in_window[0]
+                        if max(days_in_window) - min(days_in_window) <= offwindow:
+                            allinwindow=True
+                    #If this window is filled with on days above CL, mark them
+                    if (float(len(days_in_window))/offwindow) >= CLLimit:
+                        maint_prediction[min(days_in_window):max(days_in_window)]=1
+                        days_in_window = []
+                RunPredictions[optype] = list(maint_prediction)
+        return Day_OpType_Candidates, RunPredictions
+
+
+    def _ErrBars_PH_Spread_FromMed(self,PH_dist,  CL):
+        PH_90hi = []
+        PH_90lo = []
+        PH_median =np.median(PH_dist,axis=0)
+        binedges = np.arange(0.0,1.0 + (2.0/60.0), (1.0/60.0))
+        for i in xrange(len(PH_dist[0])): #Gets ith index of each day
+            dayprobs = []
+            for e in xrange(len(PH_dist)):
+                dayprobs.append(PH_dist[e][i])
+            dayprobs = np.array(dayprobs)
+            hist, binedges = np.histogram(dayprobs,bins=binedges)
+            #find the bin index where this average is located
+            avgind = np.where(PH_median[i] < binedges)[0][0]
+            #avgind is the index in hist that has the median value
+            #Now, we move left and right, summing up the % of events we have.
+            #Once we cross 90%CL, our bounds are defined by the edges of these
+            #Bins.
+            sumlength = np.max([avgind, len(hist)- avgind])
+            current_CL = 0.0
+            tot_entries = float(hist.sum())
+            past_CL = False
+            summedalllo = False
+            summedallhi = False 
+            for i in xrange(sumlength):
+                if past_CL is True:
+                    outind = i
+                    break
+                if i==0:
+                    current_CL += float(hist[avgind])/ tot_entries
+                else:
+                    ##add the bin on ith side of prob. median
+                    #FIXME: Confirm you have overcoverage here
+                    if avgind-i >= 0:
+                        current_CL += float(hist[avgind-i])/ tot_entries
+                    else:
+                        summedalllo = True
+                    if avgind+i <= len(hist)-1:
+                        current_CL += float(hist[avgind+i])/ tot_entries
+                    else:
+                        summedallhi = True
+                if current_CL >= CL:
+                    passed_CL = True
+                    break
+            if summedallhi is True:
+                PH_90hi.append(binedges[len(binedges)-1])
+            else:
+                PH_90hi.append(binedges[avgind+i])
+            if summedalllo is True:
+                PH_90lo.append(binedges[0])
+            else:
+                PH_90lo.append(binedges[avgind-i])
+        return PH_90hi, PH_90lo
 
     def _ErrBars_PH_Spread_FC(self,PH_dist, CL=0.90):
         '''For the array of given PH distributions, calculate the Feldman-
@@ -198,9 +337,6 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
                 dayprobs.append(PH_dist[e][i])
             dayprobs = np.array(dayprobs)
             hist, binedges = np.histogram(dayprobs,bins=binedges)
-            if i == 580:
-                plt.hist(hist,bins=binedges)
-                plt.show()
             indices = np.arange(0,len(hist),1)
             #Order the histograms from greatest to least; also order
             #the indices along the way for the cumulative sum we will do
@@ -213,12 +349,8 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
             current_CL = 0.0
             tot_entries = sum(hist_ordered)
             past_CL = False
-            print("HIST BINS: " + str(hist_ordered))
-            print("INDI BINS: " + str(ind_ordered))
-            print("BINN EDGE: " + str(bin_ordered))
             for i in xrange(tot_entries):
                 current_CL += float(hist_ordered[i])/ tot_entries
-                print("CURRENT CL: " + str(current_CL))
                 if current_CL >= CL:
                     past_CL is True
                     break
@@ -308,9 +440,7 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         PH_vec = k*PH_forward*PH_backward
         PL_vec = k*PL_forward*PL_backward
         
-        #Append this experiment's results to the distributions array
-        self.PH_dist_train.append(list(PH_vec))
-        return
+        return PH_vec
 
     def _calcbackwardterms(self, propagator=None, days=None, events=None, pivec=None):
         PH_backward = [1.0]
