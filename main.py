@@ -66,20 +66,20 @@ if options.activity is not None:
 if options.bufsize is not None:
     BUFFERSIZE = options.bufsize
 
-import lib.config.config_traindata as ctr
-import lib.config.config_testdata as ctt
+import lib.config.config as c
+
 if DEBUG is True:
     import graph.Histogram as h
     import graph.Exp_Graph as gr
     import matplotlib.pyplot as plt
 if __name__=='__main__':
-    print(str(ctr.signals.signals)) 
+    print(str(c.signals.signals)) 
     #Run once, add the maintenance and core shutoffs to schedule_dict
-    Run1 = eg.ExperimentGenerator(ctr.signals, ctr.schedule_dict, ctr.RESOLUTION, \
-            ctr.cores)
+    Run1 = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+            c.cores)
     #FIXME: A bit dirty adding this in after the fact and not in config..
-    ctr.schedule_dict["MAINTENANCE_STARTDAYS"] = Run1.core_maintenance_startdays
-    ctr.schedule_dict["SHUTDOWN_STARTDAYS"] = Run1.core_shutoff_startdays
+    c.schedule_dict_train["MAINTENANCE_STARTDAYS"] = Run1.core_maintenance_startdays
+    c.schedule_dict_train["SHUTDOWN_STARTDAYS"] = Run1.core_shutoff_startdays
     if DEBUG is True:
         Run1.show()  #Shows output of some experiment run details
         #gr.Plot_NRBackgrounds(Run1)
@@ -108,10 +108,11 @@ if __name__=='__main__':
     ForwardBackwardAnalysis = a.ForwardBackwardAnalysis()
     SlidingWindowAnalysis = a.SlidingWindowAnalysis()
     #Datadict object will save the output configuration and results of analysis
-    datadict = {"Site": ctr.SITE,"pc":ctr.PHOTOCOVERAGE,"buffersize":ctr.BUFFERSIZE, 
-            "pmt_type":ctr.PMTTYPE,"schedule_dict": ctr.schedule_dict, "Analysis": None}
-    experiments = np.arange(0,ctr.NEXPERIMENTS,1)
-
+    datadict = {"Site": c.SITE,"pc":c.PHOTOCOVERAGE,"buffersize":c.BUFFERSIZE, 
+            "pmt_type":c.PMTTYPE,"schedule_dict_train": c.schedule_dict_train, 
+            "schedule_dict_test": c.schedule_dict_test,"Analysis": None}
+    experiments = np.arange(0,c.NEXPERIMENTS,1)
+    test_experiments = np.arange(0,c.NTESTEXPTS,1)
     if WINDOW is True:
         datadict["Analysis"] = "WINDOW"
         datadict["Window_type"] = "average"
@@ -119,8 +120,8 @@ if __name__=='__main__':
         SlidingWindowAnalysis.setHalfWidth(datadict["Window_halfwidth"])
         SlidingWindowAnalysis.setWindowType(datadict["Window_type"])
         for experiment in experiments:
-            SingleRun = eg.ExperimentGenerator(ctr.signals, ctr.schedule_dict, ctr.RESOLUTION, \
-                    ctr.cores)
+            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+                    c.cores)
             SlidingWindowAnalysis(SingleRun)
         datadict['known_numcoreson'] = list(SingleRun.known_numcoreson)
         datadict['avg_distributions'] = SlidingWindowAnalysis.averaged_distributions
@@ -149,15 +150,19 @@ if __name__=='__main__':
         datadict["Analysis"] = "FORWARDBACKWARD"
         #Run a bunch of test experiments for training CL bands
         for experiment in experiments:
-            SingleRun = eg.ExperimentGenerator(ctr.signals, ctr.schedule_dict, ctr.RESOLUTION, \
-                    ctr.cores)
+            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+                    c.cores)
             ForwardBackwardAnalysis(SingleRun,exptype="train")
         #Train the CL bands based on the assumption we have two cores both doing
         #outages at different times, with maintenance and large shutdowns
-        ForwardBackwardAnalysis.TrainCLBands(CL=0.90)
-        TestRun = eg.ExperimentGenerator(ctt.signals, ctt.schedule_dict, ctt.RESOLUTION, \
-                    ctt.cores)
-        ForwardBackwardAnalysis(TestRun,exptype="test")
+        ForwardBackwardAnalysis.TrainTheJudge(CL=0.90)
+        for testexpt in test_experiments:
+            TestRun = eg.ExperimentGenerator(c.signals, c.schedule_dict_test, c.RESOLUTION, \
+                        c.cores)
+            #FIXME: Still dirty to add this here...
+            c.schedule_dict_test["MAINTENANCE_STARTDAYS"] = TestRun.core_maintenance_startdays
+            c.schedule_dict_test["SHUTDOWN_STARTDAYS"] = TestRun.core_shutoff_startdays
+            ForwardBackwardAnalysis(TestRun,exptype="test")
         datadict['known_numcoreson'] = list(SingleRun.known_numcoreson)
         #if DEBUG is True:
         datadict["PH_dist_train"] = ForwardBackwardAnalysis.PH_dist_train
@@ -180,8 +185,8 @@ if __name__=='__main__':
     if KALMAN is True:
         datadict["Analysis"] = "KALMAN"
         for experiment in experiments:
-            SingleRun = eg.ExperimentGenerator(ctr.signals, ctr.schedule_dict, ctr.RESOLUTION, \
-                    ctr.cores)
+            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+                    c.cores)
             KalmanAnalysis(SingleRun)
         #if DEBUG is True:
         datadict['known_numcoreson'] = list(SingleRun.known_numcoreson)
@@ -199,8 +204,8 @@ if __name__=='__main__':
     if SPRT is True:
         datadict["Analysis"] = "SPRT"
         for experiment in experiments:
-            SingleRun = eg.ExperimentGenerator(ctr.signals, ctr.schedule_dict, ctr.RESOLUTION, \
-                    ctr.cores)
+            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+                    c.cores)
             SPRTAnalysis(SingleRun)
         datadict["above_null_days"] = SPRTAnalysis.SPRT_accdays
         datadict["below_null_days"] = SPRTAnalysis.SPRT_rejdays
@@ -212,13 +217,13 @@ if __name__=='__main__':
                     linestyle='none', marker='o', color = 'g', label=r'Accept $\mu+3\sigma_{\mu}$')
             plt.plot(SPRTAnalysis.SPRTresultday, SPRTAnalysis.SPRTrejbound, \
                     linestyle='none', marker='o', color = 'r', label=r"Accept $\mu-3\sigma_{\mu} '$")
-            if ctr.schedule_dict['KILL_DAYS'] is not None:
-                for day in ctr.schedule_dict['KILL_DAYS']:
+            if c.schedule_dict_train['KILL_DAYS'] is not None:
+                for day in c.schedule_dict_train['KILL_DAYS']:
                     plt.axvline(day, linewidth = 3, color='m', label='Core shutdown')
             plt.plot(SPRTAnalysis.SPRTresultday, SPRTAnalysis.SPRTtestpredict, \
                     linewidth=3, color='k',label='Avg. prediction for # IBDs')
             plt.title("SPRT Result for generated experiment using on data \n" + \
-                    "for known core")
+                    "for known core (training data)")
             plt.xlabel("Day in experiment")
             plt.ylabel("Number of IBD candidates")
             plt.legend(loc=2)
@@ -236,8 +241,8 @@ if __name__=='__main__':
     if POISFIT is True:
         datadict["Analysis"] = "POISSON_FIT"
         for experiment in experiments:
-            Run = eg.ExperimentGenerator(ctr.signals, ctr.schedule_dict, ctr.RESOLUTION, \
-                    ctr.cores)
+            Run = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+                    c.cores)
             UnknownCoreAnalysis(Run)
         print("NUM FAILED FITS: " + str(UnknownCoreAnalysis.num_failfits))
         plt.hist(UnknownCoreAnalysis.csndf_offbinfits, 40, range=(0.0,8.0))
@@ -251,8 +256,8 @@ if __name__=='__main__':
     if SCHED is True:
         datadict["Analysis"] = "ONOFF_DIFFERENCE"
         for experiment in experiments:
-            Run = eg.ExperimentGenerator(ctr.signals, ctr.schedule_dict, ctr.RESOLUTION, \
-                    ctr.cores)
+            Run = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+                    c.cores)
             ScheduleAnalysis(Run)
             datadict["determination_days"] = ScheduleAnalysis.determination_days
             datadict["no3sigmadays"] = ScheduleAnalysis.num_nodetermine

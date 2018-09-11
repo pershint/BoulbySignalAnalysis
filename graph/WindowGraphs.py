@@ -93,7 +93,7 @@ def Window_OpRegions(WindowAnalysisDict,CL=0.68):
     '''Plots the regions that the "both cores on" and "one core off" should lie
     within to the given CL'''
     try:
-        fulldays = np.arange(1,WindowAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1,1)
+        fulldays = np.arange(1,WindowAnalysisDict["schedule_dict_train"]["TOTAL_RUN"]+1,1)
         coremap = WindowAnalysisDict['known_numcoreson']
     except KeyError:
         print("No core map generated/saved in data dictionary. Cannot run this " +\
@@ -104,7 +104,7 @@ def Window_OpRegions(WindowAnalysisDict,CL=0.68):
     P_avg = np.average(P_dist, axis=0)
     #Now, we need to calculate the 90% CL range for each day
     P_CLhi, P_CLlo = _ErrBars_Spread_FC(P_dist, P_avg, CL)
-    Exp_days = np.arange(1,WindowAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1)
+    Exp_days = np.arange(1,WindowAnalysisDict["schedule_dict_train"]["TOTAL_RUN"]+1)
     bothon_CLhi, bothon_CLlo, oneoff_CLhi, oneoff_CLlo = \
             _findOpRegions(coremap, P_CLhi, P_CLlo)
     print("BOTHON_LO: " + str(bothon_CLlo))
@@ -148,7 +148,7 @@ def WindowSpread_FC(WindowAnalysisDict,use_coremap=True,CL=0.90):
     P_average = np.average(P_dist, axis=0)
     #Now, we need to calculate the 90% CL range for each day
     P_90hi, P_90lo = _ErrBars_Spread_FC(P_dist, P_average, CL)
-    Exp_days = np.arange(1,WindowAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1,1)
+    Exp_days = np.arange(1,WindowAnalysisDict["schedule_dict_train"]["TOTAL_RUN"]+1,1)
     #First, we rebin the PL and PH distributions
     sns.set_style("whitegrid")
     sns.axes_style("whitegrid")
@@ -163,7 +163,7 @@ def WindowSpread_FC(WindowAnalysisDict,use_coremap=True,CL=0.90):
             label="Average event rate")
     print(P_90lo)
     if use_coremap is True:
-        schedule=WindowAnalysisDict['schedule_dict']
+        schedule=WindowAnalysisDict['schedule_dict_train']
         kshutoff_starts = np.empty(0)
         kshutoff_ends = np.empty(0)
         kmaint_starts = np.empty(0) 

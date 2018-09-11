@@ -178,11 +178,13 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
             #predict the state of the reactors with it based on the model
             PH_distribution = self._TrackReactors()
             self.PH_dist_test.append(list(PH_distribution))
-            BandCandidateDays,OpPrediction = self._PredictOp(PHDist=PH_distribution)
+            BandCandidateDays,OpPrediction = self._JudgeOp(PHDist=PH_distribution)
             self.TestExpt_DayPredictions.append(BandCandidateDays)
             self.TestExpt_OpPredictions.append(OpPrediction)
     
-    def TrainCLBands(self,CL=0.90):
+    def TrainTheJudge(self,CL=0.90):
+        '''Finds the bands of FB algorithm output that correspond to different reactor states
+        according to the training data'''
         self.CL = CL
         #First, find the expected PH spread without labeling 
         self.PH_CLhi, self.PH_CLlo = self._ErrBars_PH_Spread_FromMed(self.PH_dist_train, CL)
@@ -190,8 +192,8 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         #operational state with the PH_90hi and PH_90lo bands at each day
         self.banddict = self._findOpRegions()
 
-    def _PredictOp(self,PHDist=None):
-        '''Here, we use the trained CL bands to try and predict the state of
+    def _JudgeOp(self,PHDist=None):
+        '''Here, the Judge uses the trained CL bands to try and predict the state of
         the Hartlepool complex operation to within 90% accuracy, as well as
         detect deviations to within 90% accuracy.'''
         if PHDist is None:
@@ -247,7 +249,6 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
                     #If this window is filled with on days above CL, mark them
                     if (float(len(days_in_window))/offwindow) >= CLLimit:
                         shutdown_prediction[min(days_in_window):max(days_in_window)]=1
-                        days_in_window = []
                 RunPredictions[optype] = (list(shutdown_prediction))
             elif optype == "one off, maintenance":
                 offwindow = 10 

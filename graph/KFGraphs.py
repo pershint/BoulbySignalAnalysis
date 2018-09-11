@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 #Graphs that plot results from the Kalman Filter Analysis
 
-def _AddOpMap(ExptDict,ax):
+def _AddOpMap(ScheduleDict,ax):
     '''Adds the operational map for the input experiment to the current plot'''
-    schedule=ExptDict['schedule_dict']
+    schedule=ScheduleDict
+    print(schedule)
     kshutoff_starts = np.empty(0)
     kshutoff_ends = np.empty(0)
     kmaint_starts = np.empty(0) 
@@ -62,7 +63,7 @@ def Rebin_Pdists(Prob_array, Exp_days, daysperbin=3):
 def PH_Plotter(ForwardBackAnalysisDict,daysperbin=3,use_opmap=True):
     '''Plots the first PH distribution in the analysis results dictionary'''
     PH_dist = np.array(ForwardBackAnalysisDict["PH_dist_train"][0])
-    Exp_days = np.arange(1,ForwardBackAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1,daysperbin)
+    Exp_days = np.arange(1,ForwardBackAnalysisDict["schedule_dict_train"]["TOTAL_RUN"]+1,daysperbin)
     #First, we rebin the PL and PH distributions
     probarr,Exp_days = Rebin_Pdists([PH_dist],Exp_days, daysperbin=daysperbin)
     [PH_rebinned] = probarr
@@ -77,7 +78,7 @@ def PH_Plotter(ForwardBackAnalysisDict,daysperbin=3,use_opmap=True):
     #Plot the PL days
     ax.plot(Exp_days,PH_rebinned, alpha=0.8,linewidth=4,label="P(both cores on)")
     if use_opmap is True:
-        ax = _AddOpMap(ForwardBackAnalysisDict,ax)
+        ax = _AddOpMap(ForwardBackAnalysisDict["schedule_dict_train"],ax)
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -150,7 +151,7 @@ def PH_Spread(ForwardBackAnalysisDict,daysperbin=1,use_opmap=True):
     PH_90hi, PH_90lo = ForwardBackAnalysisDict['PH_CLhi'], ForwardBackAnalysisDict["PH_CLlo"]
     numexpts = len(PH_dist)
     PH_median = np.average(PH_dist, axis=0)
-    Exp_days = np.arange(1,ForwardBackAnalysisDict["schedule_dict"]["TOTAL_RUN"]+1,daysperbin)
+    Exp_days = np.arange(1,ForwardBackAnalysisDict["schedule_dict_train"]["TOTAL_RUN"]+1,daysperbin)
     #First, we rebin the PL and PH distributions
     parr,Exp_days = Rebin_Pdists([PH_median,PH_90hi, PH_90lo],
             Exp_days, daysperbin=daysperbin)
@@ -170,7 +171,7 @@ def PH_Spread(ForwardBackAnalysisDict,daysperbin=1,use_opmap=True):
             label="P(both cores on)")
     print(PH_90loreb)
     if use_opmap is True:
-       ax = _AddOpMap(ForwardBackAnalysisDict,ax)
+       ax = _AddOpMap(ForwardBackAnalysisDict["schedule_dict_train"],ax)
     ax.vlines(Exp_days, PH_90loreb, PH_90hireb, color='g',alpha=0.8)
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
@@ -217,7 +218,7 @@ def _findOpRegions(opmap, PH_90hi, PH_90lo):
 def Show_CLBands(ForwardBackAnalysisDict):
     '''Plots the regions that the "both cores on" and "one core off" should lie
     within to the given CL, according to the training data'''
-    Exp_days = np.arange(0,ForwardBackAnalysisDict["schedule_dict"]["TOTAL_RUN"],1)
+    Exp_days = np.arange(0,ForwardBackAnalysisDict["schedule_dict_train"]["TOTAL_RUN"],1)
     numexpts = len(ForwardBackAnalysisDict["PH_dist_train"])
     if ForwardBackAnalysisDict["band_CL"] is None:
         print("You must train this result's CL bands to plot them.")
@@ -257,7 +258,7 @@ def Show_CLBands(ForwardBackAnalysisDict):
 def PlotTestPrediction(ForwardBackAnalysisDict,exptno=0,use_opmap=True,optoshow="all"):
     '''Plots the trained CL bands and the first test data's probability distribution.
     Only takes results from the Forward-Backward Algorithm as input'''
-    Exp_days = np.arange(0,ForwardBackAnalysisDict["schedule_dict"]["TOTAL_RUN"],1)
+    Exp_days = np.arange(0,ForwardBackAnalysisDict["schedule_dict_train"]["TOTAL_RUN"],1)
     numexpts = len(ForwardBackAnalysisDict["PH_dist_train"])
     PH_dist = np.array(ForwardBackAnalysisDict["PH_dist_test"][0])
     OpCurves = ForwardBackAnalysisDict["Op_predictions"][0]
@@ -275,10 +276,10 @@ def PlotTestPrediction(ForwardBackAnalysisDict,exptno=0,use_opmap=True,optoshow=
         elif optoshow == optype:
             ax.plot(Exp_days, OpCurves[optype], alpha=0.8,linewidth=4,label=optype + "\nprediction")
     if use_opmap is True:
-        ax = _AddOpMap(ForwardBackAnalysisDict,ax)
-    plt.title("Prediction of possible operational state \n"+\
-            "(CL regions of prediction of state to %f CL,\n"%(CL) + \
-            "Determined using %i training experiments)"%(numexpts))
+        ax = _AddOpMap(ForwardBackAnalysisDict["schedule_dict_test"],ax)
+    plt.title("Judge's Prediction of possible operational state \n"+\
+            "(CL regions for Judge cover %s CL,\n"%(str(np.round(CL,2))) + \
+            "Trained using %i training experiments)"%(numexpts),fontsize=30)
     plt.tick_params(labelsize=26)
     plt.xlabel("Day in experiment",fontsize=30)
     plt.ylabel("Possible Reactor state \n(1=yes, 2=no)",fontsize=30)
@@ -290,8 +291,8 @@ def PlotTestPrediction(ForwardBackAnalysisDict,exptno=0,use_opmap=True,optoshow=
 def PH_OpRegionsWithFirstTest(ForwardBackAnalysisDict):
     '''Plots the trained CL bands and the first test data's probability distribution.
     Only takes results from the Forward-Backward Algorithm as input'''
-    Exp_days = np.arange(0,ForwardBackAnalysisDict["schedule_dict"]["TOTAL_RUN"],1)
-    numexpts = len(ForwardBackAnalysisDict["PH_dist_train"])
+    Exp_days = np.arange(0,ForwardBackAnalysisDict["schedule_dict_test"]["TOTAL_RUN"],1)
+    numtrainexpts = len(ForwardBackAnalysisDict["PH_dist_train"])
     PH_dist = np.array(ForwardBackAnalysisDict["PH_dist_test"][0])
     CL = ForwardBackAnalysisDict["band_CL"]
     sns.set_style("whitegrid")
@@ -304,7 +305,7 @@ def PH_OpRegionsWithFirstTest(ForwardBackAnalysisDict):
     ax.plot(Exp_days,PH_dist, alpha=0.8,linewidth=4,label="")
     plt.title("Test experiment probability distribution \n"+\
             "(Bands of reactor complex operational state to %f CL,\n"%(CL) + \
-            "Determined using %i training experiments)"%(numexpts))
+            "Determined using %i training experiments)"%(numtrainexpts))
     plt.tick_params(labelsize=26)
     plt.xlabel("Day in experiment",fontsize=30)
     plt.ylabel("Probability both reactors are on",fontsize=30)
@@ -331,7 +332,7 @@ def PH_OpRegionsWithFirstTest(ForwardBackAnalysisDict):
 def OneCoreOff_CL(KalmanAnalysisDict,daysperbin=3,CL=0.683):
     '''Plots the first PL and PH distribution in the analysis results dictionary'''
     PH_dist = np.array(KalmanAnalysisDict["PH_dist_train"][0])
-    Exp_days = np.arange(0,KalmanAnalysisDict["schedule_dict"]["TOTAL_RUN"],daysperbin)
+    Exp_days = np.arange(0,KalmanAnalysisDict["schedule_dict_train"]["TOTAL_RUN"],daysperbin)
     Exp_days = Exp_days[1:len(Exp_days)]
     sns.set_style("whitegrid")
     sns.axes_style("whitegrid")
