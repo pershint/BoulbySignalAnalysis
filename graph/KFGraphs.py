@@ -5,6 +5,7 @@ import seaborn as sns
 
 def _AddOpMap(ScheduleDict,ax):
     '''Adds the operational map for the input experiment to the current plot'''
+    #TODO: ADD THE DAYS WHERE A SHUTDOWN HAPPENS TO THE OP MAP
     schedule=ScheduleDict
     print(schedule)
     kshutoff_starts = np.empty(0)
@@ -27,21 +28,21 @@ def _AddOpMap(ScheduleDict,ax):
         for j,val in enumerate(kshutoff_starts):
             if not havesoffbox:
                 ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
-                    alpha=0.2, label="Large Shutdown")
+                    alpha=0.25, label="one off, shutdown\n truth")
                 havesoffbox = True
             else:
                 ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
-                    alpha=0.2)
+                    alpha=0.25)
     if kmaint_starts is not None and (int(schedule["MAINTENANCE_TIME"])>0):
         havemoffbox = False
         for j,val in enumerate(kmaint_starts):
             if not havemoffbox:
                 ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
-                    alpha=0.4, label="Maintenance")
+                    alpha=0.3, label="one off, maintenance\n truth")
                 havemoffbox = True
             else:
                 ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
-                    alpha=0.4)
+                    alpha=0.3)
     return ax
 
 def Rebin_Pdists(Prob_array, Exp_days, daysperbin=3):
@@ -60,7 +61,7 @@ def Rebin_Pdists(Prob_array, Exp_days, daysperbin=3):
         Probs_rebinned.append(P_rebinned)
     return Probs_rebinned, np.array(Exp_days)
 
-def PH_Plotter(ForwardBackAnalysisDict,daysperbin=3,use_opmap=True):
+def PH_Plotter(ForwardBackAnalysisDict,daysperbin=3,use_opmap=True,mark="line"):
     '''Plots the first PH distribution in the analysis results dictionary'''
     PH_dist = np.array(ForwardBackAnalysisDict["PH_dist_train"][0])
     Exp_days = np.arange(1,ForwardBackAnalysisDict["schedule_dict_train"]["TOTAL_RUN"]+1,daysperbin)
@@ -76,17 +77,21 @@ def PH_Plotter(ForwardBackAnalysisDict,daysperbin=3,use_opmap=True):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     #Plot the PL days
-    ax.plot(Exp_days,PH_rebinned, alpha=0.8,linewidth=4,label="P(both cores on)")
+    if mark=="line":
+        ax.plot(Exp_days,PH_rebinned, alpha=0.8,linewidth=4,label="P(both cores on)")
+    elif mark=="point":
+        ax.plot(Exp_days,PH_rebinned, alpha=0.8,linestyle="none",marker="o",
+                markersize=5)
     if use_opmap is True:
         ax = _AddOpMap(ForwardBackAnalysisDict["schedule_dict_train"],ax)
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.title("Probability of reactor states at Boulby per day\n"+\
-            "as predicted by Forward-Backward Algorithm")
+    plt.title("Probability of reactor states at Hartlepool per day\n"+\
+            "as predicted by Forward-Backward Algorithm",fontsize=32)
     plt.tick_params(labelsize=26)
-    plt.xlabel("Day in experiment",fontsize=30)
-    plt.ylabel("Probability of state",fontsize=30)
+    plt.xlabel("Day in WATCHMAN observation",fontsize=30)
+    plt.ylabel("Probability that both \n Hartlepool cores are on",fontsize=30)
     #plt.legend(loc=5)
     plt.show()
 
@@ -185,37 +190,7 @@ def PH_Spread(ForwardBackAnalysisDict,daysperbin=1,use_opmap=True):
     #plt.legend(loc=5)
     plt.show()
 
-def _findOpRegions(opmap, PH_90hi, PH_90lo):
-    '''Returns the high and low bands consistent with "both cores on" and
-    "one core off" to the given CL'''
-    bothon_CLhi, bothon_CLlo = [], []
-    offs_CLhi, offs_CLlo = [], []
-    offm_CLhi, offm_CLlo = [], []
-    #First, we build bothon, oneoff_S, and
-    #oneoff_M regions
-
-    for j,state in enumerate(opmap):
-        if state == 'on':
-            bothon_CLhi.append(PH_90hi[j])
-            bothon_CLlo.append(PH_90lo[j])
-        elif state == 'off_s':
-            offs_CLhi.append(PH_90hi[j])
-            offs_CLlo.append(PH_90lo[j])
-        elif state == 'off_m':
-            offm_CLhi.append(PH_90hi[j])
-            offm_CLlo.append(PH_90lo[j])
-        else:
-            print("Something went wrong with defining states in your op maps...")
-            return
-    bothon_hiavg = np.average(bothon_CLhi)
-    bothon_loavg = np.average(bothon_CLlo)
-    offs_hiavg = np.average(offs_CLhi)
-    offs_loavg = np.average(offs_CLlo)
-    offm_hiavg = np.average(offm_CLhi)
-    offm_loavg = np.average(offm_CLlo)
-    return bothon_hiavg, bothon_loavg, offs_hiavg, offs_loavg, offm_hiavg, offm_loavg
-
-def Show_CLBands(ForwardBackAnalysisDict):
+def Show_CLBands(ForwardBackAnalysisDict,optoshow="all"):
     '''Plots the regions that the "both cores on" and "one core off" should lie
     within to the given CL, according to the training data'''
     Exp_days = np.arange(0,ForwardBackAnalysisDict["schedule_dict_train"]["TOTAL_RUN"],1)
@@ -231,11 +206,12 @@ def Show_CLBands(ForwardBackAnalysisDict):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     #Plot the PL days
-    plt.title("Bands of reactor complex operational state to %f CL\n"%(CL) + \
-            "Determined using %i statistical experiments"%(numexpts))
+    CL = str(np.round(CL,2))
+    plt.title("Bands of Hartlepool operational state to %s CL\n"%(CL) + \
+            "Determined using %i statistical experiments"%(numexpts),fontsize=32)
     plt.tick_params(labelsize=26)
     plt.xlabel("Day in experiment",fontsize=30)
-    plt.ylabel("Probability both reactors are on",fontsize=30)
+    plt.ylabel("Probablity region covered by FB algorithm",fontsize=30)
     colorstopick = ['b','g','orange','red','purple']
     banddict = ForwardBackAnalysisDict["banddict"]
     if banddict is None:
@@ -243,16 +219,24 @@ def Show_CLBands(ForwardBackAnalysisDict):
         return
     print("BANDDICT: " + str(banddict))
     for j,band in enumerate(banddict):
-        ax.hlines(y=banddict[band][1], xmin=Exp_days[0], xmax=Exp_days[len(Exp_days)-1], 
+        bandtoshow=None
+        if band==optoshow:
+            bandtoshow=band
+        elif band=="all":
+            bandtoshow=band
+        else:
+            continue
+        ax.hlines(y=banddict[bandtoshow][1], xmin=Exp_days[0], xmax=Exp_days[len(Exp_days)-1], 
                 color=colorstopick[j],
                 label=band,linewidth=5,alpha=0.6)
-        ax.hlines(banddict[band][0], Exp_days[0], Exp_days[len(Exp_days)-1], color=colorstopick[j],
+        ax.hlines(banddict[bandtoshow][0], Exp_days[0], Exp_days[len(Exp_days)-1], color=colorstopick[j],
                 linewidth=5,alpha=0.8)
-        ax.fill_between(Exp_days, banddict[band][0], banddict[band][1], 
+        ax.fill_between(Exp_days, banddict[bandtoshow][0], banddict[bandtoshow][1], 
                 color=colorstopick[j], alpha=0.2)
     box = ax.get_position()
+    ax.set_ylim([0,1])
     ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),fontsize=16)
     plt.show()
 
 def PlotTestPrediction(ForwardBackAnalysisDict,exptno=0,use_opmap=True,optoshow="all"):
@@ -272,60 +256,74 @@ def PlotTestPrediction(ForwardBackAnalysisDict,exptno=0,use_opmap=True,optoshow=
     #Plot the PL days
     for optype in OpCurves:
         if optoshow=="all":
-            ax.plot(Exp_days, OpCurves[optype], alpha=0.8,linewidth=4,label=optype + "\nprediction")
+            ax.plot(Exp_days, OpCurves[optype], alpha=0.8,linewidth=5,label=optype + "\nprediction")
         elif optoshow == optype:
-            ax.plot(Exp_days, OpCurves[optype], alpha=0.8,linewidth=4,label=optype + "\nprediction")
+            ax.plot(Exp_days, OpCurves[optype], alpha=0.8,linewidth=5,label=optype + "\nprediction")
     if use_opmap is True:
         ax = _AddOpMap(ForwardBackAnalysisDict["schedule_dict_test"],ax)
-    plt.title("Judge's Prediction of possible operational state \n"+\
-            "(CL regions for Judge cover %s CL,\n"%(str(np.round(CL,2))) + \
+    plt.title("Judge's Prediction of Hartlepool state\n"+\
             "Trained using %i training experiments)"%(numexpts),fontsize=30)
     plt.tick_params(labelsize=26)
-    plt.xlabel("Day in experiment",fontsize=30)
-    plt.ylabel("Possible Reactor state \n(1=yes, 2=no)",fontsize=30)
+    plt.xlabel("Day in WATCHMAN observation",fontsize=30)
+    plt.ylabel("Judge's prediction of state \n(1=yes, 0=no)",fontsize=30)
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),fontsize=18)
     plt.show()
 
-def PH_OpRegionsWithFirstTest(ForwardBackAnalysisDict):
+def PH_OpRegionsWithFirstTest(ForwardBackAnalysisDict,optoshow="all",showatimewindow=False):
     '''Plots the trained CL bands and the first test data's probability distribution.
     Only takes results from the Forward-Backward Algorithm as input'''
     Exp_days = np.arange(0,ForwardBackAnalysisDict["schedule_dict_test"]["TOTAL_RUN"],1)
     numtrainexpts = len(ForwardBackAnalysisDict["PH_dist_train"])
-    PH_dist = np.array(ForwardBackAnalysisDict["PH_dist_test"][0])
+    PH_dist = np.array(ForwardBackAnalysisDict["PH_dist_test"][2])
     CL = ForwardBackAnalysisDict["band_CL"]
     sns.set_style("whitegrid")
     sns.axes_style("whitegrid")
-    xkcd_colors = ['purple','purple', 'red', 'red']
+    xkcd_colors = ['cobalt','purple', 'red', 'red']
     sns.set_palette(sns.xkcd_palette(xkcd_colors))#,len(allclasssacs)))
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     #Plot the PL days
-    ax.plot(Exp_days,PH_dist, alpha=0.8,linewidth=4,label="")
-    plt.title("Test experiment probability distribution \n"+\
-            "(Bands of reactor complex operational state to %f CL,\n"%(CL) + \
-            "Determined using %i training experiments)"%(numtrainexpts))
-    plt.tick_params(labelsize=26)
-    plt.xlabel("Day in experiment",fontsize=30)
-    plt.ylabel("Probability both reactors are on",fontsize=30)
-    colorstopick = ['b','g','orange','red','purple']
+    ax.plot(Exp_days,PH_dist, alpha=0.8,marker="o",linestyle="none",label="Test data, \n FB algorithm output")
+    plt.title("Visualization of Judge's search for single core shutdowns "
+            "(Judge's \n%s%% CL bands trained "%(str(np.round(CL,2)*100.0)) + \
+            "using %i training experiments)"%(numtrainexpts),fontsize=28)
+    plt.tick_params(labelsize=24)
+    plt.xlabel("Day in experiment",fontsize=26)
+    plt.ylabel("Probability both reactors are on",fontsize=26)
+    colorstopick = ['g','b','orange','red','purple']
     banddict = ForwardBackAnalysisDict["banddict"]
     if banddict is None:
         print("You must train your CL bands to make this plot.")
         return
     print("BANDDICT: " + str(banddict))
     for j,band in enumerate(banddict):
-        ax.hlines(y=banddict[band][1], xmin=Exp_days[0], xmax=Exp_days[len(Exp_days)-1], 
+        bandtoshow=None
+        if band==optoshow:
+            bandtoshow=band
+        elif band=="all":
+            bandtoshow=band
+        else:
+            continue
+        ax.hlines(y=banddict[bandtoshow][1], xmin=Exp_days[0], xmax=Exp_days[len(Exp_days)-1], 
                 color=colorstopick[j],
-                label=band,linewidth=5,alpha=0.6)
-        ax.hlines(banddict[band][0], Exp_days[0], Exp_days[len(Exp_days)-1], color=colorstopick[j],
+                label="One core shutdown\n interval from training",linewidth=5,alpha=0.6)
+        ax.hlines(banddict[bandtoshow][0], Exp_days[0], Exp_days[len(Exp_days)-1], color=colorstopick[j],
                 linewidth=5,alpha=0.8)
-        ax.fill_between(Exp_days, banddict[band][0], banddict[band][1], 
+        ax.fill_between(Exp_days, banddict[bandtoshow][0], banddict[bandtoshow][1], 
                 color=colorstopick[j], alpha=0.2)
+    if showatimewindow:
+        ax.vlines(x=100, ymin=0, ymax=1, 
+                color="black",
+                label="Time window interval\n from Hartlepool model",linewidth=5,alpha=0.8)
+        ax.vlines(x=160,  ymin=0, ymax=1, color="black",
+                linewidth=5,alpha=0.8)
+        ax.fill_between(np.arange(100,160,1), 0, 1, 
+                color="black", alpha=0.2)
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),fontsize=18)
     plt.show()
 
 

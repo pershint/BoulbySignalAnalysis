@@ -15,14 +15,15 @@ def Plot_KnownReacOnOff(GeneratedExperiment):
 #            color='k', alpha=0.8)
 #    ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.unknown_core_events, marker = 'o', linestyle='none', color='k')
     ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.core_status_array,
-            color='m', alpha=0.8, linewidth=3) 
+            color='blue', alpha=0.7, linewidth=3) 
     for tick in ax.xaxis.get_major_ticks():
         tick.label.set_fontsize(16)
     for tick in ax.yaxis.get_major_ticks():
         tick.label.set_fontsize(16)
-    ax.set_xlabel("days",fontsize=18)
-    ax.set_ylabel("Known reactor state (# = # cores on on the day)",fontsize=18)
-    ax.set_title("Number of known cores on at each day in the experiment")
+    ax.set_xlabel("Days since start of WATCHMAN observation",fontsize=24)
+    ax.set_title("Default model of Hartlepool reactor plant operation \n"+\
+            "(Schedule based on Hartlepool's operational history)",fontsize=32)
+    ax.set_ylabel("Number of reactor cores operating on day",fontsize=24)
     ax.set_ylim([0,3])
     ax.grid(True)
     plt.show()
@@ -41,9 +42,9 @@ def Plot_AllReacOnOff(GeneratedExperiment):
         tick.label.set_fontsize(16)
     for tick in ax.yaxis.get_major_ticks():
         tick.label.set_fontsize(16)
-    ax.set_xlabel("days", fontsize = 18)
-    ax.set_ylabel("Total reactor state (# = # cores on on the day)", fontsize=18)
-    ax.set_title("Number of total cores on at each day in the experiment")
+    ax.set_xlabel("days", fontsize = 24)
+    ax.set_ylabel("Number of cores operating at full power",fontsize=24)
+    ax.set_title("Number of known cores on at each day in the experiment",fontsize=32)
     ax.set_ylim([0,3])
     ax.grid(True)
     plt.show()
@@ -247,8 +248,8 @@ def Plot_Signal(GeneratedExperiment):
         tick.label.set_fontsize(24)
     ax.set_xlabel("Experiment day",fontsize=30)
     ax.set_ylabel("Candidate events",fontsize=30)
-    ax.set_title("Total signal for one statistically generated WATCHMAN experiment",
-            fontsize=32)
+    ax.set_title("Total IBD candidates for one statistically \n"+\
+            "generated WATCHMAN experiment", fontsize=32)
     plt.show()
 
 def Plot_Cores(GeneratedExperiment):

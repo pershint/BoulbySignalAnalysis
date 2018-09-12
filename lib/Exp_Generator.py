@@ -238,7 +238,7 @@ class ExperimentGenerator(object):
                 if core==killcore:
                     onoffdays[self.killdays[j]:self.totaldays] = 0
                     offtype[self.killdays[j]:self.totaldays] = \
-                    ["K"] * (self.totaldays - self.killdays[j])+1
+                    ["K"] * ((self.totaldays - self.killdays[j])+1)
             #Add this core's schedule map to the full reactor outage map
             self.core_opmap[core] = offtype
             if core in self.coredict["known_cores"]:
