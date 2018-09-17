@@ -12,6 +12,7 @@ def _AddOpMap(ScheduleDict,ax):
     kshutoff_ends = np.empty(0)
     kmaint_starts = np.empty(0) 
     kmaint_ends = np.empty(0)
+    killdays = np.empty(0)
     for core in schedule["SHUTDOWN_STARTDAYS"]:
         if core in schedule["CORETYPES"]["known_cores"]:
             kshutoff_starts = np.append(kshutoff_starts, \
@@ -22,7 +23,11 @@ def _AddOpMap(ScheduleDict,ax):
             kmaint_starts = np.append(kmaint_starts, \
                      schedule["MAINTENANCE_STARTDAYS"][core])
             kmaint_ends = kmaint_starts + schedule["MAINTENANCE_TIME"]
+    for j,core in enumerate(schedule["KILL_CORES"]):
+        if core in schedule["CORETYPES"]["known_cores"]:
+            killdays = np.append(killdays,schedule["KILL_DAYS"][j])
 
+    print(killdays)
     if kshutoff_starts is not None:
         havesoffbox = False
         for j,val in enumerate(kshutoff_starts):
@@ -37,12 +42,28 @@ def _AddOpMap(ScheduleDict,ax):
         havemoffbox = False
         for j,val in enumerate(kmaint_starts):
             if not havemoffbox:
-                ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
+                ax.axvspan(kmaint_starts[j],kmaint_ends[j], 
+                        color='orange', 
                     alpha=0.3, label="one off, maintenance\n truth")
                 havemoffbox = True
             else:
                 ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
                     alpha=0.3)
+    if killdays is not None:
+        havekillbox = False
+        for j,val in enumerate(killdays):
+            if not havekillbox:
+                ax.axvspan(killdays[j],schedule["TOTAL_RUN"], color='red', 
+                    alpha=0.3, label="Permanent shutdown\n truth")
+                ax.vlines(x=killdays[j],ymin=-3, ymax=3,  
+                color="red",
+                linewidth=4,alpha=0.4)
+                havemoffbox = True
+            else:
+                ax.axvspan(killdays[j],schedule["TOTAL_RUN"], color='red', 
+                    alpha=0.3)
+                ax.vlines(x=killdays[j], ymin=0, ymax=1, 
+                color="red",linewidth=4,alpha=0.4)
     return ax
 
 def Rebin_Pdists(Prob_array, Exp_days, daysperbin=3):
@@ -63,7 +84,7 @@ def Rebin_Pdists(Prob_array, Exp_days, daysperbin=3):
 
 def PH_Plotter(ForwardBackAnalysisDict,daysperbin=3,use_opmap=True,mark="line"):
     '''Plots the first PH distribution in the analysis results dictionary'''
-    PH_dist = np.array(ForwardBackAnalysisDict["PH_dist_train"][0])
+    PH_dist = np.array(ForwardBackAnalysisDict["PH_dist_train"][3])
     Exp_days = np.arange(1,ForwardBackAnalysisDict["schedule_dict_train"]["TOTAL_RUN"]+1,daysperbin)
     #First, we rebin the PL and PH distributions
     probarr,Exp_days = Rebin_Pdists([PH_dist],Exp_days, daysperbin=daysperbin)
@@ -261,8 +282,8 @@ def PlotTestPrediction(ForwardBackAnalysisDict,exptno=0,use_opmap=True,optoshow=
             ax.plot(Exp_days, OpCurves[optype], alpha=0.8,linewidth=5,label=optype + "\nprediction")
     if use_opmap is True:
         ax = _AddOpMap(ForwardBackAnalysisDict["schedule_dict_test"],ax)
-    plt.title("Judge's Prediction of Hartlepool state\n"+\
-            "Trained using %i training experiments)"%(numexpts),fontsize=30)
+    plt.title("Judge's prediction of Hartlepool state\n"+\
+            "(trained using %i training experiments)"%(numexpts),fontsize=30)
     plt.tick_params(labelsize=26)
     plt.xlabel("Day in WATCHMAN observation",fontsize=30)
     plt.ylabel("Judge's prediction of state \n(1=yes, 0=no)",fontsize=30)
@@ -329,7 +350,7 @@ def PH_OpRegionsWithFirstTest(ForwardBackAnalysisDict,optoshow="all",showatimewi
 
 def OneCoreOff_CL(KalmanAnalysisDict,daysperbin=3,CL=0.683):
     '''Plots the first PL and PH distribution in the analysis results dictionary'''
-    PH_dist = np.array(KalmanAnalysisDict["PH_dist_train"][0])
+    PH_dist = np.array(KalmanAnalysisDict["PH_dist_train"][3])
     Exp_days = np.arange(0,KalmanAnalysisDict["schedule_dict_train"]["TOTAL_RUN"],daysperbin)
     Exp_days = Exp_days[1:len(Exp_days)]
     sns.set_style("whitegrid")
