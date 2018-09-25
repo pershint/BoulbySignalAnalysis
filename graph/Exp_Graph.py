@@ -3,6 +3,9 @@ import copy as cp
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+import MapMaker as mm
+
 sns.set_style("whitegrid")
 sns.axes_style("whitegrid")
 xkcd_colors = ['light eggplant', 'black', 'slate blue', 'warm pink', 'green', 'grass']
@@ -233,23 +236,25 @@ def Plot_NRBackgrounds(GeneratedExperiment):
     plt.show()
 
 
-def Plot_Signal(GeneratedExperiment):
+def Plot_Signal(GeneratedExperiment,showtruthmap=True):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.events, \
             linestyle='none', color='red', alpha=0.8,markersize=5,marker='o')
-    #ax.errorbar(GeneratedExperiment.experiment_days, GeneratedExperiment.events, \
-    #    xerr=0, yerr=GeneratedExperiment.events_unc, marker='o',\
-    #    linestyle='none', color='r', alpha=0.7,markersize=4)
-    #ax.axhline(y=GeneratedExperiment.avg_NRbackground,color='r',alpha=0.7)
+    if showtruthmap:
+        mm._AddOpMap(GeneratedExperiment.schedule_dict,ax)
     for tick in ax.xaxis.get_major_ticks():
         tick.label.set_fontsize(24)
     for tick in ax.yaxis.get_major_ticks():
         tick.label.set_fontsize(24)
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
+    ax.legend(loc=2, bbox_to_anchor=(1, 0.5))
     ax.set_xlabel("Experiment day",fontsize=30)
     ax.set_ylabel("Candidate events",fontsize=30)
     ax.set_title("Total IBD candidates for one statistically \n"+\
             "generated WATCHMAN experiment", fontsize=32)
+
     plt.show()
 
 def Plot_Cores(GeneratedExperiment):

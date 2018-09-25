@@ -9,6 +9,7 @@ DEBUG = False
 #For an experiment.
 class ExperimentGenerator(object):
     def __init__(self,signalClass, schedule_dict, resolution, cores):
+        self.schedule_dict = schedule_dict
         self.signals = signalClass.signals
         
         self.offtime = schedule_dict["OFF_TIME"]

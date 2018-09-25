@@ -83,6 +83,7 @@ if __name__=='__main__':
     if DEBUG is True:
         Run1.show()  #Shows output of some experiment run details
         #gr.Plot_NRBackgrounds(Run1)
+        gr.Plot_Signal(Run1,showtruthmap=False)
         gr.Plot_Signal(Run1)
         #gr.Plot_Cores(Run1)
         gr.Plot_KnownReacOnOff(Run1)

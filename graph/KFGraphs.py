@@ -1,70 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+import MapMaker as mm
 #Graphs that plot results from the Kalman Filter Analysis
-
-def _AddOpMap(ScheduleDict,ax):
-    '''Adds the operational map for the input experiment to the current plot'''
-    #TODO: ADD THE DAYS WHERE A SHUTDOWN HAPPENS TO THE OP MAP
-    schedule=ScheduleDict
-    print(schedule)
-    kshutoff_starts = np.empty(0)
-    kshutoff_ends = np.empty(0)
-    kmaint_starts = np.empty(0) 
-    kmaint_ends = np.empty(0)
-    killdays = np.empty(0)
-    for core in schedule["SHUTDOWN_STARTDAYS"]:
-        if core in schedule["CORETYPES"]["known_cores"]:
-            kshutoff_starts = np.append(kshutoff_starts, \
-                schedule["SHUTDOWN_STARTDAYS"][core])
-            kshutoff_ends = kshutoff_starts + schedule["OFF_TIME"]
-    for core in schedule["MAINTENANCE_STARTDAYS"]:
-        if core in schedule["CORETYPES"]["known_cores"]:
-            kmaint_starts = np.append(kmaint_starts, \
-                     schedule["MAINTENANCE_STARTDAYS"][core])
-            kmaint_ends = kmaint_starts + schedule["MAINTENANCE_TIME"]
-    for j,core in enumerate(schedule["KILL_CORES"]):
-        if core in schedule["CORETYPES"]["known_cores"]:
-            killdays = np.append(killdays,schedule["KILL_DAYS"][j])
-
-    print(killdays)
-    if kshutoff_starts is not None:
-        havesoffbox = False
-        for j,val in enumerate(kshutoff_starts):
-            if not havesoffbox:
-                ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
-                    alpha=0.25, label="one off, shutdown\n truth")
-                havesoffbox = True
-            else:
-                ax.axvspan(kshutoff_starts[j],kshutoff_ends[j], color='b', 
-                    alpha=0.25)
-    if kmaint_starts is not None and (int(schedule["MAINTENANCE_TIME"])>0):
-        havemoffbox = False
-        for j,val in enumerate(kmaint_starts):
-            if not havemoffbox:
-                ax.axvspan(kmaint_starts[j],kmaint_ends[j], 
-                        color='orange', 
-                    alpha=0.3, label="one off, maintenance\n truth")
-                havemoffbox = True
-            else:
-                ax.axvspan(kmaint_starts[j],kmaint_ends[j], color='orange', 
-                    alpha=0.3)
-    if killdays is not None:
-        havekillbox = False
-        for j,val in enumerate(killdays):
-            if not havekillbox:
-                ax.axvspan(killdays[j],schedule["TOTAL_RUN"], color='red', 
-                    alpha=0.3, label="Permanent shutdown\n truth")
-                ax.vlines(x=killdays[j],ymin=-3, ymax=3,  
-                color="red",
-                linewidth=4,alpha=0.4)
-                havemoffbox = True
-            else:
-                ax.axvspan(killdays[j],schedule["TOTAL_RUN"], color='red', 
-                    alpha=0.3)
-                ax.vlines(x=killdays[j], ymin=0, ymax=1, 
-                color="red",linewidth=4,alpha=0.4)
-    return ax
 
 def Rebin_Pdists(Prob_array, Exp_days, daysperbin=3):
     '''Re-bins the probability distributions and averages the days in each bin'''
@@ -104,7 +43,7 @@ def PH_Plotter(ForwardBackAnalysisDict,daysperbin=3,use_opmap=True,mark="line"):
         ax.plot(Exp_days,PH_rebinned, alpha=0.8,linestyle="none",marker="o",
                 markersize=5)
     if use_opmap is True:
-        ax = _AddOpMap(ForwardBackAnalysisDict["schedule_dict_train"],ax)
+        ax = mm._AddOpMap(ForwardBackAnalysisDict["schedule_dict_train"],ax)
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -197,7 +136,7 @@ def PH_Spread(ForwardBackAnalysisDict,daysperbin=1,use_opmap=True):
             label="P(both cores on)")
     print(PH_90loreb)
     if use_opmap is True:
-       ax = _AddOpMap(ForwardBackAnalysisDict["schedule_dict_train"],ax)
+       ax = mm._AddOpMap(ForwardBackAnalysisDict["schedule_dict_train"],ax)
     ax.vlines(Exp_days, PH_90loreb, PH_90hireb, color='g',alpha=0.8)
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
@@ -243,7 +182,7 @@ def Show_CLBands(ForwardBackAnalysisDict,optoshow="all"):
         bandtoshow=None
         if band==optoshow:
             bandtoshow=band
-        elif band=="all":
+        elif optoshow=="all":
             bandtoshow=band
         else:
             continue
@@ -265,8 +204,8 @@ def PlotTestPrediction(ForwardBackAnalysisDict,exptno=0,use_opmap=True,optoshow=
     Only takes results from the Forward-Backward Algorithm as input'''
     Exp_days = np.arange(0,ForwardBackAnalysisDict["schedule_dict_train"]["TOTAL_RUN"],1)
     numexpts = len(ForwardBackAnalysisDict["PH_dist_train"])
-    PH_dist = np.array(ForwardBackAnalysisDict["PH_dist_test"][0])
-    OpCurves = ForwardBackAnalysisDict["Op_predictions"][0]
+    PH_dist = np.array(ForwardBackAnalysisDict["PH_dist_test"][exptno])
+    OpCurves = ForwardBackAnalysisDict["Op_predictions"][exptno]
     CL = ForwardBackAnalysisDict["band_CL"]
     sns.set_style("whitegrid")
     sns.axes_style("whitegrid")
@@ -281,7 +220,7 @@ def PlotTestPrediction(ForwardBackAnalysisDict,exptno=0,use_opmap=True,optoshow=
         elif optoshow == optype:
             ax.plot(Exp_days, OpCurves[optype], alpha=0.8,linewidth=5,label=optype + "\nprediction")
     if use_opmap is True:
-        ax = _AddOpMap(ForwardBackAnalysisDict["schedule_dict_test"],ax)
+        ax = mm._AddOpMap(ForwardBackAnalysisDict["schedule_dict_test"],ax)
     plt.title("Judge's prediction of Hartlepool state\n"+\
             "(trained using %i training experiments)"%(numexpts),fontsize=30)
     plt.tick_params(labelsize=26)

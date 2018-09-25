@@ -186,11 +186,14 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         '''Finds the bands of FB algorithm output that correspond to different reactor states
         according to the training data'''
         self.CL = CL
-        #First, find the expected PH spread without labeling 
-        self.PH_CLhi, self.PH_CLlo = self._ErrBars_PH_Spread_FromMed(self.PH_dist_train, CL)
-        #Now, we find the CL bands for each reactor state pairing each day's
-        #operational state with the PH_90hi and PH_90lo bands at each day
-        self.banddict = self._findOpRegions()
+        #The following two lines find the CL bands by looking at each
+        #day's 90% CL bands, then averaging the band edges for each dist.
+        self.PH_CLhi, self.PH_CLlo = self._FindDailyPHSpread(self.PH_dist_train, CL)
+        #self.banddict = self._findOpRegions_CLBands()
+
+        #The following takes days from all operation regions and puts them
+        #Into their own histograms, and finds the bands there
+        self.banddict = self._findOpRegions_OneHist(CL)
 
     def _JudgeOp(self,PHDist=None):
         '''Here, the Judge uses the trained CL bands to try and predict the state of
@@ -199,7 +202,7 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         if PHDist is None:
             print("You must feed in a 'probability of being on' distribution"+\
                     "to run this prediction.")
-        CLLimit = 0.80
+        CLLimit = 0.68
         CLkeys = self.banddict.keys()
         Day_OpType_Candidates = {}
         for CL in CLkeys:
@@ -270,58 +273,62 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
                 RunPredictions[optype] = list(maint_prediction)
         return Day_OpType_Candidates, RunPredictions
 
+    def _Get_Distributions_CLCoverage(self,single_PH, nbins, CL):
+        median =np.median(single_PH)
+        binedges = np.arange(0.0,1.0 + (1.1/float(nbins)), (1.0/float(nbins)))
+        PH_CLhi = None
+        PH_CLlo = None
+        hist, binedges = np.histogram(single_PH,bins=binedges)
+        #find the bin index where this average is located
+        median_bin = np.where(median < binedges)[0][0]
+        sumlength = np.max([median_bin, len(hist)- median_bin])
+        current_CL = 0.0
+        tot_entries = float(hist.sum())
+        past_CL = False
+        summedalllo = False
+        summedallhi = False 
+        for i in xrange(sumlength):
+            if past_CL is True:
+                outind = i
+                break
+            if i==0:
+                current_CL += float(hist[median_bin])/ tot_entries
+            else:
+                ##add the bin on ith side of prob. median
+                #FIXME: Confirm you have overcoverage here
+                if median_bin-i >= 0:
+                    current_CL += float(hist[median_bin-i])/ tot_entries
+                else:
+                    summedalllo = True
+                if median_bin+i <= len(hist)-1:
+                    current_CL += float(hist[median_bin+i])/ tot_entries
+                else:
+                    summedallhi = True
+            if current_CL >= CL:
+                passed_CL = True
+                break
+        if summedallhi is True:
+            PH_CLhi = (binedges[len(binedges)-1])
+        else:
+            PH_CLhi = (binedges[median_bin+i])
+        if summedalllo is True:
+            PH_CLlo = (binedges[0])
+        else:
+            PH_CLlo = (binedges[median_bin-i])
+        return PH_CLhi, PH_CLlo
 
-    def _ErrBars_PH_Spread_FromMed(self,PH_dist,  CL):
+    def _FindDailyPHSpread(self,PH_dist,  CL):
         PH_90hi = []
         PH_90lo = []
         PH_median =np.median(PH_dist,axis=0)
-        binedges = np.arange(0.0,1.0 + (2.0/60.0), (1.0/60.0))
         for i in xrange(len(PH_dist[0])): #Gets ith index of each day
             dayprobs = []
             for e in xrange(len(PH_dist)):
                 dayprobs.append(PH_dist[e][i])
             dayprobs = np.array(dayprobs)
-            hist, binedges = np.histogram(dayprobs,bins=binedges)
-            #find the bin index where this average is located
-            avgind = np.where(PH_median[i] < binedges)[0][0]
-            #avgind is the index in hist that has the median value
-            #Now, we move left and right, summing up the % of events we have.
-            #Once we cross 90%CL, our bounds are defined by the edges of these
-            #Bins.
-            sumlength = np.max([avgind, len(hist)- avgind])
-            current_CL = 0.0
-            tot_entries = float(hist.sum())
-            past_CL = False
-            summedalllo = False
-            summedallhi = False 
-            for i in xrange(sumlength):
-                if past_CL is True:
-                    outind = i
-                    break
-                if i==0:
-                    current_CL += float(hist[avgind])/ tot_entries
-                else:
-                    ##add the bin on ith side of prob. median
-                    #FIXME: Confirm you have overcoverage here
-                    if avgind-i >= 0:
-                        current_CL += float(hist[avgind-i])/ tot_entries
-                    else:
-                        summedalllo = True
-                    if avgind+i <= len(hist)-1:
-                        current_CL += float(hist[avgind+i])/ tot_entries
-                    else:
-                        summedallhi = True
-                if current_CL >= CL:
-                    passed_CL = True
-                    break
-            if summedallhi is True:
-                PH_90hi.append(binedges[len(binedges)-1])
-            else:
-                PH_90hi.append(binedges[avgind+i])
-            if summedalllo is True:
-                PH_90lo.append(binedges[0])
-            else:
-                PH_90lo.append(binedges[avgind-i])
+            PH_CLhi, PH_CLlo = self._Get_Distributions_CLCoverage(dayprobs,60,CL) 
+            PH_90hi.append(PH_CLhi)
+            PH_90lo.append(PH_CLlo)
         return PH_90hi, PH_90lo
 
     def _ErrBars_PH_Spread_FC(self,PH_dist, CL=0.90):
@@ -363,8 +370,48 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
             PH_90hi.append(binedges[binright]+binwidth)
             PH_90lo.append(binedges[binleft])
         return PH_90hi, PH_90lo
+    
+    def _findOpRegions_OneHist(self,CL):
+        '''Returns the high and low bands consistent with "both cores on" and
+        "one core off" to the given CL'''
+        bothon_Ps = []
+        oneoff_M_Ps = []
+        oneoff_S_Ps = []
+        #We build bothon, oneoff_S, and
+        #oneoff_M region probability histograms
+        #First, rebuild experiment's op map
+        opmap = ["on"] * self.experiment_length 
+        for core in self.core_opmaps:
+            for j,dayop in enumerate(self.core_opmaps[core]):
+                if dayop == "S":
+                    opmap[j] = "off_s" 
+                elif dayop == "M":
+                    opmap[j] = "off_m"  
+        #Now, for any day of each type, append
+        #That day's FB probability value to that
+        #data array
+        for expt_PH in self.PH_dist_train:
+            for j,state in enumerate(opmap):
+                if state == 'on':
+                    bothon_Ps.append(expt_PH[j]) 
+                elif state == 'off_s':
+                    oneoff_S_Ps.append(expt_PH[j]) 
+                elif state == 'off_m':
+                    oneoff_M_Ps.append(expt_PH[j])  
+                else:
+                    print("Something went wrong with defining states in your op maps...")
+                    return
+        bothon_hiCL,bothon_loCL = self._Get_Distributions_CLCoverage(bothon_Ps,
+                60, CL)
+        offs_hiCL,offs_loCL = self._Get_Distributions_CLCoverage(oneoff_S_Ps,
+                60, CL)
+        offm_hiCL,offm_loCL = self._Get_Distributions_CLCoverage(oneoff_M_Ps,
+                60, CL)
+        banddict = {'both on': [bothon_loCL,bothon_hiCL], 'one off, shutdown': 
+                [offs_loCL, offs_hiCL], 'one off, maintenance': [offm_loCL, offm_hiCL]}
+        return banddict
 
-    def _findOpRegions(self):
+    def _findOpRegions_CLBands(self):
         '''Returns the high and low bands consistent with "both cores on" and
         "one core off" to the given CL'''
         bothon_CLhi, bothon_CLlo = [], []
