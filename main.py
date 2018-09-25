@@ -171,6 +171,7 @@ if __name__=='__main__':
         datadict["PH_CLhi"] = ForwardBackwardAnalysis.PH_CLhi
         datadict["PH_CLlo"] = ForwardBackwardAnalysis.PH_CLlo
         datadict["banddict"] = ForwardBackwardAnalysis.banddict
+        datadict["probdistdict"] = ForwardBackwardAnalysis.probdistdict
         datadict["band_CL"] = ForwardBackwardAnalysis.CL
         datadict["Op_predictions"] = ForwardBackwardAnalysis.TestExpt_OpPredictions
         if DEBUG is True:

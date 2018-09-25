@@ -5,6 +5,8 @@ import seaborn as sns
 import MapMaker as mm
 #Graphs that plot results from the Kalman Filter Analysis
 
+
+
 def Rebin_Pdists(Prob_array, Exp_days, daysperbin=3):
     '''Re-bins the probability distributions and averages the days in each bin'''
     Probs_rebinned = []
@@ -20,6 +22,50 @@ def Rebin_Pdists(Prob_array, Exp_days, daysperbin=3):
             Exp_days.pop(len(Exp_days)-1)
         Probs_rebinned.append(P_rebinned)
     return Probs_rebinned, np.array(Exp_days)
+
+def OpProbDistPlotter(ForwardBackwardAnalysisDict,optoshow="all",nbins=100):
+    '''Given an input type of operational state, returns the FB algorithm
+    probability distribution of all days in that operational state in the
+    training data'''
+    sns.set_style("whitegrid")
+    sns.axes_style("whitegrid")
+    xkcd_colors = ['green','green', 'red', 'red']
+    sns.set_palette(sns.xkcd_palette(xkcd_colors))#,len(allclasssacs)))
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    probdistdict = ForwardBackwardAnalysisDict["probdistdict"]
+    banddict = ForwardBackwardAnalysisDict["banddict"]
+    colorstopick = ['b','g','orange','red','purple']
+    bandtoshow=None
+    for j,dist in enumerate(probdistdict):
+        disttoshow=None
+        if dist==optoshow:
+            disttoshow=dist
+            bandtoshow=dist
+        elif optoshow=="all":
+            disttoshow=dist
+        else:
+            continue
+        if bandtoshow is not None:
+            theCL = ForwardBackwardAnalysisDict["band_CL"]
+            ax.vlines(x=banddict[bandtoshow][0], ymin=0, ymax=1, 
+                    color='black',
+                    label="%s %% CL from median"%(theCL),linewidth=5,alpha=0.8)
+            ax.vlines(x=banddict[bandtoshow][1],  ymin=0, ymax=1, color='black',
+                    linewidth=5,alpha=0.8)
+        histbins = np.array(probdistdict[disttoshow])
+        weights = np.ones_like(histbins)/float(len(histbins))
+        plt.hist(histbins,bins=nbins,weights=weights,color=colorstopick[j],alpha=0.7,label=disttoshow)
+    if optoshow=="all":
+        optoshow="all operational types"
+    plt.title("Distribution of FB algorithm probabilities for \n %s in training data"%(optoshow),fontsize=32)
+    plt.xlabel("FB Algorithm Probability Response",fontsize=28)
+    box = ax.get_position()
+    ax.set_ylim([0,1])
+    ax.set_position([box.x0, box.y0 , box.width*0.9, box.height])
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),fontsize=20)
+    plt.tick_params(labelsize=26)
+    plt.show()
 
 def PH_Plotter(ForwardBackAnalysisDict,daysperbin=3,use_opmap=True,mark="line"):
     '''Plots the first PH distribution in the analysis results dictionary'''
@@ -55,62 +101,10 @@ def PH_Plotter(ForwardBackAnalysisDict,daysperbin=3,use_opmap=True,mark="line"):
     #plt.legend(loc=5)
     plt.show()
 
-def _ErrBars_PH_Spread_FC(PH_dist, PH_average, CL):
-    PH_90hi = []
-    PH_90lo = []
-    binedges = np.arange(0.0,1.0 + (0.9/60), (1.0/60.0))
-    for i in xrange(len(PH_dist[0])): #Gets ith index of each day
-        dayprobs = []
-        for e in xrange(len(PH_dist)):
-            dayprobs.append(PH_dist[e][i])
-        dayprobs = np.array(dayprobs)
-        hist, binedges = np.histogram(dayprobs,bins=binedges)
-        #find the bin index where this average is located
-        avgind = np.where(PH_average[i] < binedges)[0][0]
-        #avgind is the index in hist that has the average value
-        #Now, we move left and right, summing up the % of events we have.
-        #Once we cross 90%CL, our bounds are defined by the edges of these
-        #Bins.
-        sumlength = np.max([avgind, len(hist)- avgind])
-        current_CL = 0.0
-        tot_entries = float(hist.sum())
-        past_CL = False
-        summedalllo = False
-        summedallhi = False 
-        for i in xrange(sumlength):
-            if past_CL is True:
-                outind = i
-                break
-            if i==0:
-                current_CL += float(hist[avgind])/ tot_entries
-            else:
-                ##add the bin on ith side of prob. average
-                #FIXME: Confirm you have overcoverage here
-                if avgind-i >= 0:
-                    current_CL += float(hist[avgind-i])/ tot_entries
-                else:
-                    summedalllo = True
-                if avgind+i <= len(hist)-1:
-                    current_CL += float(hist[avgind+i])/ tot_entries
-                else:
-                    summedallhi = True
-            if current_CL >= CL:
-                passed_CL = True
-                break
-        if summedallhi is True:
-            PH_90hi.append(binedges[len(binedges)-1])
-        else:
-            PH_90hi.append(binedges[avgind+i])
-        if summedalllo is True:
-            PH_90lo.append(binedges[0])
-        else:
-            PH_90lo.append(binedges[avgind-i])
-    return PH_90hi, PH_90lo
-
 
 def PH_Spread(ForwardBackAnalysisDict,daysperbin=1,use_opmap=True):
-    '''Plots the average and 90% CL bands (with overcoverage) of PH distributions 
-    found during training in the given results dictionary'''
+    '''Plots the average and 90% CL bands (with overcoverage) of each day's PH distributions 
+    in all of the training data'''
     CL = ForwardBackAnalysisDict["band_CL"]
     PH_dist = np.array(ForwardBackAnalysisDict["PH_dist_train"])
     PH_90hi, PH_90lo = ForwardBackAnalysisDict['PH_CLhi'], ForwardBackAnalysisDict["PH_CLlo"]

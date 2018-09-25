@@ -137,6 +137,7 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         self.experiment_length = None
         self.experiment_days = None
         self.core_opmaps = None
+        self.probdistdict = None
         self.banddict = None
         self.CL = None
         self.TestExpt_DayPredictions = []
@@ -188,12 +189,13 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         self.CL = CL
         #The following two lines find the CL bands by looking at each
         #day's 90% CL bands, then averaging the band edges for each dist.
+        self.PH_CLhi = []
+        self.PH_CLlo = []
         self.PH_CLhi, self.PH_CLlo = self._FindDailyPHSpread(self.PH_dist_train, CL)
-        #self.banddict = self._findOpRegions_CLBands()
 
         #The following takes days from all operation regions and puts them
         #Into their own histograms, and finds the bands there
-        self.banddict = self._findOpRegions_OneHist(CL)
+        self.probdistdict, self.banddict = self._findOpRegions(CL)
 
     def _JudgeOp(self,PHDist=None):
         '''Here, the Judge uses the trained CL bands to try and predict the state of
@@ -202,7 +204,7 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         if PHDist is None:
             print("You must feed in a 'probability of being on' distribution"+\
                     "to run this prediction.")
-        CLLimit = 0.68
+        CLLimit = 0.80
         CLkeys = self.banddict.keys()
         Day_OpType_Candidates = {}
         for CL in CLkeys:
@@ -318,6 +320,9 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         return PH_CLhi, PH_CLlo
 
     def _FindDailyPHSpread(self,PH_dist,  CL):
+        '''Given an array of FB algorithm probability distributions,
+        returns two arrays that give the day-by-day upper and lower
+        bound on where the probability values lie to the input CL'''
         PH_90hi = []
         PH_90lo = []
         PH_median =np.median(PH_dist,axis=0)
@@ -371,7 +376,7 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
             PH_90lo.append(binedges[binleft])
         return PH_90hi, PH_90lo
     
-    def _findOpRegions_OneHist(self,CL):
+    def _findOpRegions(self,CL):
         '''Returns the high and low bands consistent with "both cores on" and
         "one core off" to the given CL'''
         bothon_Ps = []
@@ -407,47 +412,12 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
                 60, CL)
         offm_hiCL,offm_loCL = self._Get_Distributions_CLCoverage(oneoff_M_Ps,
                 60, CL)
+        probdistdict = {'both on': bothon_Ps, 'one off, shutdown': oneoff_S_Ps,
+                'one off, maintenance': oneoff_M_Ps}
         banddict = {'both on': [bothon_loCL,bothon_hiCL], 'one off, shutdown': 
                 [offs_loCL, offs_hiCL], 'one off, maintenance': [offm_loCL, offm_hiCL]}
-        return banddict
+        return probdistdict, banddict
 
-    def _findOpRegions_CLBands(self):
-        '''Returns the high and low bands consistent with "both cores on" and
-        "one core off" to the given CL'''
-        bothon_CLhi, bothon_CLlo = [], []
-        offs_CLhi, offs_CLlo = [], []
-        offm_CLhi, offm_CLlo = [], []
-        #First, we build bothon, oneoff_S, and
-        #oneoff_M regions
-        opmap = ["on"] * self.experiment_length 
-        for core in self.core_opmaps:
-            for j,dayop in enumerate(self.core_opmaps[core]):
-                if dayop == "S":
-                    opmap[j] = "off_s" 
-                elif dayop == "M":
-                    opmap[j] = "off_m"  
-        for j,state in enumerate(opmap):
-            if state == 'on':
-                bothon_CLhi.append(self.PH_CLhi[j])
-                bothon_CLlo.append(self.PH_CLlo[j])
-            elif state == 'off_s':
-                offs_CLhi.append(self.PH_CLhi[j])
-                offs_CLlo.append(self.PH_CLlo[j])
-            elif state == 'off_m':
-                offm_CLhi.append(self.PH_CLhi[j])
-                offm_CLlo.append(self.PH_CLlo[j])
-            else:
-                print("Something went wrong with defining states in your op maps...")
-                return
-        bothon_hiavg = np.average(bothon_CLhi)
-        bothon_loavg = np.average(bothon_CLlo)
-        offs_hiavg = np.average(offs_CLhi)
-        offs_loavg = np.average(offs_CLlo)
-        offm_hiavg = np.average(offm_CLhi)
-        offm_loavg = np.average(offm_CLlo)
-        banddict = {'both on': [bothon_loavg,bothon_hiavg], 'one off, shutdown': 
-                [offs_loavg, offs_hiavg], 'one off, maintenance': [offm_loavg, offm_hiavg]}
-        return banddict
 
     def ExpCheck(self):
         if self.Current_Experiment.numcores != 2:
@@ -712,7 +682,6 @@ class SPRTAnalysis(ExperimentalAnalysis):
                 days_reacon.append(self.Current_Experiment.experiment_days[j])
                 events_ondays.append(self.Current_Experiment.events[j])
         events_ondays = np.array(events_ondays)
-        plt.show()
         #Calculate the null hypothesis average
         testavg = float(np.sum(events_ondays[0:self.initdays]))/ \
                 float(self.initdays)

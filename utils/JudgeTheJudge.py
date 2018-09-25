@@ -96,20 +96,23 @@ def EvaluateJudgePerformance(ForwardBackAnalysisDict,optocheck="one off, shutdow
         AntiLargeOffMap = -1.0 * (LargeOffMap-1)
         #Now we have this experiment's op.  Do the algorithms to test.
         Days_falseclaim = (AntiLargeOffMap * TheOpGuess)
+        print("DAYS_FALSECLAIMMAP: " + str(Days_falseclaim))
+        print("SUM DAYS_FALSECLAIMMAP: " + str(np.sum(Days_falseclaim)))
         daysinarowfalse = 0
-        for j,day in enumerate(Days_falseclaim):
-            if j==0:
+        for k,day in enumerate(Days_falseclaim):
+            if k==0:
                 continue
-            if Days_falseclaim[j] + Days_falseclaim[j-1] == 2:
+            if Days_falseclaim[k] + Days_falseclaim[k-1] == 2:
                 daysinarowfalse+=1
+            else:
+                daysinarowfalse=0
             #Relax our "False Claim" condition if a maintenance happens
             #within a month of a large shutdown
-            if MaintOffMap[j] == 1 and np.sum(LargeOffMap[j-30:j+30])>0:
-                daysinarowfalse=0
-            else:
+            if MaintOffMap[k] == 1 and np.sum(LargeOffMap[k-30:k+30])>0:
                 daysinarowfalse=0
             if daysinarowfalse>shutdown_length:
                 NoShuts_claimed+=1
+                daysinarowfalse=0
     print("THE JUDGE MISCLAIMED %s SHUTDOWNS COMPLETELY"%str(NoShuts_claimed))
     #See if the judge missed any shutdowns completely
     shutdown_length = ForwardBackAnalysisDict["schedule_dict_test"]["OFF_TIME"]
