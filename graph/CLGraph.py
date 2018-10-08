@@ -35,10 +35,13 @@ class CLGraph(object):
         CL_dict = {"68.3% CL": int(len(ddays) * 0.683), \
                  "95% CL": int(len(ddays) * 0.95), \
                  "99.7% CL": int(len(ddays) * 0.997)}
+        print("THE CLS: ")
+        for k in CL_dict:
+            print("%s : %s"%(k,str(ddays[CL_dict[k]])))
         CL_colors = ["m","k","r"]
         for j,CL in enumerate(CL_dict):
             ax.axvline(ddays[CL_dict[CL]], color = CL_colors[j], \
-                    linewidth=2, label = CL)
+                    linewidth=4, label = CL)
         if ShowOpMap:
             ax = mm._AddOpMap(self.schedule,ax)
         ax.set_xlim([0,np.max(ddays)+25])
