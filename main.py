@@ -1,70 +1,31 @@
 #!/usr/bin/python
 
 #Main script for outputting reactor sensitivity study at Boulby in WATCHMAN
-import optparse
 import json
 import os.path
 import sys
 import lib.playDarts as pd
 import lib.Exp_Generator as eg
 import lib.Analysis as a
+import lib.ArgParser as ap
 import numpy as np
 #import lib.ExpFitting as ef
 
 basepath = os.path.dirname(__file__)
 savepath = os.path.abspath(os.path.join(basepath,"jobresults"))
 
+DEBUG = ap.DEBUG
+SPRT = ap.SPRT 
+KALMAN = ap.KALMAN 
+FORWARDBACKWARD = ap.FORWARDBACKWARD 
+WINDOW = ap.WINDOW
+POISFIT = ap.POISFIT
+DWELLTIME = ap.DWELLTIME
+jn = ap.jn
+PHOTOCOVERAGE = ap.PHOTOCOVERAGE
+PMTTYPE = ap.PMTTYPE
+BUFFERSIZE = ap.BUFFERSIZE
 
-parser = optparse.OptionParser()
-parser.add_option("--debug",dest="debug",action="store_true",default="False")
-parser.add_option("-k","--killreacs",action="store",dest="killreacs", \
-        type="int",default=None,help="If defined, both reactors will" + \
-        "shut down for all days following the input day")
-parser.add_option('-e','--efficiency',action="store",dest="efficiency", \
-        type="float",default=None,help="Detector efficiency (0.2,0.4,0.6,0.8,"+\
-        "1.0 only currently implemented")
-parser.add_option('-p','--photocov',action="store",dest="pc", \
-        type="float",default=None,help="Photocoverage of WATCHMAN" + \
-        "to use(0.25 only implemented)")
-parser.add_option('-b','--buffersize',action="store",dest="bufsize", \
-        type="float",default=1.5,help="Specify buffer size in meters")
-parser.add_option('-a','--activity',action="store", dest="activity", \
-        type="string",help="Specify what type of PMTs you want the signal"+\
-        "/background for (normal_activity, 5050mix, or low_activity)")
-parser.add_option('-c','--schedule',action="store_true",dest="schedule", \
-        default="False",help="Search for difference in IBD numbers in known"+\
-        "reactor on and reactor off data sets")
-parser.add_option('-f','--poisfit',action="store_true",dest="posfit", \
-        default="False",help="Fit a poisson to 'rector off' data for known reactors")
-parser.add_option('-s','--SPRT',action="store_true",dest="sprt", \
-        default="False",help="Run an SPRT over all on days for known reactors")
-parser.add_option('-l','--Kalman',action="store_true",dest="kalman", \
-        default="False",help="Run the Kalman Filter probability test on"+\
-        "each statistical experiment generated")
-parser.add_option('-o','--FB',action="store_true",dest="forwardbackward", \
-        default="False",help="Run the Forward-Backward probability test on"+\
-        "each statistical experiment generated")
-parser.add_option('-w','--Window',action="store_true",dest="window", \
-        default="False",help="Run the moving window smoothing algorithm on"+\
-        "each statistical experiment generated")
-parser.add_option('-j','--jobnum',action="store",dest="jobnum", \
-        type="int",default=0,help="Job number (for saving data/grid use)")
-
-(options,args) = parser.parse_args()
-DEBUG = options.debug
-SPRT = options.sprt
-KALMAN = options.kalman
-FORWARDBACKWARD = options.forwardbackward
-WINDOW = options.window
-POISFIT = options.posfit
-SCHED = options.schedule
-jn = options.jobnum
-if options.pc is not None:
-    PHOTOCOVERAGE = options.pc
-if options.activity is not None:
-    PMTTYPE = options.activity
-if options.bufsize is not None:
-    BUFFERSIZE = options.bufsize
 
 import lib.config.config as c
 
@@ -75,11 +36,11 @@ if DEBUG is True:
 if __name__=='__main__':
     print(str(c.signals.signals)) 
     #Run once, add the maintenance and core shutoffs to schedule_dict
-    Run1 = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+    Run1 = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
             c.cores)
     #FIXME: A bit dirty adding this in after the fact and not in config..
-    c.schedule_dict_train["MAINTENANCE_STARTDAYS"] = Run1.core_maintenance_startdays
-    c.schedule_dict_train["SHUTDOWN_STARTDAYS"] = Run1.core_shutoff_startdays
+    c.schedule_dict["MAINTENANCE_STARTDAYS"] = Run1.core_maintenance_startdays
+    c.schedule_dict["SHUTDOWN_STARTDAYS"] = Run1.core_shutoff_startdays
     if DEBUG is True:
         Run1.show()  #Shows output of some experiment run details
         #gr.Plot_NRBackgrounds(Run1)
@@ -110,10 +71,10 @@ if __name__=='__main__':
     SlidingWindowAnalysis = a.SlidingWindowAnalysis()
     #Datadict object will save the output configuration and results of analysis
     datadict = {"Site": c.SITE,"pc":c.PHOTOCOVERAGE,"buffersize":c.BUFFERSIZE, 
-            "pmt_type":c.PMTTYPE,"schedule_dict_train": c.schedule_dict_train, 
-            "schedule_dict_test": c.schedule_dict_test,"Analysis": None}
+            "pmt_type":c.PMTTYPE,"schedule_dict": c.schedule_dict, 
+            "Analysis": None}
     experiments = np.arange(0,c.NEXPERIMENTS,1)
-    test_experiments = np.arange(0,c.NTESTEXPTS,1)
+    training_experiments = np.arange(0,c.NTRAININGEXPTS,1)
     if WINDOW is True:
         datadict["Analysis"] = "WINDOW"
         datadict["Window_type"] = "average"
@@ -121,7 +82,7 @@ if __name__=='__main__':
         SlidingWindowAnalysis.setHalfWidth(datadict["Window_halfwidth"])
         SlidingWindowAnalysis.setWindowType(datadict["Window_type"])
         for experiment in experiments:
-            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
             SlidingWindowAnalysis(SingleRun)
         datadict['known_numcoreson'] = list(SingleRun.known_numcoreson)
@@ -149,15 +110,16 @@ if __name__=='__main__':
 
     if FORWARDBACKWARD is True:
         datadict["Analysis"] = "FORWARDBACKWARD"
+        datadict["schedule_dict_test"] = c.schedule_dict_test
         #Run a bunch of test experiments for training CL bands
-        for experiment in experiments:
-            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+        for experiment in training_experiments:
+            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
             ForwardBackwardAnalysis(SingleRun,exptype="train")
         #Train the CL bands based on the assumption we have two cores both doing
         #outages at different times, with maintenance and large shutdowns
         ForwardBackwardAnalysis.TrainTheJudge(CL=0.90)
-        for testexpt in test_experiments:
+        for testexpt in experiments:
             TestRun = eg.ExperimentGenerator(c.signals, c.schedule_dict_test, c.RESOLUTION, \
                         c.cores)
             #FIXME: Still dirty to add this here...
@@ -187,7 +149,7 @@ if __name__=='__main__':
     if KALMAN is True:
         datadict["Analysis"] = "KALMAN"
         for experiment in experiments:
-            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
             KalmanAnalysis(SingleRun)
         #if DEBUG is True:
@@ -206,7 +168,7 @@ if __name__=='__main__':
     if SPRT is True:
         datadict["Analysis"] = "SPRT"
         for experiment in experiments:
-            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
             SPRTAnalysis(SingleRun)
         datadict["above_null_days"] = SPRTAnalysis.SPRT_accdays
@@ -219,8 +181,8 @@ if __name__=='__main__':
                     linestyle='none', marker='o', color = 'g', label=r'Accept $\mu+3\sigma_{\mu}$')
             plt.plot(SPRTAnalysis.SPRTresultday, SPRTAnalysis.SPRTrejbound, \
                     linestyle='none', marker='o', color = 'r', label=r"Accept $\mu-3\sigma_{\mu} '$")
-            if c.schedule_dict_train['KILL_DAYS'] is not None:
-                for day in c.schedule_dict_train['KILL_DAYS']:
+            if c.schedule_dict['KILL_DAYS'] is not None:
+                for day in c.schedule_dict['KILL_DAYS']:
                     plt.axvline(day, linewidth = 3, color='m', label='Core shutdown')
             plt.plot(SPRTAnalysis.SPRTresultday, SPRTAnalysis.SPRTtestpredict, \
                     linewidth=3, color='k',label='Avg. prediction for # IBDs')
@@ -243,7 +205,7 @@ if __name__=='__main__':
     if POISFIT is True:
         datadict["Analysis"] = "POISSON_FIT"
         for experiment in experiments:
-            Run = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+            Run = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
             UnknownCoreAnalysis(Run)
         print("NUM FAILED FITS: " + str(UnknownCoreAnalysis.num_failfits))
@@ -255,10 +217,10 @@ if __name__=='__main__':
         plt.xlabel("Distribution of Poisson average for each 1800 day experiment")
         plt.title(r"$\mu$ best fit")
         plt.show()
-    if SCHED is True:
-        datadict["Analysis"] = "ONOFF_DIFFERENCE"
+    if DWELLTIME is True:
+        datadict["Analysis"] = "3SIGMA_DWELL_TIME"
         for experiment in experiments:
-            Run = eg.ExperimentGenerator(c.signals, c.schedule_dict_train, c.RESOLUTION, \
+            Run = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
                     c.cores)
             ScheduleAnalysis(Run)
             datadict["determination_days"] = ScheduleAnalysis.determination_days

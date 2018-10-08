@@ -658,8 +658,8 @@ class SPRTAnalysis(ExperimentalAnalysis):
         self.RunSPRT()
 
     def ExpCheck(self):
-        if len(self.Current_Experiment.coredict["known_cores"]) != 1:
-            print("Experiment does not have one known core.  Should not"+\
+        if len(self.Current_Experiment.coredict["core_names"]) != 1:
+            print("Experiment does not have one core.  Should not"+\
                     "run this analysis.")
 
     def RunSPRT(self):
@@ -749,7 +749,7 @@ class RunningAverageAnalysis(ExperimentalAnalysis):
         self.TestBackground(8)
 
     def ExpCheck(self):
-        if len(self.Current_Experiment.coredict["known_cores"]) != 1:
+        if len(self.Current_Experiment.coredict["core_names"]) != 1:
             print("Experiment does not have one known core.  Should not"+\
                     "run this analysis.")
 
