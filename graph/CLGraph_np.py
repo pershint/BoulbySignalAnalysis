@@ -59,6 +59,7 @@ class CLGraph(object):
                 self.kmaint_ends = self.kmaint_starts + self.schedule["MAINTENANCE_TIME"]
 
     def plot_cumulsum(self,ddays,csum_vals,NumConfirmRequired=None,Title=None):
+        sns.set_style("whitegrid")
         #if the number of days required for confirmation was non-zero,
         #Need to shift the Cumulative distribution over
         #Plot the cumulative sum of determination days
@@ -104,12 +105,12 @@ class CLGraph(object):
         ax.set_xlim([0,np.max(ddays)])
         ax.set_ylim([0,100])
         for tick in ax.xaxis.get_major_ticks():
-            tick.label.set_fontsize(16)
+            tick.label.set_fontsize(24)
         for tick in ax.yaxis.get_major_ticks():
-            tick.label.set_fontsize(16)
-        ax.set_xlabel("Experiment day", fontsize=18)
-        ax.set_ylabel("Confidence Limit (%)", fontsize=18)
-        ax.set_title(Title,fontsize=20)
+            tick.label.set_fontsize(24)
+        ax.set_xlabel("Experiment day", fontsize=28)
+        ax.set_ylabel("Confidence Limit (%)", fontsize=28)
+        ax.set_title(Title,fontsize=32)
         #The default order sucks.  I have to define it here
         handles, labels = ax.get_legend_handles_labels()
         hand = [handles[0], handles[1], handles[3], handles[2],\
@@ -119,7 +120,9 @@ class CLGraph(object):
         for i in xrange(len(handles)-len(hand)): #add any extras
             hand.append(handles[len(hand)+i])
             lab.append(labels[len(lab)+i])
-        plt.legend(hand,lab, loc = 2)
+        legend = plt.legend(hand,lab, loc = 1,frameon=1,fontsize=20)
+        frame = legend.get_frame()
+        frame.set_facecolor("white")
         plt.show()       
 
 class OnOffCL(CLGraph):
@@ -140,8 +143,8 @@ class OnOffCL(CLGraph):
             return
         self.num3SigRequired = AnalDict["num3siginarow"]
         self.csum_vals = self.buildcsum(self.ddays)
-        self.plot_title = "Confidence Limit of days needed until WATCHMAN " + \
-            "confirms on/off cycle at " + self.site + "\n" 
+        self.plot_title = "Confidence Limit of days needed until WATCHMAN \n" + \
+            "confirms on/off cycle at " + self.site  
         #On init, run what the default is in the given dictionary
         self.plot_cumulsum(self.ddays, self.csum_vals,NumConfirmRequired= \
                 self.num3SigRequired,Title=self.plot_title)

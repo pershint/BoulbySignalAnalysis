@@ -38,12 +38,12 @@ schedule_dict_test = {}
 schedule_dict_test["OFF_TIME"] = 60    #Days that cores turn off for a long outage
 schedule_dict_test["UP_TIME"] = 1035   #Day interval between long outages
 schedule_dict_test["KILL_CORES"] = []#"Core_2"] #List the name of core(s) to shut down
-schedule_dict_test["KILL_DAYS"] = [700] #List the days where cores in KILL_CORES shuts down
+schedule_dict_test["KILL_DAYS"] = [] #List the days where cores in KILL_CORES shuts down
 schedule_dict_test["TOTAL_RUN"] = 1550  #Total length of experiment
 schedule_dict_test["MAINTENANCE_TIME"] =10 
 schedule_dict_test["MAINTENANCE_INTERVAL"] = 106 #Day interval between maintenance outages
 
-schedule_dict_test["FIRST_KNOWNSHUTDOWNS"] = [71,619]
+schedule_dict_test["FIRST_KNOWNSHUTDOWNS"] = [1,549]
 schedule_dict_test["FIRST_UNKNOWNSHUTDOWNS"] = []
 
 #NOTE: These are not implemented for any use yet
