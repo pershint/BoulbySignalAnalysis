@@ -47,15 +47,16 @@ class dataFuser(object):
         Checks if the given data dictionary has the same metadata as
         Has been initialized using the initDetails function.
         '''
+        issame = True
         if self.details_inited is False:
             print("There's no meta data currently loaded.")
             return False
         if self.site != data["Site"] or self.pmttype!=data["pmt_type"]:
-            return False
+            issame = False
         elif self.pc != data["pc"] or self.bufsize!=data["buffersize"]:
-            return False
+            issame = False
         elif self.schedule_dict != data["schedule_dict"]:
-            return False
+            issame = False
         else:
             return True
 
@@ -67,6 +68,7 @@ class dataFuser(object):
         '''
         try:
             files = glob.glob(loc + "/results_j*.json")
+            print("FILES IN DIR: %s"%(str(files)))
         except:
             print("Error getting filenames from input directory.  Check" + \
                     "your specified directory and try again.")
@@ -76,13 +78,16 @@ class dataFuser(object):
                 with open(fname,"r") as f:
                     data = json.load(f)
                     #Check if the metadata matches
-                    if self.hassamemeta(data) is False:
+                    if self.hassamemeta(data) is False and self.details_inited is False:
                         self.initDetails(data)
+                        self.determination_days = data["determination_days"]
+                        self.no3sigmadays += data["no3sigmadays"]
+                    elif not self.hassamemeta(data) and self.details_inited:
+                        print("File %s does not have same data as inited"%(fname))
+                        continue
                     elif self.hassamemeta(data):
                         self.determination_days.extend(data["determination_days"])
                         self.no3sigmadays += data["no3sigmadays"]
-                    elif self.hassamemeta(data) is False and self.details_inited is True:
-                        print("TRIED TO LOAD DATA WITH DIFFERENT META INFO...")
 #            except:
 #                print("Error loading in file" + str(fname) + ". Continuing")
 #                continue
