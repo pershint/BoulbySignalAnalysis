@@ -68,9 +68,12 @@
       "pmt_type":"low_activity",
       "buffersize": 1.5,
     "Signal_Contributions": {
-        "Core_1" : 0.681,
-        "Core_2" : 0.681,
-        "Tot_background": 0.077
+        "Core_1" : 0.685,
+        "Core_2" : 0.685,
+        "accidentals": 0.085,
+	"fastN": 0.085,
+        "WorldReac":0.214,
+        "Radionuclide":0.014 
         }
     },
     { "Photocoverage": 0.35,

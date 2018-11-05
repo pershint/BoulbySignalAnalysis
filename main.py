@@ -4,12 +4,12 @@
 import json
 import os.path
 import sys
+import lib.DBParse as dp
 import lib.playDarts as pd
 import lib.Exp_Generator as eg
 import lib.Analysis as a
 import lib.ArgParser as ap
 import numpy as np
-#import lib.ExpFitting as ef
 
 basepath = os.path.dirname(__file__)
 savepath = os.path.abspath(os.path.join(basepath,"jobresults"))
@@ -27,17 +27,29 @@ PMTTYPE = ap.PMTTYPE
 BUFFERSIZE = ap.BUFFERSIZE
 
 
-import lib.config.config as c
+import lib.config.schedule_config as c
+import lib.config.DBConfig as dbc
 
 if DEBUG is True:
     import graph.Histogram as h
     import graph.Exp_Graph as gr
     import matplotlib.pyplot as plt
+
+
 if __name__=='__main__':
-    print(str(c.signals.signals)) 
+    
+    signal_loader={}
+    signal_loader= dp.Signals_PC(dbc.PHOTOCOVERAGE,dbc.PMTTYPE,dbc.BUFFERSIZE, dbc.SITE)
+    if dbc.PMT_ORIENTATION is not None:
+        signal_loader.set_orientation(dbc.PMT_ORIENTATION)
+    if dbc.HAS_SHIELDS is not None:
+        signal_loader.set_shields(dbc.HAS_SHIELDS)
+    signal_loader.load_signal_dict()
+    print("SIGNALS LOADED: " + str(signal_loader.signals)) 
+    
     #Run once, add the maintenance and core shutoffs to schedule_dict
-    Run1 = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
-            c.cores)
+    Run1 = eg.ExperimentGenerator(signal_loader, c.schedule_dict, c.RESOLUTION, \
+            dbc.cores)
     #FIXME: A bit dirty adding this in after the fact and not in config..
     c.schedule_dict["MAINTENANCE_STARTDAYS"] = Run1.core_maintenance_startdays
     c.schedule_dict["SHUTDOWN_STARTDAYS"] = Run1.core_shutoff_startdays
@@ -70,9 +82,10 @@ if __name__=='__main__':
     ForwardBackwardAnalysis = a.ForwardBackwardAnalysis()
     SlidingWindowAnalysis = a.SlidingWindowAnalysis()
     #Datadict object will save the output configuration and results of analysis
-    datadict = {"Site": c.SITE,"pc":c.PHOTOCOVERAGE,"buffersize":c.BUFFERSIZE, 
-            "pmt_type":c.PMTTYPE,"schedule_dict": c.schedule_dict, 
-            "Analysis": None}
+    datadict = {"Site": dbc.SITE,"pc":dbc.PHOTOCOVERAGE,"buffersize":dbc.BUFFERSIZE, 
+            "pmt_type":dbc.PMTTYPE,"pmt_orientation":dbc.PMT_ORIENTATION,
+            "has_shields":dbc.HAS_SHIELDS, "schedule_dict": c.schedule_dict, 
+            "Analysis": None, "Signals": signal_loader.signals}
     experiments = np.arange(0,c.NEXPERIMENTS,1)
     training_experiments = np.arange(0,c.NTRAININGEXPTS,1)
     if WINDOW is True:
@@ -82,8 +95,8 @@ if __name__=='__main__':
         SlidingWindowAnalysis.setHalfWidth(datadict["Window_halfwidth"])
         SlidingWindowAnalysis.setWindowType(datadict["Window_type"])
         for experiment in experiments:
-            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
-                    c.cores)
+            SingleRun = eg.ExperimentGenerator(signal_loader, c.schedule_dict, c.RESOLUTION, \
+                    dbc.cores)
             SlidingWindowAnalysis(SingleRun)
         datadict['known_numcoreson'] = list(SingleRun.known_numcoreson)
         datadict['avg_distributions'] = SlidingWindowAnalysis.averaged_distributions
@@ -113,15 +126,15 @@ if __name__=='__main__':
         datadict["schedule_dict_test"] = c.schedule_dict_test
         #Run a bunch of test experiments for training CL bands
         for experiment in training_experiments:
-            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
-                    c.cores)
+            SingleRun = eg.ExperimentGenerator(signal_loader, c.schedule_dict, c.RESOLUTION, \
+                    dbc.cores)
             ForwardBackwardAnalysis(SingleRun,exptype="train")
         #Train the CL bands based on the assumption we have two cores both doing
         #outages at different times, with maintenance and large shutdowns
         ForwardBackwardAnalysis.TrainTheJudge(CL=0.90)
         for testexpt in experiments:
-            TestRun = eg.ExperimentGenerator(c.signals, c.schedule_dict_test, c.RESOLUTION, \
-                        c.cores)
+            TestRun = eg.ExperimentGenerator(signal_loader, c.schedule_dict_test, c.RESOLUTION, \
+                        dbc.cores)
             #FIXME: Still dirty to add this here...
             c.schedule_dict_test["MAINTENANCE_STARTDAYS"] = TestRun.core_maintenance_startdays
             c.schedule_dict_test["SHUTDOWN_STARTDAYS"] = TestRun.core_shutoff_startdays
@@ -149,8 +162,8 @@ if __name__=='__main__':
     if KALMAN is True:
         datadict["Analysis"] = "KALMAN"
         for experiment in experiments:
-            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
-                    c.cores)
+            SingleRun = eg.ExperimentGenerator(signal_loader, c.schedule_dict, c.RESOLUTION, \
+                    dbc.cores)
             KalmanAnalysis(SingleRun)
         #if DEBUG is True:
         datadict['known_numcoreson'] = list(SingleRun.known_numcoreson)
@@ -168,8 +181,8 @@ if __name__=='__main__':
     if SPRT is True:
         datadict["Analysis"] = "SPRT"
         for experiment in experiments:
-            SingleRun = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
-                    c.cores)
+            SingleRun = eg.ExperimentGenerator(signal_loader, c.schedule_dict, c.RESOLUTION, \
+                    dbc.cores)
             SPRTAnalysis(SingleRun)
         datadict["above_null_days"] = SPRTAnalysis.SPRT_accdays
         datadict["below_null_days"] = SPRTAnalysis.SPRT_rejdays
@@ -205,8 +218,8 @@ if __name__=='__main__':
     if POISFIT is True:
         datadict["Analysis"] = "POISSON_FIT"
         for experiment in experiments:
-            Run = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
-                    c.cores)
+            Run = eg.ExperimentGenerator(signal_loader, c.schedule_dict, c.RESOLUTION, \
+                    dbc.cores)
             UnknownCoreAnalysis(Run)
         print("NUM FAILED FITS: " + str(UnknownCoreAnalysis.num_failfits))
         plt.hist(UnknownCoreAnalysis.csndf_offbinfits, 40, range=(0.0,8.0))
@@ -220,8 +233,8 @@ if __name__=='__main__':
     if DWELLTIME is True:
         datadict["Analysis"] = "3SIGMA_DWELL_TIME"
         for experiment in experiments:
-            Run = eg.ExperimentGenerator(c.signals, c.schedule_dict, c.RESOLUTION, \
-                    c.cores)
+            Run = eg.ExperimentGenerator(signal_loader, c.schedule_dict, c.RESOLUTION, \
+                    dbc.cores)
             ScheduleAnalysis(Run)
             datadict["determination_days"] = ScheduleAnalysis.determination_days
             datadict["no3sigmadays"] = ScheduleAnalysis.num_nodetermine

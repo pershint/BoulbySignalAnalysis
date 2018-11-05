@@ -2,27 +2,10 @@
 #optons that we are seeing right now.  It's getting too hectic in the main.
 import config_checks as cc
 from .. import DBParse as dp
-
+import DBConfig as dbc
 ########################BEGIN CONFIGURABLES#############################
 
-########## SITE SELECTION AND WHAT CORES ARE KNOWN/UNKNOWN #############
-SITE = "Boulby"  #Either Boulby or Fairport implemented
-
-cores = {}
-if SITE=="Boulby":
-    cores["core_names"] = ['Core_1','Core_2']  #Must match entries in DB used
-    cores["known_cores"] = ['Core_1','Core_2'] #Tells analyses which cores are known
-    cores["unknown_cores"] = []                #Tells the analyses which cores are unknown
-if SITE=="Fairport":
-    cores["core_names"] = ["Core_1"]
-    cores["known_cores"] = ["Core_1"]
-    cores["unknown_cores"] = []
-
-
-##### Choose the WATCHMAN configuration (defines signal/background rates) #####
-PHOTOCOVERAGE = 0.25  #Choose the photocoverage you want from the database
-BUFFERSIZE = 1.5  #Choose your buffer size, in meters
-PMTTYPE = "low_activity" #regular_activity, low_activity, or 5050mix
+###################BEGIN CONFIGURING BASED ON OPTIONS ABOVE############
 
 ####### NUMBER OF EXPERIMENTS TO GENERATE FOR THE ANALYSIS RUN ########
 NEXPERIMENTS = 100 #Number of experiments generated in analysis run (# Test 
@@ -43,7 +26,7 @@ schedule_dict["MAINTENANCE_TIME"] =10
 schedule_dict["MAINTENANCE_INTERVAL"] = 106 #Day interval between maintenance outages
 
 schedule_dict["FIRST_SHUTDOWNS"] = [1,549] #Match index with cores in "core_names"
-schedule_dict["CORETYPES"] = cores
+schedule_dict["CORETYPES"] = dbc.cores
 
 #######SCHEDULE FOR DATA USED TO TEST ANALYSES########
 schedule_dict_test = {}
@@ -56,15 +39,9 @@ schedule_dict_test["MAINTENANCE_TIME"] =10
 schedule_dict_test["MAINTENANCE_INTERVAL"] = 106 #Day interval between maintenance outages
 
 schedule_dict_test["FIRST_SHUTDOWNS"] = [1,549] #Match index with cores in "core_names"
-schedule_dict_test["CORETYPES"] = cores
+schedule_dict_test["CORETYPES"] = dbc.cores
 
 ####################END CONFIGURABLES##################################
-
-###################BEGIN CONFIGURING BASED ON OPTIONS ABOVE############
-signals={}
-signals = dp.Signals_PC(PHOTOCOVERAGE,PMTTYPE,BUFFERSIZE, SITE)
-
-###########END CONFIGURING BASED ON OPTIONS ABOVE#####################
 
 ##########RUN CHECKS FOR SENSIBLE CONFIGURATION#######################
 cc.runchecks()

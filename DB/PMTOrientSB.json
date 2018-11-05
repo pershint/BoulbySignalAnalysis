@@ -1,0 +1,47 @@
+{
+   "SB": [
+    { "Photocoverage": 0.25,
+      "pmt_type":"low_activity",
+      "buffersize": 1.5,
+      "orientation":"center_point",
+      "has_shields":"true",
+    "Signal_Contributions": {
+        "Core_1" : 0.662,
+        "Core_2" : 0.662,
+        "Accidentals": 0.084
+        }
+    },
+    { "Photocoverage": 0.25,
+      "pmt_type":"low_activity",
+      "buffersize": 1.5,
+      "orientation":"center_point",
+      "has_shields":"false",
+    "Signal_Contributions": {
+        "Core_1" : 0.722,
+        "Core_2" : 0.722,
+        "Accidentals": 0.072
+        }
+    },
+    { "Photocoverage": 0.25,
+      "pmt_type":"low_activity",
+      "buffersize": 1.5,
+      "orientation":"normal_point",
+      "has_shields":"true",
+    "Signal_Contributions": {
+        "Core_1" : 0.675,
+        "Core_2" : 0.675,
+        "Accidentals": 0.103
+        }
+    },
+    { "Photocoverage": 0.25,
+      "pmt_type":"low_activity",
+      "buffersize": 1.5,
+      "orientation":"normal_point",
+      "has_shields":"false",
+    "Signal_Contributions": {
+        "Core_1" : 0.651,
+        "Core_2" : 0.651,
+        "Accidentals": 0.087
+        }
+    }]
+}
