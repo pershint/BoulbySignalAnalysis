@@ -126,7 +126,11 @@ class DwellTimeCL(CLGraph):
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
         #First, get all ddays in a dictionary w/ key as the varying variable
-        colors = ["blue","red","black","blue","red","black","red","black","black","pink","cyan","yellow"]
+        if self.LenStackPlotList() == 2:
+            colors = ["blue","red","blue","red","pink","cyan","yellow"]
+            
+        else:
+            colors = ["blue","red","black","blue","red","black","red","black","black","pink","cyan","yellow"]
         plotdicts = []
         for results in self.sd:
             thisresdict = {}
