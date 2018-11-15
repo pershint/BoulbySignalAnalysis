@@ -85,17 +85,34 @@ class DwellTimeCL(CLGraph):
             return
         self._num3SigRequired = AnalDict["num3siginarow"]
         self._csum_vals = self._buildcsum(self._ddays)
+        self._plot_title = "Confidence Limit of days needed until WATCHMAN \n" + \
+            "confirms on/off cycle at " + self.site 
         self.ShowDwellTimePlot()
 
-    def ShowDwellTimePlot(self,title="DEFAULT"):
+    def SetTitle(self,title):
+        '''Sets what the title of the plot made will be.  If you want the
+        default plot title, set as DEFAULT'''
+        if title=="DEFAULT":
+            self._plot_title = "Confidence Limit of days needed until WATCHMAN \n" + \
+                "confirms on/off cycle at " + self.site 
+        else:
+            self._plot_title=title
+
+    def GetTitle(self):
+        '''Gets the current title set for graphs.  Nice for just appending stuff
+        to what you already have!'''
+        return self._plot_title
+
+    def ShowTitle(self):
+        '''Show what the currently set title is for the dwell time plots'''
+        print(self._plot_title)
+
+    def ShowDwellTimePlot(self):
         '''Shows the dwell time CL for the single dictionary given when
         this DwellTimeCL class was initialized'''
-        if title == "DEFAULT":
-            self.plot_title = "Confidence Limit of days needed until WATCHMAN \n" + \
-                "confirms on/off cycle at " + self.site  
         #On init, run what the default is in the given dictionary
         self._plot_cumulsum(self._ddays, self._csum_vals,NumConfirmRequired= \
-                self._num3SigRequired,Title=title)
+                self._num3SigRequired,Title=self._plot_title)
 
     def AddDictForStackPlot(self,AnalysisDict):
         '''Add a plot to the array for Stack Plotting'''
@@ -168,11 +185,11 @@ class DwellTimeCL(CLGraph):
             tick.label.set_fontsize(24)
         ax.set_xlabel("Experiment day", fontsize=26)
         ax.set_ylabel("Confidence Limit (%)", fontsize=26)
-        self.plot_title = "Confidence Limit of days needed until WATCHMAN " + \
+        self._plot_title = "Confidence Limit of days needed until WATCHMAN " + \
             "confirms %s on/off cycle (Lines at 0.90 CL)\n" %self.site 
         for var in fixed_vardict:
-            self.plot_title+="%s: %s " % (str(var),str(fixed_vardict[var]))
-        ax.set_title(self.plot_title,fontsize=32)
+            self._plot_title+="%s: %s " % (str(var),str(fixed_vardict[var]))
+        ax.set_title(self._plot_title,fontsize=32)
         plt.legend(loc = 1,fontsize=20)
         plt.show()       
 
