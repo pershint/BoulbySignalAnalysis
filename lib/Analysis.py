@@ -139,7 +139,6 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
         self.core_opmaps = None
         self.probdistdict = None
         self.banddict = None
-        self.CL = None
         self.TestExpt_DayPredictions = []
         self.TestExpt_OpPredictions = []
     
@@ -160,6 +159,7 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
                 print("WARNING: Experiments of different lengths have been "+\
                         "loaded in/analyzed.  This could be bad if you are trying "+\
                         "to compare algorithm performance across multiple experiments")
+        thePHdist = None
         if exptype=="train":
             self.ontototal_ratio_guess = ontototal_ratio_guess
             self.prob_ontooff = prob_ontooff
@@ -174,15 +174,15 @@ class ForwardBackwardAnalysis(ExperimentalAnalysis):
                     self.total_background+=self.Current_Experiment.signals[signal]
             PH_distribution = self._TrackReactors()
             self.PH_dist_train.append(list(PH_distribution))
+            thePHdist = list(PH_distribution)
         if exptype=="test":
             #We've constructed the desired CL bands; run a test and try to
             #predict the state of the reactors with it based on the model
             PH_distribution = self._TrackReactors()
             self.PH_dist_test.append(list(PH_distribution))
-            BandCandidateDays,OpPrediction = self._JudgeOp(PHDist=PH_distribution)
-            self.TestExpt_DayPredictions.append(BandCandidateDays)
-            self.TestExpt_OpPredictions.append(OpPrediction)
-    
+            thePHdist = list(PH_distribution)
+        return thePHdist
+
     def TrainTheJudge(self,CL=0.90):
         '''Finds the bands of FB algorithm output that correspond to different reactor states
         according to the training data'''

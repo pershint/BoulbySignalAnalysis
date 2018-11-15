@@ -4,6 +4,7 @@
 import json
 import os.path
 import sys
+import lib.TheJudge as tj
 import lib.DBParse as dp
 import lib.playDarts as pd
 import lib.Exp_Generator as eg
@@ -129,26 +130,32 @@ if __name__=='__main__':
             SingleRun = eg.ExperimentGenerator(signal_loader, c.schedule_dict, c.RESOLUTION, \
                     dbc.cores)
             ForwardBackwardAnalysis(SingleRun,exptype="train")
-        #Train the CL bands based on the assumption we have two cores both doing
-        #outages at different times, with maintenance and large shutdowns
-        ForwardBackwardAnalysis.TrainTheJudge(CL=0.90)
+        #Now, we need to initialize our Judge
+        TheJudge = tj.CLJudge()
+        TheJudge.SetCLWidth(0.90)
+        TheJudge.AddTrainingDistributions(ForwardBackwardAnalysis.PH_dist_train)
+        TheJudge.TrainTheJudge()
+        #Now, we give Test data to the trained judge and save the results to our datadict
+        TestExpt_OpPredictions = [] 
         for testexpt in experiments:
             TestRun = eg.ExperimentGenerator(signal_loader, c.schedule_dict_test, c.RESOLUTION, \
                         dbc.cores)
             #FIXME: Still dirty to add this here...
             c.schedule_dict_test["MAINTENANCE_STARTDAYS"] = TestRun.core_maintenance_startdays
             c.schedule_dict_test["SHUTDOWN_STARTDAYS"] = TestRun.core_shutoff_startdays
-            ForwardBackwardAnalysis(TestRun,exptype="test")
+            test_data_PHdist = ForwardBackwardAnalysis(TestRun,exptype="test")
+            opTypeCandidates, OpPrediction = TheJudge.JudgeOp(test_data_PHdist)
+            TestExpt_OpPredictions.append(OpPrediction)
         datadict['known_numcoreson'] = list(SingleRun.known_numcoreson)
         #if DEBUG is True:
         datadict["PH_dist_train"] = ForwardBackwardAnalysis.PH_dist_train
         datadict["PH_dist_test"] = ForwardBackwardAnalysis.PH_dist_test
-        datadict["PH_CLhi"] = ForwardBackwardAnalysis.PH_CLhi
-        datadict["PH_CLlo"] = ForwardBackwardAnalysis.PH_CLlo
-        datadict["banddict"] = ForwardBackwardAnalysis.banddict
-        datadict["probdistdict"] = ForwardBackwardAnalysis.probdistdict
-        datadict["band_CL"] = ForwardBackwardAnalysis.CL
-        datadict["Op_predictions"] = ForwardBackwardAnalysis.TestExpt_OpPredictions
+        datadict["PH_CLhi"] = TheJudge.PH_CLhi
+        datadict["PH_CLlo"] = TheJudge.PH_CLlo
+        datadict["banddict"] = TheJudge.banddict
+        datadict["probdistdict"] = TheJudge.probdistdict
+        datadict["band_CL"] = TheJudge.CL
+        datadict["Op_predictions"] = TestExpt_OpPredictions
         if DEBUG is True:
             print("SHOWING PLOT OF FIRST EXPERIMENT'S PROBABILITY TRACKING")
             PL_days = ForwardBackwardAnalysis.PL_dist_train[0]
