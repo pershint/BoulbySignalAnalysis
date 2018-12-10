@@ -25,7 +25,7 @@ class CLJudge(TheJudge):
         self.banddict = None
         self.PH_CLhi = []
         self.PH_CLlo = []
-    
+
     def SetCLWidth(self,CL):
         '''Set what confidence (fraction of 1) you want the Judge to learn each
         operational type to.  For example, if CL=0.683, the Judge will learn the region 
@@ -45,15 +45,78 @@ class CLJudge(TheJudge):
         '''Empties the training distributions array'''
         self.PH_dist_train = []
 
+
     def TrainTheJudge(self):
         '''Using all loaded training data, finds the bands of FB algorithm output that correspond 
         to different reactor states'''
+        if len(self.PH_dist_train) == 0:
+            print("You must give the judge training data before training him.")
+            return
         #The following two lines find the CL bands by looking at each
         #day's 90% CL bands, then averaging the band edges for each dist.
-        self.PH_CLhi, self.PH_CLlo = self._ min(days_in_window) <= s_offwindow:
+        self.PH_CLhi, self.PH_CLlo = self._FindDailyPHSpread(self.PH_dist_train)
+
+        #The following takes days from all operation regions and puts them
+        #Into their own histograms, and finds the bands there
+        self.probdistdict, self.banddict = self._findOpRegions()
+
+
+    def _JudgeOp(self,PHDist=None):
+        '''Here, the Judge uses the trained CL bands to try and predict the state of
+        the Hartlepool complex operation to within 90% accuracy, as well as
+        detect deviations to within 90% accuracy.'''
+        if PHDist is None:
+            print("You must feed in a 'probability of being on' distribution"+\
+                    "to run this prediction.")
+        CLLimit = 0.80
+        CLkeys = self.banddict.keys()
+        Day_OpType_Candidates = {}
+        for CL in CLkeys:
+            Day_OpType_Candidates[CL] = []
+        #Go day by day and see if the probability is consistent with any
+        #of our bands
+        for j,day in enumerate(self.experiment_days):
+            for band in self.banddict:
+                if self.banddict[band][0] < PHDist[j] < self.banddict[band][1]:
+                    Day_OpType_Candidates[band].append(day)
+        #Now, we'll try to reconstruct the regions of operation using the
+        #Day_OpType_Candidates
+        RunPredictions = {}
+        days_in_window = []
+        for optype in Day_OpType_Candidates:
+            if optype == "both on":
+                onwindow = 10 
+                bothon_prediction = np.zeros(len(self.experiment_days))
+                for day in Day_OpType_Candidates[optype]:
+                    days_in_window.append(day)
+                    #check if The total num. of events
+                    allinwindow = True
+                    rangeinwindow = max(days_in_window) - min(days_in_window)
+                    if rangeinwindow > onwindow:
+                        allinwindow = False 
+                    while not allinwindow:
+                        del days_in_window[0]
+                        if max(days_in_window) - min(days_in_window) <= onwindow:
                             allinwindow=True
                     #If this window is filled with on days above CL, mark them
-                    if (float(len(days_in_window))/s_offwindow) >= CLLimit:
+                    if (float(len(days_in_window))/onwindow) >= CLLimit:
+                        bothon_prediction[min(days_in_window):max(days_in_window)]=1
+                RunPredictions[optype] = list(bothon_prediction)
+            elif optype == "one off, shutdown":
+                offwindow = 60 
+                shutdown_prediction = np.zeros(len(self.experiment_days))
+                for day in Day_OpType_Candidates[optype]:
+                    days_in_window.append(day)
+                    #check if The total num. of events
+                    allinwindow = True
+                    if max(days_in_window) - min(days_in_window) > offwindow:
+                        allinwindow = False 
+                    while not allinwindow:
+                        del days_in_window[0]
+                        if max(days_in_window) - min(days_in_window) <= offwindow:
+                            allinwindow=True
+                    #If this window is filled with on days above CL, mark them
+                    if (float(len(days_in_window))/offwindow) >= CLLimit:
                         shutdown_prediction[min(days_in_window):max(days_in_window)]=1
                 RunPredictions[optype] = (list(shutdown_prediction))
             elif optype == "one off, maintenance":
