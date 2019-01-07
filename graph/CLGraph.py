@@ -33,8 +33,8 @@ class CLGraph(object):
                 label="% CL",linewidth=4)
         #Add the CL lines
         CL_dict = {"68.3% CL": int(len(ddays) * 0.683), \
-                 "95% CL": int(len(ddays) * 0.95), \
-                 "99.7% CL": int(len(ddays) * 0.997)}
+                 "90% CL": int(len(ddays) * 0.90), \
+                 "95% CL": int(len(ddays) * 0.95) }
         print("THE CLS: ")
         for k in CL_dict:
             print("%s : %s"%(k,str(ddays[CL_dict[k]])))
@@ -159,6 +159,7 @@ class DwellTimeCL(CLGraph):
                 thisentryindex = len(plotdicts)
                 thisresdict["label"]=""
                 for labels in labelvar:
+                    print(labels)
                     thisresdict["label"] += " %s:%s"%(str(labels),results[labels])
                 thisresdict["labelcolor"] = colors[thisentryindex]
                 thisresdict["linecolor"] = colors[thisentryindex+len(self.sd)]
@@ -190,7 +191,9 @@ class DwellTimeCL(CLGraph):
         for var in fixed_vardict:
             self._plot_title+="%s: %s " % (str(var),str(fixed_vardict[var]))
         ax.set_title(self._plot_title,fontsize=32)
-        plt.legend(loc = 1,fontsize=20)
+        legend = plt.legend(loc = 1,frameon=1,fontsize=20)
+        frame = legend.get_frame()
+        frame.set_facecolor("white")
         plt.show()       
 
 

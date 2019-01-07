@@ -6,8 +6,7 @@ import seaborn as sns
 
 import MapMaker as mm
 
-sns.set_style("whitegrid")
-sns.axes_style("whitegrid")
+sns.set_style("darkgrid")
 xkcd_colors = ['light eggplant', 'black', 'slate blue', 'warm pink', 'green', 'grass']
 sns.set_palette(sns.xkcd_palette(xkcd_colors))#,len(allclasssacs)))
 
@@ -132,7 +131,7 @@ def Plot_Analysis1OnOff(Analysis):
     plt.legend(loc = 2)
     plt.show()
 
-def Plot_OnOffCumSum_A2(Analysis2,sitename=None):
+def Plot_OnOffCumSum_A2(Analysis2,sitename="Boulby"):
     '''
     Takes in an Analysis2 subclass and plots the results from the 3Sigma
     studies for the current experiment fed into the Analysis2 call.
@@ -141,23 +140,29 @@ def Plot_OnOffCumSum_A2(Analysis2,sitename=None):
     ax = fig.add_subplot(1,1,1)
     #ax.plot(GeneratedExperiment.experiment_days, GeneratedExperiment.NR_bkg, \
     #        'ro', color='blue', alpha=0.8)
+    ax.axvline(x=Analysis2.currentexp_determination_day,color='r', \
+            label=r'on > off by 3$\sigma$',linewidth=4)
     ax.errorbar(Analysis2.Current_Experiment.experiment_days, \
         Analysis2.onavg_cumul, xerr=0, yerr=Analysis2.onavg_cumul_unc, \
         marker='o', linestyle='none', color='g', alpha=0.7, label='Both cores on')
     ax.errorbar(Analysis2.Current_Experiment.experiment_days, \
         Analysis2.offavg_cumul, xerr=0, yerr=Analysis2.offavg_cumul_unc, \
         marker='o', linestyle='none', \
-        color='m', alpha=0.7, label='At least one core off')
-    ax.axvline(x=Analysis2.currentexp_determination_day,color='r', \
-            label=r'on > off by 3$\sigma$')
+        color='m', alpha=0.7, label='One core off')
     ax.axhline(y=0,color='k')
-    ax.set_xlabel("Days since experiment started")
-    ax.set_ylabel("Average IBDs/day rate")
-    ax.set_title("Average IBDs/day at WATCHMAN " + str(sitename) + \
-            " Site \n" + \
-            "Determination day = {}".format(Analysis2.currentexp_determination_day))
-    ax.grid(True)
-    plt.legend(loc = 2)
+    ax.set_xlabel("Day in WATCHMAN observation",fontsize=30)
+    ax.set_ylabel("Average IBDs/day rate",fontsize=30)
+    ax.set_title("IBD event rate for subdatasets at each observation day \n"+\
+            "WATCHMAN %s site, Determination day = %i"%(sitename,Analysis2.currentexp_determination_day),
+            fontsize=32)
+    ax.grid(True,linewidth=1,color='k',linestyle=':',alpha=0.7)
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(24)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(24)
+    legend = plt.legend(loc=1,frameon=1,fontsize=18)
+    frame = legend.get_frame()
+    frame.set_facecolor("white")
     plt.show()
 
 def Plot_OnOffDiff_A2(Analysis2,sitename=None):
