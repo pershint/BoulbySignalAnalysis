@@ -11,8 +11,8 @@ import MapMaker as mm
 
 class CLGraph(object):
     def __init__(self, AnalDict):
-        self.site = AnalDict["Site"]
-        self.pc = AnalDict["pc"] #fractional photocoverage
+        self.site = AnalDict["WATCHMANConfiguration"]["site"]
+        self.pc = AnalDict["WATCHMANConfiguration"]["Photocoverage"] #fractional photocoverage
         self.schedule = AnalDict["schedule_dict"]
         
     def _buildcsum(self, ddays):
@@ -126,7 +126,7 @@ class DwellTimeCL(CLGraph):
         '''Clear out all dictionaries in the stack plot data list'''
         self.sd = []
 
-    def ShowStackPlot(self, fixed_vardict={"buffersize":1.5, "pmt_type":"low_activity"},labelvar=["pc"],ShowOpMap=True):
+    def ShowStackPlot(self, fixed_vardict={"buffersize":1.5, "pmt_type":"low_activity"},labelvar=["Photocoverage"],ShowOpMap=True):
         '''Plots all CL distributions from data in the current Stack Plot List.  
         fixed_vardict indicates which WATCHMAN specs to keep fixed, while labelvar
         defines what WATCHMAN spec is varied between the CL plots
@@ -153,14 +153,14 @@ class DwellTimeCL(CLGraph):
             thisresdict = {}
             matchvars = True
             for var in fixed_vardict:
-                if results[var] != fixed_vardict[var]:
+                if results["signal_dict"][var] != fixed_vardict[var]:
                     matchvars = False
             if matchvars is True:
                 thisentryindex = len(plotdicts)
                 thisresdict["label"]=""
                 for labels in labelvar:
                     print(labels)
-                    thisresdict["label"] += " %s:%s"%(str(labels),results[labels])
+                    thisresdict["label"] += " %s:%s"%(str(labels),results["signal_dict"][labels])
                 thisresdict["labelcolor"] = colors[thisentryindex]
                 thisresdict["linecolor"] = colors[thisentryindex+len(self.sd)]
                 if self._num3SigRequired is not None:

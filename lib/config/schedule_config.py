@@ -1,16 +1,15 @@
 #Here we'll write a config file to read from, rather than all of the input
 #optons that we are seeing right now.  It's getting too hectic in the main.
-import config_checks as cc
 from .. import DBParse as dp
-import DBConfig as dbc
+import db_config as dbc
 ########################BEGIN CONFIGURABLES#############################
 
 ###################BEGIN CONFIGURING BASED ON OPTIONS ABOVE############
 
 ####### NUMBER OF EXPERIMENTS TO GENERATE FOR THE ANALYSIS RUN ########
-NEXPERIMENTS = 100 #Number of experiments generated in analysis run (# Test 
+NEXPERIMENTS = 10 #Number of experiments generated in analysis run (# Test 
                     #expts. for the FB algorithm
-NTRAININGEXPTS = 100 #Number of experiments to test the FB algorithm's Judge with
+NTRAININGEXPTS = 10 #Number of experiments to test the FB algorithm's Judge with
 RESOLUTION = 1 #Exp_Generator does re-binning of data by request; this gives
                #The bin resolution in days
 
@@ -42,7 +41,4 @@ schedule_dict_test["FIRST_SHUTDOWNS"] = [1,549] #Match index with cores in "core
 schedule_dict_test["CORETYPES"] = dbc.cores
 
 ####################END CONFIGURABLES##################################
-
-##########RUN CHECKS FOR SENSIBLE CONFIGURATION#######################
-cc.runchecks()
 

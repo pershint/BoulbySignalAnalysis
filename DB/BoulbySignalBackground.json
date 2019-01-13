@@ -2,7 +2,8 @@
    "SB": [
     { "Photocoverage": 0.20,
       "pmt_type":"R7801_LRI",
-      "buffersize": 1.7,
+      "buffer_size": 1.7,
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 1.22,
         "Core_2" : 1.22,
@@ -11,7 +12,8 @@
     },
     { "Photocoverage": 0.25,
       "pmt_type":"R11780_SG",
-      "buffersize": 1.6,
+      "buffer_size": 1.6,
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 0.946,
         "Core_2" : 0.946,
@@ -20,7 +22,8 @@
     },
     { "Photocoverage": 0.20,
       "pmt_type":"R11780_SG",
-      "buffersize": 1.6,
+      "buffer_size": 1.6,
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 0.813,
         "Core_2" : 0.813,
@@ -29,7 +32,8 @@
     },
     { "Photocoverage": 0.15,
       "pmt_type":"regular_activity",
-      "buffersize": 1.5,
+      "buffer_size": 1.5,
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 0.246,
         "Core_2" : 0.246,
@@ -38,7 +42,8 @@
     },
     { "Photocoverage": 0.25,
       "pmt_type":"regular_activity",
-      "buffersize": 1.5,
+      "buffer_size": 1.5,
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 0.417,
         "Core_2" : 0.417,
@@ -47,7 +52,8 @@
     },
     { "Photocoverage": 0.35,
       "pmt_type":"regular_activity",
-      "buffersize": 1.5,
+      "buffer_size": 1.5,
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 0.449,
         "Core_2" : 0.449,
@@ -57,7 +63,8 @@
   
     { "Photocoverage": 0.15,
       "pmt_type":"low_activity",
-      "buffersize": 1.5,
+      "buffer_size": 1.5,
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 0.499,
         "Core_2" : 0.499,
@@ -66,7 +73,8 @@
     },
     { "Photocoverage": 0.25,
       "pmt_type":"low_activity",
-      "buffersize": 1.5,
+      "buffer_size": 1.5,
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 0.685,
         "Core_2" : 0.685,
@@ -78,7 +86,8 @@
     },
     { "Photocoverage": 0.35,
       "pmt_type":"low_activity",
-      "buffersize": 1.5,
+      "buffer_size": 1.5,
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 0.759,
         "Core_2" : 0.759,

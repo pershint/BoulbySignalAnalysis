@@ -5,6 +5,7 @@
       "buffersize": 1.5,
       "orientation":"center_point",
       "has_shields":"true",
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 0.662,
         "Core_2" : 0.662,
@@ -16,6 +17,7 @@
       "buffersize": 1.5,
       "orientation":"center_point",
       "has_shields":"false",
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 0.722,
         "Core_2" : 0.722,
@@ -27,6 +29,7 @@
       "buffersize": 1.5,
       "orientation":"normal_point",
       "has_shields":"true",
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 0.675,
         "Core_2" : 0.675,
@@ -38,6 +41,7 @@
       "buffersize": 1.5,
       "orientation":"normal_point",
       "has_shields":"false",
+      "site": "Boulby",
     "Signal_Contributions": {
         "Core_1" : 0.651,
         "Core_2" : 0.651,

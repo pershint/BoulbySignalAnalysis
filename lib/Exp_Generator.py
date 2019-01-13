@@ -8,10 +8,9 @@ DEBUG = False
 #Class takes in a signal class as defined in DBParse.py and creates the spectrum
 #For an experiment.
 class ExperimentGenerator(object):
-    def __init__(self,signalClass, schedule_dict, resolution, cores):
+    def __init__(self,signal_dict, schedule_dict, resolution, cores):
         self.schedule_dict = schedule_dict
-        self.signals = signalClass.signals
-        
+        self.signals = signal_dict["Signal_Contributions"]       
         self.offtime = schedule_dict["OFF_TIME"]
         self.uptime = schedule_dict["UP_TIME"]
         self.totaldays = schedule_dict["TOTAL_RUN"]

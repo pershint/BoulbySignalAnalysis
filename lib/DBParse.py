@@ -3,7 +3,7 @@
 
 import os, json
 import sys
-import config.DBConfig as dbc
+import config.db_config as dbc
 
 basepath = os.path.dirname(__file__)
 dbpath = os.path.abspath(os.path.join(basepath, "..", "DB"))
@@ -70,3 +70,57 @@ class Signals_PC(object):
             for entry in self.signals:
                 print(str(entry) + ":" + str(self.signals[entry]))
 
+class SignalsLoader(object):
+    def __init__(self, specifications={}, path_to_db=dbpath):
+        self._specs = specifications
+        self._dbpath = path_to_db
+    
+    def add_specification(self, thekey, thevalue):
+        '''Adds the key,value pair to the specification dictionary'''
+        self._specs[thekey] = thevalue
+ 
+    def clear_specifications(self):
+        '''clears out the specification dictionary'''
+        self._specs = {}
+ 
+    def show_specifications(self):
+         print(self._specs)
+
+    def show_current_dbpath(self):
+        print(self._dbpath)
+
+    def set_db_path(self,dbpath):
+        self._dbpath = dbpath
+
+    def load_signals(self, fname):
+        if self._dbpath == None:
+            print("Please set the path to the database where the filename given is loaded")
+            return
+        sigpath = os.path.abspath(os.path.join(self._dbpath, fname))
+        print("PATH TO SIGNAL/BACKGROUND DATABASE: " + str(sigpath))
+        loaded_dictionary = None
+        found_match = False
+        with open(sigpath) as data_file:
+            data = json.load(data_file)
+            for case in data["SB"]:
+                specs_match = True
+                for spec in self._specs:
+                    if spec == None:
+                        continue
+                    if spec not in case:
+                        specs_match = False
+                        break
+                    else:
+                        if self._specs[spec] != case[spec]:
+                            specs_match = False
+                            break
+                if specs_match and not found_match:
+                    print("Found an entry in DB with matching specifications. Loading SB dictionary.")
+                    found_match = True
+                    loaded_dictionary = case
+                if specs_match and found_match:
+                    print("WARNING: Your given specifications match more than one configuration in DB.  Keeping first loaded entry.")
+            if not found_match:
+                print("ERROR: no signal/background rates found matching given specifications.  Stopping")
+                sys.exit(1)
+        return loaded_dictionary
