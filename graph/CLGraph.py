@@ -32,13 +32,14 @@ class CLGraph(object):
         ax.plot(ddays,csum_vals, color='green', alpha=0.8, 
                 label="% CL",linewidth=4)
         #Add the CL lines
-        CL_dict = {"68.3% CL": int(len(ddays) * 0.683), \
+        CL_dict = {"50% CL": int(len(ddays) * 0.50), \
+                 "68.3% CL": int(len(ddays) * 0.683), \
                  "90% CL": int(len(ddays) * 0.90), \
                  "95% CL": int(len(ddays) * 0.95) }
         print("THE CLS: ")
         for k in CL_dict:
             print("%s : %s"%(k,str(ddays[CL_dict[k]])))
-        CL_colors = ["m","k","r"]
+        CL_colors = ["m","k","r","b"]
         for j,CL in enumerate(CL_dict):
             ax.axvline(ddays[CL_dict[CL]], color = CL_colors[j], \
                     linewidth=4, label = CL)
@@ -55,10 +56,10 @@ class CLGraph(object):
         ax.set_title(Title,fontsize=32)
         #The default order sucks.  I have to define it here
         handles, labels = ax.get_legend_handles_labels()
-        hand = [handles[0], handles[1], handles[3], handles[2],\
-                handles[4],handles[5]]
-        lab = [labels[0], labels[1], labels[3], labels[2],\
-                labels[4],labels[5]]
+        hand = [handles[0], handles[2], handles[1], handles[4], handles[3],\
+                handles[5],handles[6]]
+        lab = [labels[0],labels[2], labels[1], labels[4], labels[3] ,\
+                labels[5],labels[6]]
         for i in xrange(len(handles)-len(hand)): #add any extras
             hand.append(handles[len(hand)+i])
             lab.append(labels[len(lab)+i])
