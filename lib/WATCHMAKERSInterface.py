@@ -1,3 +1,4 @@
+import os
 import uproot
 import numpy as np
 import glob
@@ -24,7 +25,7 @@ class WATCHMAKERSLoader(object):
 
     def __init__(self, wmoutpath):
         self.wmpath = None
-        self._bonsaidir = None
+        self.bonsaidir = None
         self._datadirs = None
         self.datadict = None
         self.SetWATCHMAKERSPath(wmoutpath)
@@ -50,39 +51,68 @@ class WATCHMAKERSLoader(object):
             print("Input path to directory does not exist!")
             return
         self.wmpath = wmoutpath
-        self._bonsaidir = self._BonsaiDirectory()
-        self._datadirs = self.DataPaths()
-        self.datadict = self._MakeDataDict()
+        self.bonsaidir = self._BonsaiDirectory()
+        self.data_types = self._GetAvailableDataTypes()
 
     def _BonsaiDirectory(self):
         '''
         Given the specified WATCHMAKERS directory, get the path to the 
         bonsai directory.
         '''
-        bonsai_glob = glob.glob("%s/bonsai_root_files*"%(self._wmpath))
-        if len(bonsai_dirs)<1:
+        bonsai_glob = glob.glob("%s/bonsai_root_files*"%(self.wmpath))
+        print("BONSAI DIR GLOB: " + str(bonsai_glob))
+        if len(bonsai_glob)<1:
             print("ERROR: No bonsai_root_files directory in WATCHMAKERS path!")
             return None
-        if len(bonsai_dirs)>1:
+        if len(bonsai_glob)>1:
             print(("WARNING: Multiple bonsai_root_files directories in" + 
                 " WATCHMAKERS directory!  Taking first found..."))
         return bonsai_glob[0]
 
-    def _DataPaths(self):
-        data_glob = glob.glob("%s/*/"%(self._bonsaidir))
+    def _GetAvailableDataTypes(self):
+        data_glob = glob.glob("%s/*/"%(self.bonsaidir))
+        print("DATA DIRECTORY GLOB: " + str(data_glob)) 
         if len(data_glob)<1:
             print("ERROR: No ROOT data found in bonsai_root_files directory!")
             return None
-        return data_glob
+        data_types = []
+        for dtype in data_glob:
+            thetype = dtype.replace(self.bonsaidir+"/Watchman_","").rstrip("/")
+            data_types.append(thetype)
+        return data_types
 
-    def _MakeDataDict(self):
+    def ListMergedBonsaiFiles(self):
         '''
-        Method looks in each data path, and produces a dictionary with the key
-        being the data's name and the value being the list of ROOT files.
+        Method shows what merged files are available in the bonsai directory.
         '''
-        ddict = {}
-        for datadir in self._datadirs:
-            data_type = datadir.lstrip(self._bonsaidir).rstrip("\n")
-            rootfiles = glob.glob("%s/%.root"%(datadir))
-            ddict[data_type] = rootfiles
-        return ddict
+        mfiles = glob.glob("%s/merged_Watchman_*.root"%(self.bonsaidir))
+        return mfiles
+
+    def GetAllBonsaiFilesOfType(self,DataType):
+        '''
+        Method returns a list of all bonsai files for a single type of data.  
+
+        Inputs:
+            DataType [string]
+            Name of the data directory to be viewed in the bonsai_root_files directory.  
+            Do not give the full file path. 
+        '''
+        dfiles = glob.glob("%s/%s/*.root"%(self.bonsaidir,DataType))
+        if len(dfiles)==0:
+            print("No ROOT files found in bonsai directory %s/%s"%(self.bonsaidir,DataType))
+        return dfiles
+
+    def OpenMergedData(self,DataType):
+        '''
+        Opens a single merged file  
+
+        Inputs:
+            DataType [string]
+            Name of the data type to be viewed.  Select an entry from self.data_types.  
+            Do not give the full file path. 
+        '''
+        if os.path.exists("%s/merged_Watchman_%s.root"%(self.bonsaidir,DataType)):
+            return uproot.open("%s/merged_Watchman_%s.root"%(self.bonsaidir,DataType))
+        else:
+            print("No merged file at %s/merged_Watchman_%s.root!"%(self.bonsaidir,DataType))
+            return
