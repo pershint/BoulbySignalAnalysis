@@ -3,7 +3,7 @@
 
 import os, json
 import sys
-import config.db_config as dbc
+from .config import db_config as dbc
 
 basepath = os.path.dirname(__file__)
 dbpath = os.path.abspath(os.path.join(basepath, "..", "DB"))
@@ -14,8 +14,8 @@ class Signals_PC(object):
         self.pc = pc
         self.bufsize = bufsize
         self.pmttype = pmttype
-	self.orient = orientation
-	self.has_shields = has_shields
+        self.orient = orientation
+        self.has_shields = has_shields
         self.signals = 'none'
         self.site = site
 
@@ -39,11 +39,9 @@ class Signals_PC(object):
         '''set if the S/B dict you want to load from the database JSON given has shields or not'''
         self.has_shields = has_shields
 
-    def load_signal_dict(self):
+    def load_signal_dict(self, dict_path):
         if self.site == "Boulby":
-            sigpath = os.path.abspath(os.path.join(dbpath, dbc.BOULBY_SIGNALS_DBENTRY))
-        if self.site == "Fairport":
-            sigpath = os.path.abspath(os.path.join(dbpath, dbc.FAIRPORT_SIGNALS_DBENTRY))
+            sigpath = os.path.abspath(os.path.join(dbpath, dict_path))
         with open(sigpath) as data_file:
             data = json.load(data_file)
             for case in data["SB"]:

@@ -36,5 +36,10 @@ if specifications['site']=="Fairport":
     cores["known_cores"] = ["Core_1"]
     cores["unknown_cores"] = []
 
+PBKG_DATA_TYPES = ["208Tl_LIQUID_CHAIN_232TH_NA","208Tl_PMT_CHAIN_232TH_NA"]
+DBKG_DATA_TYPES = ["208Tl_LIQUID_CHAIN_232TH_NA","208Tl_PMT_CHAIN_232TH_NA"]
+PSIG_DATA_TYPES = ["IBDPositron_LIQUID_ibd_p"]
+DSIG_DATA_TYPES = ["IBDNeutron_LIQUID_ibd_n"]
 
+BRANCHES = ['good_pos','distpmt','pe','n9']
 

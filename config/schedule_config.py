@@ -1,7 +1,6 @@
 #Here we'll write a config file to read from, rather than all of the input
 #optons that we are seeing right now.  It's getting too hectic in the main.
-from .. import DBParse as dp
-import db_config as dbc
+from . import db_config as dbc
 ########################BEGIN CONFIGURABLES#############################
 
 ###################BEGIN CONFIGURING BASED ON OPTIONS ABOVE############

@@ -1,7 +1,10 @@
 import os
 import uproot
 import numpy as np
+import pandas as pd
 import glob
+from . import SimpleKDE as ske
+from . import ROOTProcessor as rp
 
 ###
 # This class is designed to act as a python interface with any WATCHMAKERS
@@ -102,7 +105,7 @@ class WATCHMAKERSLoader(object):
             print("No ROOT files found in bonsai directory %s/%s"%(self.bonsaidir,DataType))
         return dfiles
 
-    def OpenMergedData(self,DataType):
+    def GetMergedDataUprootFile(self,DataType):
         '''
         Opens a single merged file  
 
@@ -113,6 +116,36 @@ class WATCHMAKERSLoader(object):
         '''
         if os.path.exists("%s/merged_Watchman_%s.root"%(self.bonsaidir,DataType)):
             return uproot.open("%s/merged_Watchman_%s.root"%(self.bonsaidir,DataType))
+        else:
+            print("No merged file at %s/merged_Watchman_%s.root!"%(self.bonsaidir,DataType))
+            return
+
+    def GetMergedDataPandasDF(self,DataType,treename='data',branches=None):
+        '''
+        Opens a single merged file as a Pandas dataframe.
+
+        Inputs:
+            DataType [string]
+            Name of the data type to be viewed.  Select an entry from self.data_types.  
+            Do not give the full file path.
+
+            treename [string]
+            Name of the tree in the ntuple file to get and process into a pandas 
+            dataframe.
+
+            branches [array]
+            Array of strings where each entry is a name of a branch to enter into
+            the pandas dataframe.  If None, uploads all available branches 
+            into the dataframe.
+        '''
+        if os.path.exists("%s/merged_Watchman_%s.root"%(self.bonsaidir,DataType)):
+                
+                #Load data from the cluster-level event tree
+                RProcessor = rp.ROOTProcessor(treename=treename)
+                rfile = "%s/merged_Watchman_%s.root"%(self.bonsaidir,DataType)
+                RProcessor.addROOTFile(rfile,branches_to_get=branches)
+                data = RProcessor.getProcessedData() #dictionary object
+                return pd.DataFrame(data)
         else:
             print("No merged file at %s/merged_Watchman_%s.root!"%(self.bonsaidir,DataType))
             return

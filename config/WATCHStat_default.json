@@ -1,0 +1,62 @@
+{
+    "SITE": "boulby",
+    "CORES": {
+        "KNOWN_CORES": ["Core_1","Core_2"],
+        "UNKNOWN_CORES": []
+    },
+    "BRANCHES": ["good_pos","distpmt","pe","n9"],
+    "PDF_CONFIGS": {
+        "n9": {
+            "xrange": [0,71],
+            "bandwidth": 2.0,
+            "bins": 35
+        },
+        "pe": {
+            "xrange": [0,201],
+            "bandwidth": 7.15,
+            "bins": 50
+        },
+        "distpmt": {
+            "xrange": [0,5000],
+            "bandwidth": 100,
+            "bins": 50
+        },
+        "good_pos": {
+            "xrange": [0,1.0],
+            "bandwidth": 0.01,
+            "bins": 40
+        }
+    },
+    "DATA_TYPES": {
+        "BKG": {
+            "PROMPT": {
+                "208Tl_LIQUID_CHAIN_232TH_NA": {
+                    "rate": 1.0
+                },
+                "208Tl_PMT_CHAIN_232TH_NA": {
+                    "rate": 1.0
+                }
+            },
+            "DELAYED": {
+                "208Tl_LIQUID_CHAIN_232TH_NA": {
+                    "rate": 1.0
+                },
+                "208Tl_PMT_CHAIN_232TH_NA": {
+                    "rate": 1.0
+                }
+            }
+        },
+        "SIG": {
+            "PROMPT": {
+                "IBDPositron_LIQUID_ibd_p": {
+                    "rate": 1.0
+                }
+            },
+            "DELAYED": {
+                "IBDNeutron_LIQUID_ibd_n": {
+                    "rate": 1.0
+                }
+            }
+        }
+    }
+}
