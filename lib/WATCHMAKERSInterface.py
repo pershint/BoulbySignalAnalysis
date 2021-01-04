@@ -21,25 +21,29 @@ class WATCHMAKERSLoader(object):
     '''
     Class that is used to load in data from a WATCHMAKERS directory's
     bonsai files.
-    Inputs:
-        wmoutpath (string)
-        Full path to the WATCHMAKERS directory.
     '''
 
     def __init__(self, wmoutpath):
+        '''
+        Class initialization Inputs:
+            wmoutpath (string)
+            Full path to the WATCHMAKERS directory that will be navigated..
+        '''
         self.wmpath = None
         self.bonsaidir = None
         self._datadirs = None
         self.datadict = None
+        self.debug = False
         self.SetWATCHMAKERSPath(wmoutpath)
 
+    def SetDebugMode(self, debug_bool):
+        '''
+        Set whether to run class in debug mode or not.
 
-    def GetAllDataTypes(self):
-        '''
-        Returns a list of all data types available in the current 
-        WATCHMAKERS bonsai directory.
-        '''
-        return list(self.datadict.keys())
+        Inputs:
+            debug_bool (bool)
+        ''' 
+        self.debug = debug_bool
 
     def SetWATCHMAKERSPath(self,wmoutpath):
         '''
@@ -48,22 +52,31 @@ class WATCHMAKERSLoader(object):
         bonsai files in the new WATCHMAKERS directory selected.
         '''
         if wmoutpath == self.wmpath:
-            print("Input was same as current WATCHMAKERS path.")
+            print("WATCHMAKERSInterface: Input was same as current WATCHMAKERS path.")
             return
         if not os.path.isdir(wmoutpath):
-            print("Input path to directory does not exist!")
+            print("WATCHMAKERSInterface: Input path to directory does not exist!")
             return
         self.wmpath = wmoutpath
-        self.bonsaidir = self._BonsaiDirectory()
+        self.bonsaidir = self._GetBonsaiDirectory()
         self.data_types = self._GetAvailableDataTypes()
 
-    def _BonsaiDirectory(self):
+    def GetAllDataTypes(self):
+        '''
+        Returns a list of all data types available in the current 
+        WATCHMAKERS bonsai directory.
+        '''
+        return self.data_types
+
+
+    def _GetBonsaiDirectory(self):
         '''
         Given the specified WATCHMAKERS directory, get the path to the 
         bonsai directory.
         '''
         bonsai_glob = glob.glob("%s/bonsai_root_files*"%(self.wmpath))
-        print("BONSAI DIR GLOB: " + str(bonsai_glob))
+        if self.debug:
+            print("BONSAI DIR GLOB: " + str(bonsai_glob))
         if len(bonsai_glob)<1:
             print("ERROR: No bonsai_root_files directory in WATCHMAKERS path!")
             return None
@@ -76,8 +89,8 @@ class WATCHMAKERSLoader(object):
         data_glob = glob.glob("%s/*/"%(self.bonsaidir))
         print("DATA DIRECTORY GLOB: " + str(data_glob)) 
         if len(data_glob)<1:
-            print("ERROR: No ROOT data found in bonsai_root_files directory!")
-            return None
+            print("ERROR: No data directories found in bonsai_root_files directory.")
+            return []
         data_types = []
         for dtype in data_glob:
             thetype = dtype.replace(self.bonsaidir+"/Watchman_","").rstrip("/")
@@ -107,7 +120,7 @@ class WATCHMAKERSLoader(object):
 
     def GetMergedDataUprootFile(self,DataType):
         '''
-        Opens a single merged file  
+        Opens a single merged file in the bonsai directory given the input data type.
 
         Inputs:
             DataType [string]
@@ -118,11 +131,11 @@ class WATCHMAKERSLoader(object):
             return uproot.open("%s/merged_Watchman_%s.root"%(self.bonsaidir,DataType))
         else:
             print("No merged file at %s/merged_Watchman_%s.root!"%(self.bonsaidir,DataType))
-            return
+            return None
 
     def GetMergedDataPandasDF(self,DataType,treename='data',branches=None):
         '''
-        Opens a single merged file as a Pandas dataframe.
+        Opens a single merged file in the bonsai directory as a Pandas dataframe.
 
         Inputs:
             DataType [string]
@@ -141,8 +154,10 @@ class WATCHMAKERSLoader(object):
         if os.path.exists("%s/merged_Watchman_%s.root"%(self.bonsaidir,DataType)):
                 
                 #Load data from the cluster-level event tree
-                RProcessor = rp.ROOTProcessor(treename=treename)
                 rfile = "%s/merged_Watchman_%s.root"%(self.bonsaidir,DataType)
+                if self.debug:
+                    print("WATCHMAKERSInterface: Opening %s as DataFrame"%(rfile)
+                RProcessor = rp.ROOTProcessor(treename=treename)
                 RProcessor.addROOTFile(rfile,branches_to_get=branches)
                 data = RProcessor.getProcessedData() #dictionary object
                 return pd.DataFrame(data)

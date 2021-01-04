@@ -4,6 +4,17 @@ import glob
 import pandas as pd
 
 def NtuplesToPD(directory,thetreename):
+    '''
+    Simple method that uses the ROOTProcessor to convert all *.ntuple.root files
+    in a directory into a single Pandas DataFrame.
+
+    inputs:
+        directory [string]
+        Path to the directory containing all ntuples of interest.
+
+        thetreename [string]
+        Name of the tree in the ROOT ntuples to process into the Pandas DataFrame.
+    '''
     flist = glob.glob("%s/*.ntuple.root"%(directory))
     fproc = ROOTProcessor(treename=thetreename)
     for f in flist:
@@ -13,12 +24,31 @@ def NtuplesToPD(directory,thetreename):
     return df
 
 class ROOTProcessor(object):
+    '''
+    Class which utilizes the uproot library to convert simple ROOT ntuple files
+    to dictionaries, which readily convert to pandas DataFrames.
+
+    TODOs:
+      - Would be nice to use uproot in a way where the entire ROOT file isn't loaded
+        into memory.  
+    '''
     def __init__(self,treename="phaseII"):
+        '''
+        Initialization inputs:
+            treename [string]
+            Name of the tree in the ROOT ntuple to convert to a pandas
+            dataframe.
+        '''
         print("ROOTProcessor initializing")
         self.treename = treename
         self.processed_data = {}
+        self.files_processed = []
 
     def getProcessedData(self):
+        '''
+        Returns a dictionary containing data from all ROOT ntuples that have been added
+        to the ROOTProcessor class.
+        '''
         if not self.processed_data:
             print("processed data array empty.  Did you process any data?")
         return self.processed_data
@@ -28,6 +58,7 @@ class ROOTProcessor(object):
         Empties the current processed_data dictionary.
         '''
         self.processed_data = {}
+        self.files_processed = []
 
     def setTreeName(self,treename="phaseII"):
         '''
@@ -70,7 +101,7 @@ class ROOTProcessor(object):
                     seen_data.append(dattype)
                     thistype_processed = ftree.get(dattype).array()
                     self._appendProcessedEntry(dattype,thistype_processed)
-            
+        self.files_processed.append(rootfile) 
 
     def _appendProcessedEntry(self, dattype, thistype_processed):
         '''

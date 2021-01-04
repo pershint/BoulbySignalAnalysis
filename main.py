@@ -13,6 +13,8 @@ import sys
 import lib.ArgParser as ap
 import lib.WATCHMAKERSInterface as wmi
 import lib.SimpleKDE as ske
+import lib.CutManager as cm
+import lib.LikelihoodCalculator as lc
 
 from scipy import interpolate
 import numpy as np
@@ -25,13 +27,10 @@ basepath = os.path.dirname(__file__)
 savepath = os.path.abspath(os.path.join(basepath,"jobresults"))
 
 DEBUG = ap.DEBUG
-SPRT = ap.SPRT 
-KALMAN = ap.KALMAN 
-FORWARDBACKWARD = ap.FORWARDBACKWARD 
-WINDOW = ap.WINDOW
-POISFIT = ap.POISFIT
 DWELLTIME = ap.DWELLTIME
 jn = ap.jn
+TRAINING_LENGTH = 10000
+TEST_LENGTH = 10000
 
 
 #LOAD CONFIGURATIONS FOR DETECTOR, SIGNAL/BACKGROUND, AND REACTOR SCHEDULE
@@ -76,14 +75,25 @@ if __name__=='__main__':
         sig_data = wload.GetMergedDataPandasDF(sig,treename='data',
                                                branches=dbc.BRANCHES)
 
-    sig_cuts = sig_data.loc[sig_data['n9']>-1000].reset_index(drop=True)
-    bkg_cuts = bkg_data.loc[bkg_data['n9']>-1000].reset_index(drop=True)
-    plt.hist(bkg_cuts['n9'],label='background',alpha=0.7)
-    plt.hist(sig_cuts['n9'],label='signal',alpha=0.7)
-    plt.xlabel("n9")
-    plt.title("n9 distribution for signal and background")
-    plt.legend()
-    plt.show()
+    pdf_cfgs = cfg["PDF_CONFIGS"]
+    myCutManager = cm.CutManager(sig_data)
+    for pdf in pdf_cfgs:
+        prange = pdf_cfgs[pdf]["xrange"]
+        myCutManager.ApplyCutValue(pdf,prange[0],"gte")
+        myCutManager.ApplyCutValue(pdf,prange[1],"lte")
+    sig_cuts = myCutManager.GetDataFrameWithCuts()
+    myCutManager.LoadDataFrame(bkg_data)
+    for pdf in pdf_cfgs:
+        prange = pdf_cfgs[pdf]["xrange"]
+        myCutManager.ApplyCutValue(pdf,prange[0],"gte")
+        myCutManager.ApplyCutValue(pdf,prange[1],"lte")
+    bkg_cuts = myCutManager.GetDataFrameWithCuts()
+    print(myCutManager.GetListOfCurrentCuts())
+
+    train_sig = sig_cuts[0:TRAINING_LENGTH]
+    bkg_sig = bkg_cuts[0:TRAINING_LENGTH]
+    test_sig = sig_cuts[TRAINING_LENGTH:TRAINING_LENGTH + TEST_LENGTH]
+    test_bkg = bkg_cuts[TRAINING_LENGTH:TRAINING_LENGTH + TEST_LENGTH]
 
     #So, we now have data loaded into Pandas DataFrames and can make PDFs based on
     #The KDE fit.  They're not perfect, but good.  What needs to happen next...
@@ -100,7 +110,9 @@ if __name__=='__main__':
     #    event data given is signal or background.
     #  - Make a HMM processor.  Needs to take in the likelihood class and use this as
     #    part of the HMM probability calculation.
-    pdf_cfgs = cfg["PDF_CONFIGS"]
+    myLikelihoodCalculator = lc.LikelihoodCalculator()
+    myLikelihoodCalculator.SetInterpolationType("linear")
+
     for pdf in pdf_cfgs:
         print("HAVE EACH PDF GET INITIALIZED HERE YO")
         print("THIS CONFIG SHOULD ALSO TELL WHAT VARIABLES TO LOAD INTO ROOTProcessor")
@@ -111,8 +123,7 @@ if __name__=='__main__':
         pbins = pdf_cfgs[pdf]["bins"]
         thex = np.arange(prange[0],prange[1],1)
         myestimator = ske.KernelDensityEstimator()
-        sig_short = sig_cuts[0:3000]
-        myestimator.SetDataFrame(sig_short)
+        myestimator.SetDataFrame(train_sig)
         if pbw is None:
             print("FINDING OPT. BANDWIDTH FOR %s"%(pname))
             pbw = myestimator.GetOptimalBandwidth(pname,[7,9],7)
@@ -120,37 +131,48 @@ if __name__=='__main__':
         #Perform kernel density estimation and then interpolate to form a function
         sx,sy = myestimator.KDEEstimate1D(pbw,pname,x_range=prange,bins=pbins,kern='gaussian')
         sy = sy/np.sum(sy)
-        f = interpolate.interp1d(sx,sy,kind='linear')
-        thehist,thehist_edges = np.histogram(sig_short[pname],bins=pbins,range=prange)
+        myLikelihoodCalculator.Add1DPDF(pname,"S",sx,sy)
+        thehist,thehist_edges = np.histogram(train_sig[pname],bins=pbins,range=prange)
+        print("THE HIST EDGES: " + str(thehist_edges))
         thehist = thehist/np.sum(thehist)
         print("SUM OF thehist: " + str(np.sum(thehist)))
         thehist_edges = thehist_edges[0:len(thehist_edges)-1]
-        plt.plot(thehist_edges,thehist,label='signal',alpha=0.7,linestyle='none',markersize=6,marker='o')
+        plt.plot(thehist_edges,thehist,label='data',alpha=0.7,linestyle='none',markersize=6,marker='o')
         plt.plot(sx,sy,label='KDE',alpha=0.7)
-        plt.plot(thex, f(thex),label='KDE interpolation')
-        plt.title("%s distribution for signal "%(pname))
+        plt.title("%s distribution for signal"%(pname))
         plt.legend()
-        plt.show()
+        #plt.show()
 
-        thex = np.arange(prange[0],prange[1],1)
         myestimator = ske.KernelDensityEstimator()
-        bkg_short = bkg_cuts[0:3000]
-        myestimator.SetDataFrame(bkg_short)
+        train_bkg = bkg_cuts[0:TRAINING_LENGTH]
+        myestimator.SetDataFrame(train_bkg)
         if pbw is None:
             print("FINDING OPT. BANDWIDTH FOR %s"%(pname))
             pbw = myestimator.GetOptimalBandwidth(pname,[1,7],7)
             print("MY BW IS: " + str(pbw))
-        #Perform kernel density estimation and then interpolate to form a function
+        #Perform kernel density estimation 
         sx,sy = myestimator.KDEEstimate1D(pbw,pname,x_range=prange,bins=pbins,kern='gaussian')
         sy = sy/np.sum(sy)
-        f = interpolate.interp1d(sx,sy,kind='linear')
-        thehist,thehist_edges = np.histogram(bkg_short[pname],bins=pbins,range=prange)
+        myLikelihoodCalculator.Add1DPDF(pname,"B",sx,sy)
+        thehist,thehist_edges = np.histogram(train_bkg[pname],bins=pbins,range=prange)
         thehist = thehist/np.sum(thehist)
         print("SUM OF thehist: " + str(np.sum(thehist)))
         thehist_edges = thehist_edges[0:len(thehist_edges)-1]
-        plt.plot(thehist_edges,thehist,label='ibackground',alpha=0.7,linestyle='none',markersize=6,marker='o')
+        plt.plot(thehist_edges,thehist,label='data',alpha=0.7,linestyle='none',markersize=6,marker='o')
         plt.plot(sx,sy,label='KDE',alpha=0.7)
-        plt.plot(thex, f(thex),label='KDE interpolation')
         plt.title("%s distribution for background"%(pname))
         plt.legend()
-        plt.show()
+        #plt.show()
+    #Neat.  We have the PDFs all made now and loaded them into our LikelihoodCalculator.  Let's test our
+    #Likelihood calculator.
+    plt.show()
+    signal_lr = myLikelihoodCalculator.GetLikelihoods(test_sig)
+    bkg_lr = myLikelihoodCalculator.GetLikelihoods(test_bkg)
+    plt.hist(signal_lr,label="signal test data",bins=30,alpha=0.5)
+    plt.hist(bkg_lr,label="background test data",bins=30,alpha=0.5)
+    plt.legend(loc=2)
+    plt.xlabel("Signal likelihood")
+    plt.title("Likelihood distribution of signal and background data")
+    plt.show()
+
+

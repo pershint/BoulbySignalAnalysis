@@ -6,29 +6,43 @@ import seaborn as sns
 class LikelihoodCalculator(object):
     '''
     Class that takes in 1D or 2D signal and background PDFs, developing a 
-    classifier that returns the probability new input data comes from either
-    the signal distributions or the background distributions.
+    classifier that returns the probability new input data comes from 
+    the signal distributions.  In short, this is a simple likelihood ratio
+    classifier, similar to that used in ROOT TMVA.
     '''
     def __init__(self):
         self.PDFs = {}
+        self.InterpolationType = "linear"
+
+    def SetInterpolationType(self, interp):
+        '''
+        Set type of interpolation to use on all PDFs.  
+
+        inputs:
+            interp [string]
+            Must be a default interpolation
+            type used by the scipy.interpolate package.
+        '''
+        self.InterpolationType = interp
 
     def RemovePDF(self,PDF_name):
         '''
         Remove this PDF from those used to calculate the likelihood.
+
         Input: PDF_name [string]
         '''
         if PDF_name not in self.PDFs.keys():
-            print("PDF not loaded into likelihood function.")
+            print("PDF does not exist in LikelihoodCalculator class..")
         else:
             del self.PDFs[PDF_name]
 
     def GetPDFNames(self):
-        PDF_names = []
-        for PDF in self.PDFs:
-            PDF_names.append(PDF)
-        return PDF_names
+        '''
+        Return a list of all PDFs currently loaded into the LikelihoodCalculator.
+        '''
+        return list(self.PDFs.keys())
 
-    def Add1DPDF(self,PDF_name,datatype,x,y,label=None,weight=1.0):
+    def Add1DPDF(self,PDF_name,datatype,x,y,label=None,weight=1.0,interpolatePDF=True):
         '''
         Adds information for a on3-dimensional PDF for use in the
         likelihood function.  xlabel and ylabel must correspond to
@@ -60,13 +74,15 @@ class LikelihoodCalculator(object):
             self.PDFs[PDF_name] = {}
         self.PDFs[PDF_name][datatype] = {}
         self.PDFs[PDF_name][datatype]['ntuple_label'] = label
-        self.PDFs[PDF_name][datatype]['PDF_xdata'] = x
-        self.PDFs[PDF_name][datatype]['PDF_ydata'] = y
+        self.PDFs[PDF_name][datatype]['x'] = x
+        self.PDFs[PDF_name][datatype]['y'] = y
         self.PDFs[PDF_name][datatype]['PDF_interpolation'] = None
         self.PDFs[PDF_name][datatype]["weight"] = weight
         self.PDFs[PDF_name][datatype]["dimension"] = 1
+        if interpolatePDF:
+            self._InterpolatePDF(PDF_name,datatype)
 
-    def Add2DPDF(self,PDF_name,datatype,xlabel,ylabel,xx,yy,zz,weight=1.0):
+    def Add2DPDF(self,PDF_name,datatype,xlabel,ylabel,xx,yy,zz,weight=1.0,interpolatePDF=True):
         '''
         Adds information for a two-dimensional PDF for use in the
         likelihood function.  xlabel and ylabel must correspond to
@@ -88,21 +104,39 @@ class LikelihoodCalculator(object):
             if datatype in self.PDFs[PDF_name].keys():
                 print("PDF %s of type %s already exists! Overwriting old PDF...")
         self.PDFs[PDF_name][datatype] = {}
-        self.PDFs[PDF_name][datatpye]['ntuple_xlabel'] = xlabel
-        self.PDFs[PDF_name][datatpye]['ntuple_ylabel'] = ylabel
-        self.PDFs[PDF_name][datatpye]['PDF_x'] = xx
-        self.PDFs[PDF_name][datatpye]['PDF_y'] = yy
-        self.PDFs[PDF_name][datatpye]['PDF_z'] = zz
-        self.PDFs[PDF_name][datatpye]["weight"] = weight
-        self.PDFs[PDF_name][datatpye]["dimension"] = 2
+        self.PDFs[PDF_name][datatype]['ntuple_xlabel'] = xlabel
+        self.PDFs[PDF_name][datatype]['ntuple_ylabel'] = ylabel
+        self.PDFs[PDF_name][datatype]['x'] = xx
+        self.PDFs[PDF_name][datatype]['y'] = yy
+        self.PDFs[PDF_name][datatype]['z'] = zz
+        self.PDFs[PDF_name][datatype]["weight"] = weight
+        self.PDFs[PDF_name][datatype]["dimension"] = 2
         self.PDFs[PDF_name][datatype]['PDF_interpolation'] = None
+        if interpolatePDF:
+            self._InterpolatePDF(PDF_name,datatype)
 
-    def _Interpolate2DPDF(self,PDF_title,datatype,interpolation_type):
-        PDF_info = self.PDFs[PDF_title][datatype]
-        PDF_x = PDF_info['PDF_x']
-        PDF_y = PDF_info['PDF_y']
-        PDF_z = PDF_info['PDF_z']
-        f = interpolate.interp2d(PDF_x,PDF_y,PDF_z,kind=interpolation_type)
+    def _InterpolatePDF(self,PDF_name,datatype):
+        '''
+        Perform an interpolation on the PDF contained in self.PDFs.  The type of
+        interpolation to use is defined with self.SetInterpolationType().
+    
+        Inputs:
+            PDF_name [string]
+                Name of the PDF to perform the interpolation on.
+            datatype [string]
+                Controls whether the interpolation is performed on the signal or background
+                distribution.  Allowed inputs are "S" or "B".
+        '''
+        PDF_info = self.PDFs[PDF_name][datatype]
+        if PDF_info["dimension"] == 1:
+            PDF_x = PDF_info['x']
+            PDF_y = PDF_info['y']
+            f = interpolate.interp1d(PDF_x,PDF_y,kind=self.InterpolationType)
+        if PDF_info["dimension"] == 2:
+            PDF_x = PDF_info['x']
+            PDF_y = PDF_info['y']
+            PDF_z = PDF_info['z']
+            f = interpolate.interp2d(PDF_x,PDF_y,PDF_z,kind=self.InterpolationType)
         self.PDFs[PDF_title][datatype]["PDF_interpolation"] = f
         return
 
@@ -110,8 +144,8 @@ class LikelihoodCalculator(object):
         PDF_info = self.PDFs[PDF_title][datatype]
         PDF_weight = PDF_info['weight']
         f = self.PDFs[PDF_title][datatype]["PDF_interpolation"]
-        x_data = data[PDF_info['ntuple_xlabel']]
-        y_data = data[PDF_info['ntuple_ylabel']]
+        x_data = np.array(data[PDF_info['ntuple_xlabel']])
+        y_data = np.array(data[PDF_info['ntuple_ylabel']])
         if type(x_data[0]) == np.ndarray and type(y_data[0]) == np.ndarray:
             #Loop through data entries and for each entry, calculate this
             #PDF's contribution to the S or B likelihood
@@ -138,15 +172,8 @@ class LikelihoodCalculator(object):
                     B_likelihood[k]+=likelihood*PDF_weight
         return S_likelihood,B_likelihood
 
-    def _Interpolate1DPDF(self,PDF_title,datatype,interpolation_type):
-        PDF_info = self.PDFs[PDF_title][datatype]
-        PDF_x = PDF_info['PDF_xdata']
-        PDF_y = PDF_info['PDF_ydata']
-        f = interpolate.interp1d(PDF_x,PDF_y,kind=PDF_interpolation)
-        self.PDFs[PDF_title][datatype]["PDF_interpolation"] = f
-        return
 
-    def _Update1DLikelihoods(self,data,PDF_title,datatype,S_likelihood,B_likelihood):
+    def _Calculate1DLikelihoods(self,data,PDF_title,datatype,S_likelihood,B_likelihood):
         '''
         For each event in the data object, calculates the likelihood that the event 
         came from either the signal or background distribution of name PDF_title.
@@ -156,7 +183,8 @@ class LikelihoodCalculator(object):
         PDF_info = self.PDFs[PDF_title][datatype]
         PDF_weight = PDF_info['weight']
         f = PDF_info['PDF_interpolation']
-        x_data = data[PDF_info['ntuple_label']]
+        x_data = np.array(data[PDF_info['ntuple_label']])
+        print(x_data)
         if type(x_data[0]) == np.ndarray:
             #Loop through data entries and for each entry, calculate this
             #PDF's contribution to the S or B likelihood
@@ -186,34 +214,38 @@ class LikelihoodCalculator(object):
     # getting likelihoods for different simulated WATCHMAN experiments 
     # may be done over and over again.
     def InterpolateAllPDFs(self):
+        '''
+        Re-perform interpolation on all PDFs loaded into the LikelihoodCalculator class.
+        '''
         for PDF in self.PDFs:
             for datatype in self.PDFs[PDF]:
-                if self.PDFs[PDF][datatype]["dimension"] == 1:
-                    self._Interpolate1DPDF(PDF,datatype,PDF_interpolation)
-                if self.PDFs[PDF][datatype]["dimension"] == 2:
-                    self._Interpolate2DPDF(PDF,datatype,PDF_interpolation)
+                self._InterpolatePDF(PDF,datatype)
 
-    def GetLikelihoods(self,test_data,PDF_interpolation='linear'):
+    def GetLikelihoods(self,test_data):
         '''
         Using the signal and background data PDFs loaded, returns the 
         likelihood that each event in the test_data object 
         comes from the signal distribution 
         rather than the background distribution.
+
+        Inputs:
+            test_data [pandas.DataFrame]
+            DataFrame of data to evaluate likelihood of.  Should have column labels consistent 
+            with names of PDFs fed into the LikelihoodCalculator class.
+
         '''
         likelihoods = []
-        S_likelihood = np.zeros(len(test_data["entrynum"]))
-        B_likelihood = np.zeros(len(test_data["entrynum"]))
+        S_likelihood = np.zeros(len(test_data.index))
+        B_likelihood = np.zeros(len(test_data.index))
         #Loop through 2D PDFs in class and calculate their likelihood contributions.
         #TODO: We should be able to restructure our inputs in a way to generalize to N-Dim. PDFs
         for PDF in self.PDFs:
             for datatype in self.PDFs[PDF]:
+                if self.PDFs[PDF][datatype]["PDF_interpolation"] is None:
+                    self._InterpolatePDF(PDF,datatype)
                 if self.PDFs[PDF][datatype]["dimension"] == 1:
-                    if self.PDFs[PDF][datatype]["PDF_interpolation"] is None:
-                        self._Interpolate1DPDF(PDF,datatype,PDF_interpolation)
-                    S_likelihood,B_likelihood = self._Update1DLikelihoods(test_data,PDF,datatype,S_likelihood,B_likelihood)
+                    S_likelihood,B_likelihood = self._Calculate1DLikelihoods(test_data,PDF,datatype,S_likelihood,B_likelihood)
                 if self.PDFs[PDF][datatype]["dimension"] == 2:
-                    if self.PDFs[PDF][datatype]["PDF_interpolation"] is None:
-                        self._Interpolate2DPDF(PDF,datatype,PDF_interpolation)
                     S_likelihood,B_likelihood = self._Calculate2DLikelihoods(test_data,PDF,datatype,S_likelihood,B_likelihood)
         Likelihood_ratio = (S_likelihood)/(S_likelihood + B_likelihood)
         return Likelihood_ratio 
@@ -260,14 +292,12 @@ class LikelihoodCalculator(object):
     def _GetOptimalPuritySqEff(self,training_input,training_output,PDF_name,PDF_interpolation):
         '''
         Determines the best purity^2*efficiency attainable if the likelihood 
-        statistic is informed by the .
+        statistic is informed by the training data.
         '''
-        S_likelihood = np.zeros(len(training_input["entrynum"]))
-        B_likelihood = np.zeros(len(training_input["entrynum"]))
-        self._Interpolate1DPDF(PDF_name,"S",PDF_interpolation)
-        self._Interpolate1DPDF(PDF_name,"B",PDF_interpolation)
-        S_likelihood,B_likelihood = self._Update1DLikelihoods(training_input,PDF_name,"S",S_likelihood,B_likelihood)
-        S_likelihood,B_likelihood = self._Update1DLikelihoods(training_input,PDF_name,"B",S_likelihood,B_likelihood)
+        S_likelihood = np.zeros(len(training_input.index))
+        B_likelihood = np.zeros(len(training_input.index))
+        S_likelihood,B_likelihood = self._Calculate1DLikelihoods(training_input,PDF_name,"S",S_likelihood,B_likelihood)
+        S_likelihood,B_likelihood = self._Calculate1DLikelihoods(training_input,PDF_name,"B",S_likelihood,B_likelihood)
         Likelihood_ratio = (S_likelihood)/(S_likelihood + B_likelihood)
         #Now, let's plot the likelihoods for signal vs. background 
         b_only_test = np.where(training_output>0)[0]
